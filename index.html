@@ -515,6 +515,8 @@
         
         async function getSimilarity(word1, word2) {
             try {
+                console.log('🔍 API 요청:', { word1, word2 });
+                
                 const response = await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: {
@@ -528,9 +530,11 @@
                 }
                 
                 const data = await response.json();
+                console.log('✅ API 응답:', data);
+                
                 return data;
             } catch (error) {
-                console.error('API 호출 실패:', error);
+                console.error('❌ API 호출 실패:', error);
                 throw new Error('유사도 계산 중 오류가 발생했습니다.');
             }
         }
@@ -587,6 +591,12 @@
             try {
                 const result = await getSimilarity(gameState.currentWord, word);
                 
+                console.log('📊 처리할 결과:', {
+                    isNoun: result.isNoun,
+                    similarity: result.similarity,
+                    message: result.message
+                });
+                
                 if (!result.isNoun) {
                     showResult('❌ ' + (result.message || '명사만 입력해주세요!'), false);
                     isProcessing = false;
@@ -596,6 +606,13 @@
                 
                 const similarity = result.similarity;
                 const similarityPercent = similarity * 100;
+                
+                console.log('🎯 유사도 점수:', {
+                    similarity,
+                    similarityPercent,
+                    threshold: SIMILARITY_THRESHOLD,
+                    pass: similarity >= SIMILARITY_THRESHOLD
+                });
                 
                 if (similarity >= SIMILARITY_THRESHOLD) {
                     // 성공

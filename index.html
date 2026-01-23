@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Word2Vec 코사인 유사도 끝말잇기</title>
+    <title>AI 코사인 유사도 끝말잇기</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@500&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,134 +15,97 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Do Hyeon', sans-serif;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             min-height: 100vh;
             padding: 20px;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-
-        h1 {
-            text-align: center;
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 2.5em;
-        }
-
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 0.9em;
-        }
-
-        /* 로딩 화면 */
-        .loading-screen {
-            text-align: center;
-            padding: 60px 20px;
-        }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .loading-text {
-            font-size: 1.2em;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .loading-progress {
-            width: 100%;
-            max-width: 400px;
-            height: 30px;
-            background: #f0f0f0;
-            border-radius: 15px;
-            margin: 20px auto;
-            overflow: hidden;
             position: relative;
         }
 
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            width: 0%;
-            transition: width 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
+        .container {
+            max-width: 1150px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            padding-bottom: 0;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+            color: #333;
         }
 
-        .loading-info {
-            color: #999;
-            font-size: 0.9em;
-            margin-top: 10px;
+        h1 {
+            font-family: 'Do Hyeon', sans-serif;
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 3.5em;
+            font-weight: normal;
+            letter-spacing: 2px;
         }
 
         /* 게임 영역 */
         .game-container {
-            display: none;
+            display: block;
         }
 
         .info-box {
-            background: #f0f4ff;
-            border-left: 4px solid #667eea;
+            background: #e8f4f8;
+            border-left: 4px solid #4a6fa5;
             padding: 15px;
             margin-bottom: 20px;
             border-radius: 5px;
         }
 
         .info-box h3 {
-            color: #667eea;
+            color: #2c3e50;
             margin-bottom: 10px;
+            font-size: 1.1em;
+            font-family: 'Do Hyeon', sans-serif;
         }
 
         .info-box p {
             color: #555;
             line-height: 1.6;
             margin: 5px 0;
+            font-size: 1.02em;
+            font-family: 'Noto Sans KR', sans-serif;
+            font-weight: 500;
         }
 
-        .timer-score {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .timer-box, .score-box {
+        /* 타이머 */
+        .timer-box {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 20px;
-            border-radius: 10px;
+            padding: 30px;
+            border-radius: 15px;
             text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
         }
 
-        .timer-value, .score-value {
-            font-size: 3em;
-            font-weight: bold;
-            margin: 10px 0;
+        .timer-box.warning {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .timer-label {
+            font-size: 1.2em;
+            opacity: 0.95;
+            margin-bottom: 8px;
+        }
+
+        .timer-value {
+            font-size: 4em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
         }
 
         .current-word {
@@ -148,16 +114,16 @@
         }
 
         .current-word h2 {
-            color: #333;
+            color: #555;
             font-size: 1.2em;
             margin-bottom: 10px;
         }
 
         .word-display {
             font-size: 3.5em;
-            color: #667eea;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            color: #4facfe;
+            text-shadow: 2px 2px 4px rgba(79, 172, 254, 0.3);
+            letter-spacing: 3px;
         }
 
         .input-area {
@@ -171,52 +137,66 @@
             padding: 15px 20px;
             font-size: 1.3em;
             border: 2px solid #ddd;
+            background: white;
+            color: #333;
             border-radius: 10px;
             transition: all 0.3s;
         }
 
+        input[type="text"]::placeholder {
+            color: #999;
+        }
+
         input[type="text"]:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
         }
 
         button {
             padding: 15px 30px;
             font-size: 1.1em;
-            background: #667eea;
-            color: white;
             border: none;
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s;
-            font-weight: bold;
+            font-family: 'Do Hyeon', sans-serif;
         }
 
-        button:hover {
-            background: #5568d3;
+        button.primary {
+            background: linear-gradient(135deg, #3a506b, #5d6d7e);
+            color: white;
+        }
+
+        button.primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2c3e50, #4a5f7f);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 5px 15px rgba(58, 80, 107, 0.3);
         }
 
-        button:active {
-            transform: translateY(0);
+        button.secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+
+        button.secondary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #7f8c8d, #6c7a89);
+            transform: translateY(-2px);
         }
 
         button:disabled {
-            background: #ccc;
+            opacity: 0.5;
             cursor: not-allowed;
-            transform: none;
         }
 
+        /* 결과 메시지 */
         .result {
-            margin: 20px 0;
-            padding: 20px;
+            display: none;
+            padding: 15px 20px;
+            margin: 15px 0;
             border-radius: 10px;
             text-align: center;
             font-size: 1.1em;
-            font-weight: bold;
-            display: none;
             animation: slideDown 0.3s ease;
         }
 
@@ -244,233 +224,282 @@
         }
 
         .similarity-score {
-            font-size: 2em;
-            margin: 10px 0;
-            color: #667eea;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin-top: 8px;
         }
 
-        .word-chain {
-            margin: 30px 0;
+        /* 단어 체인 */
+        .word-chain-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
         }
 
-        .word-chain h3 {
-            color: #667eea;
+        .word-chain-container h3 {
+            color: #2c3e50;
             margin-bottom: 15px;
-        }
-
-        .chain-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            min-height: 60px;
+            font-size: 1.3em;
         }
 
         .chain-item {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            animation: popIn 0.3s ease;
+            display: inline-block;
+            background: white;
+            padding: 10px 18px;
+            margin: 5px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
         }
 
-        @keyframes popIn {
-            from {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+        .chain-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
 
         .chain-score {
-            background: rgba(255, 255, 255, 0.3);
-            padding: 3px 8px;
-            border-radius: 10px;
+            display: inline-block;
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
             font-size: 0.85em;
+            margin-left: 8px;
         }
 
-        .stats {
+        /* 하단 통계 */
+        .stats-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
             margin: 30px 0;
         }
 
         .stat-box {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+            background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
             padding: 20px;
-            border-radius: 10px;
+            border-radius: 12px;
             text-align: center;
-        }
-
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
         }
 
         .stat-label {
-            font-size: 0.9em;
-            opacity: 0.9;
-            margin-top: 5px;
+            font-size: 0.95em;
+            color: #00695c;
+            margin-bottom: 8px;
         }
 
-        .game-over {
+        .stat-value {
+            font-size: 2.2em;
+            color: #004d40;
+            font-weight: bold;
+        }
+
+        /* 게임 오버 모달 */
+        .modal {
             display: none;
-            text-align: center;
-            padding: 40px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border-radius: 15px;
-            margin: 20px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
         }
 
-        .game-over h2 {
-            font-size: 2.5em;
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: modalSlideUp 0.4s ease;
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal h2 {
+            color: #2c3e50;
             margin-bottom: 20px;
+            font-size: 2.5em;
         }
 
         .final-score {
-            font-size: 4em;
+            font-size: 3.5em;
+            color: #4facfe;
             font-weight: bold;
             margin: 20px 0;
         }
 
-        .new-game-btn {
-            width: 100%;
-            background: #764ba2;
-            padding: 15px;
-            font-size: 1.2em;
+        .modal-stats {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: left;
         }
 
-        .new-game-btn:hover {
-            background: #6a4291;
+        .modal-stats p {
+            margin: 10px 0;
+            font-size: 1.1em;
+            color: #555;
         }
 
-        .cdn-info {
-            background: #fffbea;
-            border-left: 4px solid #f59e0b;
-            padding: 10px 15px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            font-size: 0.85em;
-            color: #92400e;
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
         }
 
-        .cache-status {
+        /* 로딩 */
+        .loading {
             display: inline-block;
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-size: 0.75em;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
             margin-left: 10px;
         }
 
-        .cache-status.cached {
-            background: #d4edda;
-            color: #155724;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .cache-status.fresh {
-            background: #fff3cd;
-            color: #856404;
+        /* 하단 정보 */
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-top: 30px;
+            border-radius: 0 0 20px 20px;
+            margin-left: -40px;
+            margin-right: -40px;
+            margin-bottom: -40px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .footer a {
+            color: #4facfe;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎮 Word2Vec 코사인 유사도 끝말잇기</h1>
-        <div class="subtitle">실제 Word2Vec 모델로 단어의 의미적 유사도를 계산합니다</div>
+        <h1>🤖 AI 코사인 유사도 끝말잇기</h1>
 
-        <!-- 로딩 화면 -->
-        <div id="loadingScreen" class="loading-screen">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">Word2Vec 모델 로딩 중...</div>
-            <div class="cdn-info" id="cdnInfo">
-                📡 jsDelivr CDN에서 데이터 다운로드 중
-                <span class="cache-status fresh" id="cacheStatus">CDN</span>
-            </div>
-            <div class="loading-progress">
-                <div class="progress-bar" id="progressBar">0%</div>
-            </div>
-            <div class="loading-info" id="loadingInfo">연결 중...</div>
-        </div>
-
-        <!-- 게임 화면 -->
-        <div id="gameContainer" class="game-container">
+        <div class="game-container" id="gameContainer">
             <div class="info-box">
-                <h3>📊 게임 규칙</h3>
-                <p>• <strong>제한 시간 60초</strong> - 시간 내에 최대한 많은 단어 연결!</p>
-                <p>• <strong>코사인 유사도 70점 이상</strong> - 의미적으로 연관된 단어만 인정</p>
-                <p>• <strong>끝말잇기 규칙</strong> - 이전 단어의 마지막 글자로 시작</p>
-                <p>• <strong>중복 불가</strong> - 이미 사용한 단어는 재사용 불가</p>
+                <h3>📌 게임 규칙</h3>
+                <p><strong>목표:</strong> 2분 안에 현재 단어와 의미적으로 유사한 명사를 이어가세요!</p>
+                <p><strong>유사도:</strong> 30점 이상이면 성공 | 콤보로 점수 배율 증가</p>
+                <p><strong>주의:</strong> 명사만 입력 가능 (마차 O, 마차의 X)</p>
             </div>
 
-            <div class="timer-score">
-                <div class="timer-box">
-                    <div>⏱️ 남은 시간</div>
-                    <div class="timer-value" id="timer">60</div>
-                </div>
-                <div class="score-box">
-                    <div>🏆 현재 점수</div>
-                    <div class="score-value" id="score">0</div>
-                </div>
+            <!-- 타이머 -->
+            <div class="timer-box" id="timerBox">
+                <div class="timer-label">남은 시간</div>
+                <div class="timer-value" id="timeLeft">2:00</div>
             </div>
 
+            <!-- 현재 단어 -->
             <div class="current-word">
-                <h2>현재 제시어</h2>
-                <div class="word-display" id="currentWord">게임</div>
+                <h2>현재 단어</h2>
+                <div class="word-display" id="currentWord">학교</div>
             </div>
 
+            <!-- 입력 영역 -->
             <div class="input-area">
-                <input type="text" id="wordInput" placeholder="단어를 입력하세요..." autocomplete="off">
-                <button id="submitBtn" onclick="submitWord()">제출</button>
+                <input type="text" id="wordInput" placeholder="유사한 명사를 입력하세요" autocomplete="off">
+                <button class="primary" id="submitBtn" onclick="submitWord()">제출</button>
+                <button class="secondary" onclick="changeWord()">단어 변경</button>
             </div>
 
-            <div id="result" class="result"></div>
+            <!-- 결과 메시지 -->
+            <div class="result" id="result"></div>
 
-            <div class="word-chain">
-                <h3>📜 단어 체인</h3>
-                <div class="chain-container" id="wordChain">
+            <!-- 단어 체인 -->
+            <div class="word-chain-container">
+                <h3>단어 연결 기록</h3>
+                <div id="wordChain">
                     <div class="chain-item">
-                        <span>게임</span>
+                        <span>학교</span>
                         <span class="chain-score">시작</span>
                     </div>
                 </div>
             </div>
 
-            <div class="stats">
+            <!-- 통계 -->
+            <div class="stats-container">
                 <div class="stat-box">
+                    <div class="stat-label">총 점수</div>
+                    <div class="stat-value" id="score">0</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">연결된 단어</div>
                     <div class="stat-value" id="totalWords">1</div>
-                    <div class="stat-label">총 단어</div>
                 </div>
                 <div class="stat-box">
-                    <div class="stat-value" id="avgSimilarity">-</div>
-                    <div class="stat-label">평균 유사도</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="highestSimilarity">-</div>
-                    <div class="stat-label">최고 유사도</div>
-                </div>
-                <div class="stat-box">
+                    <div class="stat-label">최대 콤보</div>
                     <div class="stat-value" id="combo">0</div>
-                    <div class="stat-label">연속 성공</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">평균 유사도</div>
+                    <div class="stat-value" id="avgSimilarity">0점</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">최고 유사도</div>
+                    <div class="stat-value" id="highestSimilarity">0점</div>
                 </div>
             </div>
+        </div>
 
-            <div id="gameOver" class="game-over">
-                <h2>🎉 게임 종료!</h2>
-                <div class="final-score" id="finalScore">0</div>
-                <p style="font-size: 1.2em; margin: 20px 0;">
-                    총 <span id="finalWords">0</span>개의 단어를 연결했습니다!
-                </p>
+        <!-- 게임 오버 모달 -->
+        <div class="modal" id="gameOverModal">
+            <div class="modal-content">
+                <h2>🏆 게임 종료!</h2>
+                <div class="final-score" id="finalScore">0점</div>
+                <div class="modal-stats">
+                    <p>📊 <strong>연결된 단어:</strong> <span id="finalWords">0</span>개</p>
+                    <p>🎯 <strong>평균 유사도:</strong> <span id="finalAvgSimilarity">0</span>점</p>
+                    <p>🔥 <strong>최대 콤보:</strong> <span id="finalCombo">0</span></p>
+                </div>
+                <div class="modal-buttons">
+                    <button class="primary" onclick="newGame()">다시 시작</button>
+                    <button class="secondary" onclick="closeModal()">닫기</button>
+                </div>
             </div>
+        </div>
 
-            <button class="new-game-btn" onclick="newGame()">🔄 새 게임 시작</button>
+        <div class="footer">
+            <p>💡 Gemini AI가 단어의 의미적 유사도를 판단합니다</p>
+            <p>제작자: <a href="mailto:tjdgus1121@naver.com">tjdgus1121@naver.com</a></p>
         </div>
     </div>
 
@@ -479,149 +508,52 @@
         // 설정
         // =============================================
         
-        // jsDelivr CDN URL - GitHub에 업로드 후 수정 필요!
-        // 형식: https://cdn.jsdelivr.net/gh/사용자명/레포명@브랜치/파일경로
-        const CDN_URL = 'https://cdn.jsdelivr.net/gh/YOUR_USERNAME/YOUR_REPO@main/data/word2vec_ko.json';
+        // ✅ Cloudflare Worker URL 설정 완료
+        const WORKER_URL = 'https://cosine.tjdgus1121.workers.dev';
         
-        // 로컬 개발용 (CDN 실패 시 폴백)
-        const LOCAL_URL = './data/word2vec_ko.json';
-        
-        const GAME_TIME = 60; // 초
-        const SIMILARITY_THRESHOLD = 0.70; // 70%
+        const GAME_TIME = 120; // 2분
+        const SIMILARITY_THRESHOLD = 0.3; // 30점
+        const COMBO_MULTIPLIER = 0.1; // 콤보 당 10% 보너스
         
         // =============================================
-        // 전역 변수
+        // 게임 상태
         // =============================================
         
-        let wordVectors = null;
-        let gameState = null;
-        let timerInterval = null;
-        let timeLeft = GAME_TIME;
+        let gameState = {
+            currentWord: '학교',
+            score: 0,
+            combo: 0,
+            maxCombo: 0,
+            usedWords: new Set(['학교']),
+            wordChain: [{word: '학교', similarity: null}],
+            similarities: [],
+            timeLeft: GAME_TIME
+        };
+        
         let isGameActive = false;
+        let timerInterval = null;
+        let resultTimeout = null;
+        let isProcessing = false;
         
         // =============================================
-        // Service Worker 등록
+        // API 호출
         // =============================================
         
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('✅ Service Worker 등록 성공:', reg.scope))
-                .catch(err => console.log('❌ Service Worker 등록 실패:', err));
-        }
-        
-        // =============================================
-        // 모델 로딩
-        // =============================================
-        
-        async function loadWordVectors() {
-            const progressBar = document.getElementById('progressBar');
-            const loadingInfo = document.getElementById('loadingInfo');
-            const cacheStatus = document.getElementById('cacheStatus');
+        async function getSimilarity(word1, word2) {
+            const response = await fetch(WORKER_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ word1, word2 })
+            });
             
-            try {
-                // CDN에서 로드 시도
-                loadingInfo.textContent = 'jsDelivr CDN에 연결 중...';
-                
-                const response = await fetch(CDN_URL);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                // 캐시 상태 확인
-                const isCached = response.headers.get('x-cache') === 'HIT';
-                if (isCached) {
-                    cacheStatus.textContent = '캐시됨 ⚡';
-                    cacheStatus.className = 'cache-status cached';
-                } else {
-                    cacheStatus.textContent = 'CDN 다운로드';
-                    cacheStatus.className = 'cache-status fresh';
-                }
-                
-                // Content-Length로 진행률 표시
-                const contentLength = response.headers.get('Content-Length');
-                const total = parseInt(contentLength, 10);
-                let loaded = 0;
-                
-                const reader = response.body.getReader();
-                const chunks = [];
-                
-                while (true) {
-                    const {done, value} = await reader.read();
-                    
-                    if (done) break;
-                    
-                    chunks.push(value);
-                    loaded += value.length;
-                    
-                    if (total) {
-                        const percent = Math.round((loaded / total) * 100);
-                        progressBar.style.width = percent + '%';
-                        progressBar.textContent = percent + '%';
-                        loadingInfo.textContent = `${(loaded / 1024 / 1024).toFixed(1)} MB / ${(total / 1024 / 1024).toFixed(1)} MB`;
-                    }
-                }
-                
-                // 청크들을 합쳐서 JSON 파싱
-                const blob = new Blob(chunks);
-                const text = await blob.text();
-                const data = JSON.parse(text);
-                
-                console.log('✅ 모델 로드 성공:', Object.keys(data).length, '단어');
-                return data;
-                
-            } catch (error) {
-                console.warn('⚠️ CDN 로드 실패, 로컬에서 시도:', error);
-                
-                // 로컬 폴백
-                try {
-                    cacheStatus.textContent = '로컬 파일';
-                    cacheStatus.className = 'cache-status cached';
-                    loadingInfo.textContent = '로컬 파일에서 로딩 중...';
-                    
-                    const response = await fetch(LOCAL_URL);
-                    const data = await response.json();
-                    
-                    progressBar.style.width = '100%';
-                    progressBar.textContent = '100%';
-                    
-                    console.log('✅ 로컬 로드 성공:', Object.keys(data).length, '단어');
-                    return data;
-                    
-                } catch (localError) {
-                    console.error('❌ 로컬 로드도 실패:', localError);
-                    throw new Error('모델 파일을 불러올 수 없습니다. CDN URL을 확인하세요.');
-                }
-            }
-        }
-        
-        // =============================================
-        // 코사인 유사도 계산
-        // =============================================
-        
-        function cosineSimilarity(vec1, vec2) {
-            if (!vec1 || !vec2 || vec1.length !== vec2.length) {
-                return 0;
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'API 요청 실패');
             }
             
-            let dotProduct = 0;
-            let mag1 = 0;
-            let mag2 = 0;
-            
-            for (let i = 0; i < vec1.length; i++) {
-                dotProduct += vec1[i] * vec2[i];
-                mag1 += vec1[i] * vec1[i];
-                mag2 += vec2[i] * vec2[i];
-            }
-            
-            const magnitude1 = Math.sqrt(mag1);
-            const magnitude2 = Math.sqrt(mag2);
-            
-            if (magnitude1 === 0 || magnitude2 === 0) {
-                return 0;
-            }
-            
-            return dotProduct / (magnitude1 * magnitude2);
+            return await response.json();
         }
         
         // =============================================
@@ -630,42 +562,55 @@
         
         function initGame() {
             gameState = {
-                currentWord: '게임',
-                usedWords: new Set(['게임']),
-                wordChain: [{word: '게임', similarity: null}],
-                similarities: [],
+                currentWord: '학교',
                 score: 0,
-                combo: 0
+                combo: 0,
+                maxCombo: 0,
+                usedWords: new Set(['학교']),
+                wordChain: [{word: '학교', similarity: null}],
+                similarities: [],
+                timeLeft: GAME_TIME
             };
             
-            timeLeft = GAME_TIME;
             isGameActive = true;
-            
-            updateDisplay();
-            startTimer();
+            isProcessing = false;
             
             document.getElementById('wordInput').disabled = false;
             document.getElementById('submitBtn').disabled = false;
+            document.getElementById('wordInput').value = '';
             document.getElementById('wordInput').focus();
+            
+            updateDisplay();
+            startTimer();
         }
         
         function startTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-            }
+            if (timerInterval) clearInterval(timerInterval);
+            
+            const timerBox = document.getElementById('timerBox');
             
             timerInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('timer').textContent = timeLeft;
+                gameState.timeLeft--;
                 
-                if (timeLeft <= 0) {
+                const minutes = Math.floor(gameState.timeLeft / 60);
+                const seconds = gameState.timeLeft % 60;
+                document.getElementById('timeLeft').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                // 30초 남았을 때 경고
+                if (gameState.timeLeft === 30) {
+                    timerBox.classList.add('warning');
+                }
+                
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(timerInterval);
                     endGame();
                 }
             }, 1000);
         }
         
-        function submitWord() {
-            if (!isGameActive) return;
+        async function submitWord() {
+            if (!isGameActive || isProcessing) return;
             
             const input = document.getElementById('wordInput');
             const word = input.value.trim();
@@ -675,79 +620,91 @@
                 return;
             }
             
-            // 사전 확인
-            if (!wordVectors[word]) {
-                showResult(`"${word}"는 사전에 없는 단어입니다.`, false);
-                input.value = '';
-                return;
-            }
-            
-            // 중복 확인
             if (gameState.usedWords.has(word)) {
                 showResult('이미 사용한 단어입니다!', false);
-                gameState.combo = 0;
-                updateDisplay();
-                input.value = '';
                 return;
             }
             
-            // 끝말잇기 확인
-            const lastChar = gameState.currentWord[gameState.currentWord.length - 1];
-            const firstChar = word[0];
+            isProcessing = true;
+            document.getElementById('submitBtn').disabled = true;
+            showResult('🤖 AI가 유사도를 계산하는 중...<div class="loading"></div>', true);
             
-            if (lastChar !== firstChar) {
-                showResult(`"${lastChar}"(으)로 시작하는 단어를 입력하세요!`, false);
-                gameState.combo = 0;
-                updateDisplay();
-                input.value = '';
-                return;
-            }
-            
-            // 유사도 계산
-            const prevVector = wordVectors[gameState.currentWord];
-            const currentVector = wordVectors[word];
-            const similarity = cosineSimilarity(prevVector, currentVector);
-            
-            // 점수 계산
-            const similarityPercent = similarity * 100;
-            
-            if (similarity >= SIMILARITY_THRESHOLD) {
-                // 성공!
-                const baseScore = Math.round(similarityPercent);
-                const comboBonus = gameState.combo * 5;
-                const totalScore = baseScore + comboBonus;
+            try {
+                const result = await getSimilarity(gameState.currentWord, word);
                 
-                gameState.score += totalScore;
-                gameState.combo++;
-                gameState.usedWords.add(word);
-                gameState.currentWord = word;
-                gameState.wordChain.push({word, similarity});
-                gameState.similarities.push(similarity);
+                // 명사 검증
+                if (!result.isNoun) {
+                    showResult('❌ ' + (result.message || '명사만 입력해주세요!'), false);
+                    isProcessing = false;
+                    document.getElementById('submitBtn').disabled = false;
+                    return;
+                }
                 
-                showResult(
-                    `정답! 유사도 ${similarityPercent.toFixed(1)}점 ` +
-                    (comboBonus > 0 ? `(+${comboBonus} 콤보)` : ''),
-                    true,
-                    similarity
-                );
+                const similarity = result.similarity;
+                const similarityPercent = similarity * 100;
                 
-                updateDisplay();
-                input.value = '';
+                if (similarity >= SIMILARITY_THRESHOLD) {
+                    // 성공
+                    const baseScore = Math.floor(similarityPercent);
+                    const comboBonus = Math.floor(baseScore * gameState.combo * COMBO_MULTIPLIER);
+                    const totalScore = baseScore + comboBonus;
+                    
+                    gameState.score += totalScore;
+                    gameState.combo++;
+                    
+                    if (gameState.combo > gameState.maxCombo) {
+                        gameState.maxCombo = gameState.combo;
+                    }
+                    
+                    gameState.usedWords.add(word);
+                    gameState.currentWord = word;
+                    gameState.wordChain.push({word, similarity});
+                    gameState.similarities.push(similarity);
+                    
+                    let qualityLabel = '';
+                    if (similarityPercent >= 60) qualityLabel = '🔥 완벽! ';
+                    else if (similarityPercent >= 50) qualityLabel = '👍 좋아요! ';
+                    else qualityLabel = '✅ 통과! ';
+                    
+                    showResult(
+                        qualityLabel + `유사도 ${similarityPercent.toFixed(1)}점 (+${totalScore}점)` +
+                        (comboBonus > 0 ? ` [콤보 x${gameState.combo}]` : ''),
+                        true,
+                        similarity
+                    );
+                    
+                    updateDisplay();
+                    input.value = '';
+                    
+                } else {
+                    // 실패
+                    showResult(
+                        `❌ 유사도가 너무 낮습니다! (${similarityPercent.toFixed(1)}점 < ${SIMILARITY_THRESHOLD * 100}점)`,
+                        false
+                    );
+                    gameState.combo = 0;
+                    updateDisplay();
+                    input.value = '';
+                }
                 
-            } else {
-                // 실패
-                showResult(
-                    `유사도가 너무 낮습니다! (${similarityPercent.toFixed(1)}점 < 70점)`,
-                    false
-                );
-                gameState.combo = 0;
-                updateDisplay();
-                input.value = '';
+            } catch (error) {
+                console.error('Error:', error);
+                showResult('오류가 발생했습니다: ' + error.message, false);
+            } finally {
+                isProcessing = false;
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('wordInput').focus();
             }
         }
         
         function showResult(message, isSuccess, similarity = null) {
             const resultDiv = document.getElementById('result');
+            
+            if (resultTimeout) {
+                clearTimeout(resultTimeout);
+                resultTimeout = null;
+            }
+            
             resultDiv.className = 'result ' + (isSuccess ? 'success' : 'fail');
             
             if (isSuccess && similarity !== null) {
@@ -761,19 +718,16 @@
             
             resultDiv.style.display = 'block';
             
-            setTimeout(() => {
+            resultTimeout = setTimeout(() => {
                 resultDiv.style.display = 'none';
+                resultTimeout = null;
             }, 2000);
         }
         
         function updateDisplay() {
-            // 현재 단어
             document.getElementById('currentWord').textContent = gameState.currentWord;
-            
-            // 점수
             document.getElementById('score').textContent = gameState.score;
             
-            // 단어 체인
             const chainDiv = document.getElementById('wordChain');
             chainDiv.innerHTML = '';
             
@@ -794,9 +748,8 @@
                 chainDiv.appendChild(chainItem);
             });
             
-            // 통계
             document.getElementById('totalWords').textContent = gameState.wordChain.length;
-            document.getElementById('combo').textContent = gameState.combo;
+            document.getElementById('combo').textContent = gameState.maxCombo;
             
             if (gameState.similarities.length > 0) {
                 const avg = gameState.similarities.reduce((a, b) => a + b) / gameState.similarities.length;
@@ -809,6 +762,27 @@
             }
         }
         
+        function changeWord() {
+            if (!isGameActive) return;
+            
+            const newWords = ['컴퓨터', '사과', '나무', '바다', '하늘', '꽃', '음악', '책'];
+            const availableWords = newWords.filter(w => !gameState.usedWords.has(w));
+            
+            if (availableWords.length === 0) {
+                showResult('더 이상 변경할 단어가 없습니다!', false);
+                return;
+            }
+            
+            const newWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+            gameState.currentWord = newWord;
+            gameState.usedWords.add(newWord);
+            gameState.wordChain.push({word: newWord, similarity: null});
+            gameState.combo = 0;
+            
+            showResult(`새로운 단어로 변경: "${newWord}"`, true);
+            updateDisplay();
+        }
+        
         function endGame() {
             isGameActive = false;
             clearInterval(timerInterval);
@@ -816,48 +790,47 @@
             document.getElementById('wordInput').disabled = true;
             document.getElementById('submitBtn').disabled = true;
             
-            const gameOverDiv = document.getElementById('gameOver');
+            const avgSimilarity = gameState.similarities.length > 0 
+                ? (gameState.similarities.reduce((a, b) => a + b) / gameState.similarities.length * 100).toFixed(0)
+                : 0;
+            
             document.getElementById('finalScore').textContent = gameState.score;
             document.getElementById('finalWords').textContent = gameState.wordChain.length;
-            gameOverDiv.style.display = 'block';
+            document.getElementById('finalAvgSimilarity').textContent = avgSimilarity + '점';
+            document.getElementById('finalCombo').textContent = gameState.maxCombo;
+            
+            document.getElementById('gameOverModal').style.display = 'flex';
         }
         
         function newGame() {
-            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('gameOverModal').style.display = 'none';
+            const timerBox = document.getElementById('timerBox');
+            timerBox.classList.remove('warning');
             initGame();
+        }
+        
+        function closeModal() {
+            document.getElementById('gameOverModal').style.display = 'none';
         }
         
         // =============================================
         // 초기화
         // =============================================
         
-        async function init() {
-            try {
-                wordVectors = await loadWordVectors();
-                
-                // 로딩 화면 숨기고 게임 화면 표시
-                document.getElementById('loadingScreen').style.display = 'none';
-                document.getElementById('gameContainer').style.display = 'block';
-                
-                // 게임 초기화
-                initGame();
-                
-            } catch (error) {
-                alert('모델 로딩 실패: ' + error.message);
-                console.error(error);
-            }
-        }
-        
-        // Enter 키 처리
         document.addEventListener('DOMContentLoaded', () => {
-            document.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && isGameActive) {
+            // Worker URL 체크
+            if (WORKER_URL === 'https://your-worker.workers.dev') {
+                alert('⚠️ Cloudflare Worker URL을 설정해주세요!\n\nconst WORKER_URL 부분을 수정하세요.');
+            }
+            
+            // Enter 키
+            document.getElementById('wordInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !isProcessing) {
                     submitWord();
                 }
             });
             
-            // 게임 시작
-            init();
+            initGame();
         });
     </script>
 </body>

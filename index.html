@@ -393,7 +393,7 @@
         // Cloudflare Worker 설정
         // =============================================
         
-        const WORKER_URL = 'https://your-worker.workers.dev';
+        const WORKER_URL = 'https://cosine.tjdgus1121.workers.dev';
         
         // =============================================
         // 게임 상태
@@ -1023,10 +1023,7 @@
         // =============================================
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Worker URL 체크
-            if (WORKER_URL === 'https://your-worker.workers.dev') {
-                console.warn('⚠️ Cloudflare Worker URL을 설정해주세요!');
-            }
+            console.log('✅ 게임 초기화 완료');
         });
     </script>
 </body>

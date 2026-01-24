@@ -39,12 +39,31 @@
             to { opacity: 1; }
         }
         
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
         .animate-slideDown {
             animation: slideDown 0.3s ease;
         }
         
         .animate-pulse-custom {
             animation: pulse 1s ease-in-out infinite;
+        }
+        
+        .animate-bounce {
+            animation: bounce 0.5s ease;
+        }
+        
+        .animate-shake {
+            animation: shake 0.5s ease;
         }
         
         .loading {
@@ -76,6 +95,16 @@
                 <button onclick="showInfoModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl transition-all transform hover:scale-105 text-lg">
                     📖 코사인 유사도란? / 게임 방법
                 </button>
+            </div>
+            
+            <!-- Worker 상태 확인 -->
+            <div class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 mb-6">
+                <div class="text-center">
+                    <p class="text-yellow-800 font-bold mb-2">⚠️ 시작 전 확인!</p>
+                    <p class="text-sm text-yellow-700">게임 시작 후 F12 → Console을 열어 Worker 버전을 확인하세요.</p>
+                    <p class="text-xs text-yellow-600 mt-1">✅ "cosine_similarity" 표시 = 진짜 수학 계산</p>
+                    <p class="text-xs text-yellow-600">❌ "AI 추정 (구버전)" = Worker 업데이트 필요</p>
+                </div>
             </div>
             
             <!-- 난이도 선택 -->
@@ -207,7 +236,7 @@
                     <ul class="space-y-2 text-gray-700">
                         <li>✅ <strong>기본 점수</strong>: 유사도 점수만큼 획득</li>
                         <li>🔥 <strong>콤보 보너스</strong>: 연속 성공 시 추가 점수 (콤보 x 0.2배)</li>
-                        <li>⏱️ <strong>시간 제한</strong>: 3분 (180초)</li>
+                        <li>⏱️ <strong>시간 제한</strong>: 1분 (60초)</li>
                         <li>❌ <strong>실패 시</strong>: 콤보가 초기화됩니다</li>
                     </ul>
                 </div>
@@ -222,98 +251,102 @@
     </div>
     
     <!-- 게임 화면 -->
-    <div id="gameScreen" class="hidden min-h-screen p-4">
-        <div class="max-w-7xl mx-auto">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <!-- 왼쪽: 게임 정보 & 통계 -->
-                <div class="lg:col-span-1 space-y-4">
-                    <!-- 타이머 -->
-                    <div id="timerBox" class="bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-2xl p-6 text-center shadow-xl">
-                        <div class="text-xl opacity-90 mb-2">⏱️ 남은 시간</div>
-                        <div id="timeLeft" class="text-6xl font-bold title-font">3:00</div>
-                    </div>
-                    
-                    <!-- 점수 & 난이도 -->
-                    <div class="bg-white rounded-2xl p-6 shadow-xl">
-                        <div class="text-center mb-4">
-                            <div class="text-gray-600 text-sm mb-1">현재 점수</div>
-                            <div id="score" class="text-5xl font-bold text-blue-600 title-font">0</div>
-                        </div>
-                        <div class="border-t pt-4">
-                            <div class="text-center text-gray-600 text-sm mb-2">난이도</div>
-                            <div id="difficultyDisplay" class="text-center text-xl font-bold"></div>
-                        </div>
-                    </div>
-                    
-                    <!-- 게임 통계 -->
-                    <div class="bg-white rounded-2xl p-6 shadow-xl">
-                        <h3 class="title-font text-xl text-gray-700 mb-4 text-center">📊 게임 통계</h3>
-                        <div class="space-y-3">
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600">연결된 단어</span>
-                                <span id="totalWords" class="font-bold text-xl text-blue-600">1</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600">최대 콤보</span>
-                                <span id="combo" class="font-bold text-xl text-orange-600">0</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600">평균 유사도</span>
-                                <span id="avgSimilarity" class="font-bold text-xl text-green-600">-</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-gray-600">최고 유사도</span>
-                                <span id="highestSimilarity" class="font-bold text-xl text-purple-600">-</span>
-                            </div>
-                        </div>
-                    </div>
+    <div id="gameScreen" class="hidden min-h-screen flex items-center justify-center p-4">
+        <div class="w-full max-w-4xl">
+            
+            <!-- 상단 스코어보드 -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <!-- 타이머 -->
+                <div id="timerBox" class="bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-2xl p-6 text-center shadow-2xl transform transition-all hover:scale-105">
+                    <div class="text-sm opacity-90 mb-1">⏱️ 시간</div>
+                    <div id="timeLeft" class="text-5xl font-bold title-font">1:00</div>
                 </div>
                 
-                <!-- 중앙: 게임 플레이 -->
-                <div class="lg:col-span-2 space-y-4">
-                    <!-- 현재 단어 -->
-                    <div class="bg-white rounded-2xl p-8 shadow-xl text-center">
-                        <h2 class="text-gray-600 text-xl mb-4">🎯 현재 단어</h2>
-                        <div id="currentWord" class="text-6xl font-bold text-blue-500 title-font mb-6">컴퓨터</div>
-                        <button onclick="changeWord()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-xl transition-all">
-                            🔄 단어 변경
+                <!-- 점수 -->
+                <div class="bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-2xl p-6 text-center shadow-2xl transform transition-all hover:scale-105">
+                    <div class="text-sm opacity-90 mb-1">🏆 점수</div>
+                    <div id="score" class="text-5xl font-bold title-font">0</div>
+                </div>
+                
+                <!-- 난이도 & 콤보 -->
+                <div class="bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-2xl p-6 text-center shadow-2xl transform transition-all hover:scale-105">
+                    <div id="difficultyDisplay" class="text-sm opacity-90 mb-1"></div>
+                    <div class="text-3xl font-bold title-font">콤보 <span id="currentCombo">0</span></div>
+                </div>
+            </div>
+            
+            <!-- 메인 게임 영역 -->
+            <div class="bg-white rounded-3xl shadow-2xl p-8 mb-6">
+                <!-- 현재 단어 -->
+                <div class="text-center mb-8">
+                    <div class="inline-block bg-gradient-to-r from-purple-100 to-pink-100 px-6 py-2 rounded-full mb-4">
+                        <span class="text-gray-600 font-bold">🎯 현재 단어</span>
+                    </div>
+                    <div id="currentWord" class="text-7xl font-bold title-font bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+                        컴퓨터
+                    </div>
+                    <button onclick="changeWord()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-xl transition-all transform hover:scale-105">
+                        🔄 단어 변경
+                    </button>
+                </div>
+                
+                <!-- 입력 영역 -->
+                <div class="max-w-2xl mx-auto mb-6">
+                    <div class="flex gap-3">
+                        <input type="text" id="wordInput" placeholder="유사한 명사를 입력하세요..."
+                            class="flex-1 px-6 py-4 text-2xl border-4 border-purple-300 rounded-2xl focus:outline-none focus:border-purple-500 focus:ring-4 focus:ring-purple-200 transition-all"
+                            onkeypress="if(event.key==='Enter') submitWord()">
+                        <button id="submitBtn" onclick="submitWord()"
+                            class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-10 py-4 rounded-2xl text-2xl title-font transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            제출
                         </button>
                     </div>
                     
-                    <!-- 입력 영역 -->
-                    <div class="bg-white rounded-2xl p-6 shadow-xl">
-                        <div class="flex gap-3 mb-4">
-                            <input type="text" id="wordInput" placeholder="의미가 유사한 명사를 입력하세요..."
-                                class="flex-1 px-6 py-4 text-xl border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-                                onkeypress="if(event.key==='Enter') submitWord()">
-                            <button id="submitBtn" onclick="submitWord()"
-                                class="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white px-8 py-4 rounded-xl text-xl title-font transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
-                                제출
-                            </button>
-                        </div>
-                        
-                        <!-- 결과 메시지 -->
-                        <div id="result" class="hidden"></div>
+                    <!-- 결과 메시지 -->
+                    <div id="result" class="hidden mt-4"></div>
+                </div>
+                
+                <!-- 간단한 통계 -->
+                <div class="grid grid-cols-4 gap-4 text-center">
+                    <div class="bg-blue-50 p-4 rounded-xl">
+                        <div class="text-gray-600 text-sm mb-1">연결 단어</div>
+                        <div id="totalWords" class="text-3xl font-bold text-blue-600 title-font">1</div>
                     </div>
-                    
-                    <!-- 단어 체인 -->
-                    <div class="bg-white rounded-2xl p-6 shadow-xl">
-                        <h3 class="title-font text-2xl text-gray-700 mb-4">🔗 단어 연결 기록</h3>
-                        <div id="wordChain" class="flex flex-wrap gap-2">
-                            <!-- 동적으로 추가됨 -->
-                        </div>
+                    <div class="bg-orange-50 p-4 rounded-xl">
+                        <div class="text-gray-600 text-sm mb-1">최대 콤보</div>
+                        <div id="combo" class="text-3xl font-bold text-orange-600 title-font">0</div>
                     </div>
-                    
-                    <!-- 실시간 리더보드 -->
-                    <div class="bg-white rounded-2xl p-6 shadow-xl">
-                        <h3 class="title-font text-2xl text-gray-700 mb-4">🏆 실시간 리더보드</h3>
-                        <div id="leaderboard" class="space-y-2">
-                            <div class="text-center text-gray-400 py-8">리더보드를 불러오는 중...</div>
-                        </div>
+                    <div class="bg-green-50 p-4 rounded-xl">
+                        <div class="text-gray-600 text-sm mb-1">평균 유사도</div>
+                        <div id="avgSimilarity" class="text-3xl font-bold text-green-600 title-font">-</div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-xl">
+                        <div class="text-gray-600 text-sm mb-1">최고 유사도</div>
+                        <div id="highestSimilarity" class="text-3xl font-bold text-purple-600 title-font">-</div>
                     </div>
                 </div>
             </div>
+            
+            <!-- 단어 체인 -->
+            <div class="bg-white rounded-2xl p-6 shadow-xl mb-6">
+                <h3 class="title-font text-2xl text-gray-700 mb-4 text-center">🔗 단어 연결 기록</h3>
+                <div id="wordChain" class="flex flex-wrap gap-2 justify-center min-h-[60px]">
+                    <!-- 동적으로 추가됨 -->
+                </div>
+            </div>
+            
+            <!-- 리더보드 (접기/펼치기) -->
+            <details class="bg-white rounded-2xl shadow-xl overflow-hidden">
+                <summary class="cursor-pointer p-6 bg-gradient-to-r from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 transition-all">
+                    <h3 class="title-font text-2xl text-gray-700 inline-flex items-center">
+                        🏆 실시간 리더보드
+                        <span class="ml-2 text-sm text-gray-500">(클릭하여 펼치기)</span>
+                    </h3>
+                </summary>
+                <div id="leaderboard" class="p-6 space-y-2">
+                    <div class="text-center text-gray-400 py-8">리더보드를 불러오는 중...</div>
+                </div>
+            </details>
         </div>
     </div>
     
@@ -402,10 +435,8 @@
             firebase.initializeApp(firebaseConfig);
             database = firebase.database();
             firebaseInitialized = true;
-            console.log('✅ Firebase 연결 성공!');
         } catch (error) {
-            console.error('❌ Firebase 초기화 실패:', error);
-            alert('Firebase 연결에 실패했습니다. 리더보드 기능이 비활성화됩니다.');
+            console.error('Firebase 초기화 실패:', error);
         }
         
         // =============================================
@@ -427,7 +458,7 @@
         let selectedDifficulty = null;
         let SIMILARITY_THRESHOLD = 0.70;
         const COMBO_MULTIPLIER = 0.2;
-        const GAME_TIME = 180; // 3분
+        const GAME_TIME = 60; // 1분
         
         let gameState = {
             currentWord: '',
@@ -526,6 +557,11 @@
             loadLeaderboard();
             
             document.getElementById('result').style.display = 'none';
+            
+            // Worker 버전 확인 메시지
+            console.log('📌 중요: Worker가 "진짜 코사인 유사도" 버전인지 확인하세요!');
+            console.log('✅ 정상: method: "cosine_similarity", model: "text-embedding-004"');
+            console.log('❌ 구버전: method 필드 없음 (AI 추정 방식)');
         }
         
         // =============================================
@@ -550,6 +586,8 @@
                 
                 const data = await response.json();
                 console.log('✅ API 응답:', data);
+                console.log('📊 사용 중인 방식:', data.method || 'AI 추정 (구버전)');
+                console.log('🎯 유사도 값:', data.similarity);
                 
                 return data;
             } catch (error) {
@@ -574,7 +612,7 @@
                 document.getElementById('timeLeft').textContent = 
                     `${minutes}:${seconds.toString().padStart(2, '0')}`;
                 
-                if (gameState.timeLeft === 30) {
+                if (gameState.timeLeft === 20) {
                     timerBox.classList.add('animate-pulse-custom');
                     timerBox.classList.remove('from-purple-500', 'to-pink-500');
                     timerBox.classList.add('from-red-500', 'to-orange-500');
@@ -610,12 +648,6 @@
             try {
                 const result = await getSimilarity(gameState.currentWord, word);
                 
-                console.log('📊 처리할 결과:', {
-                    isNoun: result.isNoun,
-                    similarity: result.similarity,
-                    message: result.message
-                });
-                
                 if (!result.isNoun) {
                     showResult('❌ ' + (result.message || '명사만 입력해주세요!'), false);
                     isProcessing = false;
@@ -625,13 +657,6 @@
                 
                 const similarity = result.similarity;
                 const similarityPercent = similarity * 100;
-                
-                console.log('🎯 유사도 점수:', {
-                    similarity,
-                    similarityPercent,
-                    threshold: SIMILARITY_THRESHOLD,
-                    pass: similarity >= SIMILARITY_THRESHOLD
-                });
                 
                 if (similarity >= SIMILARITY_THRESHOLD) {
                     // 성공
@@ -690,10 +715,20 @@
         
         function showResult(message, isSuccess, similarity = null) {
             const resultDiv = document.getElementById('result');
+            const currentWordDiv = document.getElementById('currentWord');
             
             if (resultTimeout) {
                 clearTimeout(resultTimeout);
                 resultTimeout = null;
+            }
+            
+            // 애니메이션 효과
+            if (isSuccess) {
+                currentWordDiv.classList.add('animate-bounce');
+                setTimeout(() => currentWordDiv.classList.remove('animate-bounce'), 500);
+            } else {
+                currentWordDiv.classList.add('animate-shake');
+                setTimeout(() => currentWordDiv.classList.remove('animate-shake'), 500);
             }
             
             resultDiv.className = 'p-4 rounded-xl text-center text-lg font-bold animate-slideDown ' + 
@@ -719,13 +754,14 @@
         function updateDisplay() {
             document.getElementById('currentWord').textContent = gameState.currentWord;
             document.getElementById('score').textContent = gameState.score;
+            document.getElementById('currentCombo').textContent = gameState.combo;
             
             const chainDiv = document.getElementById('wordChain');
             chainDiv.innerHTML = '';
             
             gameState.wordChain.forEach((item, index) => {
                 const badge = document.createElement('span');
-                badge.className = 'inline-block px-4 py-2 rounded-lg text-sm font-bold';
+                badge.className = 'inline-block px-4 py-2 rounded-lg text-sm font-bold transition-all transform hover:scale-110';
                 
                 if (index === 0) {
                     badge.className += ' bg-purple-100 text-purple-700 border-2 border-purple-300';
@@ -1059,7 +1095,7 @@
         // =============================================
         
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('✅ 게임 초기화 완료');
+            // 게임 초기화 완료
         });
     </script>
 </body>

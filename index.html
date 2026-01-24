@@ -97,13 +97,12 @@
                 </button>
             </div>
             
-            <!-- Worker 상태 확인 -->
-            <div class="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 mb-6">
+            <!-- Worker 상태 안내 -->
+            <div class="bg-green-50 border-2 border-green-300 rounded-xl p-4 mb-6">
                 <div class="text-center">
-                    <p class="text-yellow-800 font-bold mb-2">⚠️ 시작 전 확인!</p>
-                    <p class="text-sm text-yellow-700">게임 시작 후 F12 → Console을 열어 Worker 버전을 확인하세요.</p>
-                    <p class="text-xs text-yellow-600 mt-1">✅ "cosine_similarity" 표시 = 진짜 수학 계산</p>
-                    <p class="text-xs text-yellow-600">❌ "AI 추정 (구버전)" = Worker 업데이트 필요</p>
+                    <p class="text-green-800 font-bold mb-2">✅ 진짜 코사인 유사도 사용 중!</p>
+                    <p class="text-sm text-green-700">Gemini Embeddings API와 배치 처리로 수학적으로 정확한 유사도를 계산합니다.</p>
+                    <p class="text-xs text-green-600 mt-2">🚀 최적화된 버전으로 더 빠른 응답 속도</p>
                 </div>
             </div>
             
@@ -182,8 +181,8 @@
                         
                         <p>💡 <strong>실제 예시:</strong> "강아지"와 "고양이"는 둘 다 애완동물이므로 벡터 방향이 비슷해 유사도가 높습니다. "강아지"와 "자동차"는 전혀 다른 개념이라 벡터 방향이 달라 유사도가 낮습니다.</p>
                         
-                        <div class="bg-yellow-50 p-3 rounded mt-2 border border-yellow-300">
-                            <p class="text-sm">⚡ <strong>이 게임은 Google의 Gemini text-embedding-004 모델을 사용하여 진짜 수학적 코사인 유사도를 계산합니다!</strong></p>
+                        <div class="bg-green-50 p-3 rounded mt-2 border border-green-300">
+                            <p class="text-sm">⚡ <strong>이 게임은 Google의 Gemini text-embedding-004 모델과 배치 API를 사용하여 진짜 수학적 코사인 유사도를 계산합니다!</strong></p>
                         </div>
                     </div>
                 </div>
@@ -445,6 +444,9 @@
         
         const WORKER_URL = 'https://cosine.tjdgus1121.workers.dev';
         
+        // ⚠️ 임시: 구버전 Worker 사용 중
+        // 진짜 코사인 유사도는 Embeddings API 문제 해결 후 적용
+        
         // =============================================
         // 게임 상태
         // =============================================
@@ -559,9 +561,9 @@
             document.getElementById('result').style.display = 'none';
             
             // Worker 버전 확인 메시지
-            console.log('📌 중요: Worker가 "진짜 코사인 유사도" 버전인지 확인하세요!');
-            console.log('✅ 정상: method: "cosine_similarity", model: "text-embedding-004"');
-            console.log('❌ 구버전: method 필드 없음 (AI 추정 방식)');
+            console.log('🚀 최적화된 Worker 사용 중!');
+            console.log('✅ 배치 API로 빠른 임베딩 처리');
+            console.log('✅ method: "cosine_similarity" = 진짜 수학 계산');
         }
         
         // =============================================

@@ -97,15 +97,6 @@
                 </button>
             </div>
             
-            <!-- Worker 상태 안내 -->
-            <div class="bg-green-50 border-2 border-green-300 rounded-xl p-4 mb-6">
-                <div class="text-center">
-                    <p class="text-green-800 font-bold mb-2">✅ 진짜 코사인 유사도 사용 중!</p>
-                    <p class="text-sm text-green-700">Gemini Embeddings API와 배치 처리로 수학적으로 정확한 유사도를 계산합니다.</p>
-                    <p class="text-xs text-green-600 mt-2">🚀 최적화된 버전으로 더 빠른 응답 속도</p>
-                </div>
-            </div>
-            
             <!-- 난이도 선택 -->
             <div class="mb-8">
                 <h3 class="title-font text-2xl text-center text-gray-700 mb-4">난이도 선택</h3>
@@ -560,10 +551,7 @@
             
             document.getElementById('result').style.display = 'none';
             
-            // Worker 버전 확인 메시지
-            console.log('🚀 최적화된 Worker 사용 중!');
-            console.log('✅ 배치 API로 빠른 임베딩 처리');
-            console.log('✅ method: "cosine_similarity" = 진짜 수학 계산');
+            console.log('🎮 게임 시작!');
         }
         
         // =============================================
@@ -571,30 +559,86 @@
         // =============================================
         
         async function getSimilarity(word1, word2) {
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('🔍 [1단계] API 요청 시작');
+            console.log('  단어1:', word1);
+            console.log('  단어2:', word2);
+            console.log('  Worker URL:', WORKER_URL);
+            
             try {
-                console.log('🔍 API 요청:', { word1, word2 });
+                console.log('📤 [2단계] Fetch 요청 전송 중...');
+                
+                const requestBody = { word1, word2 };
+                console.log('  요청 본문:', JSON.stringify(requestBody));
                 
                 const response = await fetch(WORKER_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ word1, word2 })
+                    body: JSON.stringify(requestBody)
                 });
                 
+                console.log('📥 [3단계] 응답 수신');
+                console.log('  상태 코드:', response.status);
+                console.log('  상태 텍스트:', response.statusText);
+                console.log('  응답 OK?:', response.ok);
+                
+                // 응답 본문을 텍스트로 먼저 읽기
+                const responseText = await response.text();
+                console.log('  응답 본문 (raw):', responseText);
+                
                 if (!response.ok) {
+                    console.error('❌ [에러] HTTP 오류 발생!');
+                    console.error('  상태:', response.status);
+                    
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(responseText);
+                        console.error('  에러 데이터:', errorData);
+                    } catch (e) {
+                        console.error('  응답을 JSON으로 파싱 실패');
+                        console.error('  원본 텍스트:', responseText);
+                    }
+                    
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
-                const data = await response.json();
-                console.log('✅ API 응답:', data);
-                console.log('📊 사용 중인 방식:', data.method || 'AI 추정 (구버전)');
-                console.log('🎯 유사도 값:', data.similarity);
+                // JSON 파싱
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                    console.log('✅ [4단계] JSON 파싱 성공');
+                    console.log('  파싱된 데이터:', data);
+                } catch (e) {
+                    console.error('❌ [에러] JSON 파싱 실패!');
+                    console.error('  파싱 에러:', e.message);
+                    console.error('  원본 텍스트:', responseText);
+                    throw new Error('JSON 파싱 실패');
+                }
+                
+                // 데이터 구조 확인
+                console.log('🔎 [5단계] 데이터 구조 분석');
+                console.log('  isNoun:', data.isNoun);
+                console.log('  similarity:', data.similarity);
+                console.log('  method:', data.method);
+                console.log('  model:', data.model);
+                console.log('  message:', data.message);
+                
+                console.log('✨ [완료] API 호출 성공!');
+                console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
                 
                 return data;
+                
             } catch (error) {
-                console.error('❌ API 호출 실패:', error);
-                throw new Error('유사도 계산 중 오류가 발생했습니다.');
+                console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                console.error('💥 [치명적 에러] API 호출 실패!');
+                console.error('  에러 이름:', error.name);
+                console.error('  에러 메시지:', error.message);
+                console.error('  에러 스택:', error.stack);
+                console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+                
+                throw new Error('유사도 계산 중 오류가 발생했습니다: ' + error.message);
             }
         }
         

@@ -1207,30 +1207,11 @@
           </div>
 
           <div id="student-input" class="hidden">
-            <!-- 주제 이미지 표시 영역 (맨 위) -->
-            <div
-              id="student-topic-image"
-              style="text-align: center; margin: 20px 0; display: none"
-            >
-              <h3 style="color: #1e3a5f; margin-bottom: 15px">
-                🖼️ 주제 이미지
-              </h3>
-              <img
-                id="student-image-display"
-                style="
-                  max-width: 100%;
-                  max-height: 350px;
-                  border-radius: 10px;
-                  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-                "
-              />
-            </div>
-
             <div id="nickname-section">
               <div class="tutorial">
                 <h4>📝 문장 작성 가이드</h4>
                 <div class="tutorial-step">
-                  위 이미지를 보고 떠오르는 문장을 작성해주세요
+                  닉네임 입력 후 주제 이미지를 보고 문장을 작성해주세요
                 </div>
               </div>
 
@@ -3651,17 +3632,7 @@
           imageData ? imageData.length : 0,
         );
 
-        // 닉네임 섹션 이미지 업데이트
-        const nicknameContainer = document.getElementById("student-topic-image");
-        const nicknameImg = document.getElementById("student-image-display");
-
-        if (nicknameContainer && nicknameImg) {
-          nicknameImg.src = imageData;
-          nicknameContainer.style.display = "block";
-          console.log("✅ 닉네임 섹션 이미지 표시 완료");
-        }
-
-        // 문장 입력 섹션 이미지 업데이트
+        // 문장 입력 섹션 이미지 업데이트 (닉네임 섹션은 표시하지 않음)
         const sentenceContainer = document.getElementById("sentence-topic-image");
         const sentenceImg = document.getElementById("sentence-image-display");
 
@@ -3674,12 +3645,8 @@
 
       // 학생 화면에서 주제 이미지 숨김
       function hideStudentTopicImage() {
-        const nicknameContainer = document.getElementById("student-topic-image");
         const sentenceContainer = document.getElementById("sentence-topic-image");
 
-        if (nicknameContainer) {
-          nicknameContainer.style.display = "none";
-        }
         if (sentenceContainer) {
           sentenceContainer.style.display = "none";
         }
@@ -5209,7 +5176,7 @@
           // 값 표시 형식
           const displayValue = isEuclidean
             ? mostSimilar.score.toFixed(2) // 거리는 소수점 2자리
-            : (mostSimilar.score * 100).toFixed(1) + "%"; // 유사도는 %
+            : mostSimilar.score.toFixed(4); // 유사도는 소수점 4자리
 
           const card = document.createElement("div");
           card.className = "similarity-card";

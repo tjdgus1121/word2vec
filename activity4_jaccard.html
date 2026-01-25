@@ -302,9 +302,9 @@
         const detailEmotionResult = document.getElementById('detailEmotionResult');
         const detailEmotionList = document.getElementById('detailEmotionList');
 
-        // 전체 긍정/부정 단어 집합 (자카드 유사도 계산용)
-        let globalPositiveWords = new Set();
-        let globalNegativeWords = new Set();
+        // 전체 긍정(P)/부정(N) 단어 집합 (자카드 유사도 계산용)
+        let globalP = new Set(); // 긍정 (Positive)
+        let globalN = new Set(); // 부정 (Negative)
 
         // Character Count
         inputText.addEventListener('input', () => {
@@ -400,26 +400,32 @@
 
                 // 3단계: 각 문장의 감성 개수를 감성사전 기준으로 재계산
                 sentenceResults.forEach((result, i) => {
-                    // 감성사전 기준으로 카운트
-                    let posCount = 0, neuCount = 0, negCount = 0;
+                    // 감성사전 기준으로 재분류 (중복 제거)
+                    const posWordsSet = new Set();
+                    const neuWordsSet = new Set();
+                    const negWordsSet = new Set();
                     
                     if (result.morphemes) {
                         result.morphemes.forEach(m => {
-                            // 전역 감성사전에 있는 단어만 카운트
-                            if (globalPositiveWords.has(m.word)) {
-                                posCount++;
+                            // 전역 감성사전에 있는 단어만 분류 (중복 자동 제거)
+                            if (globalP.has(m.word)) {
+                                posWordsSet.add(m.word);
                                 m.sentiment = 'positive'; // 재분류
-                            } else if (globalNegativeWords.has(m.word)) {
-                                negCount++;
+                            } else if (globalN.has(m.word)) {
+                                negWordsSet.add(m.word);
                                 m.sentiment = 'negative'; // 재분류
                             } else {
-                                neuCount++;
+                                neuWordsSet.add(m.word);
                                 m.sentiment = 'neutral'; // 재분류
                             }
                         });
                     }
                     
-                    // 감성 점수 업데이트
+                    // 감성 점수 업데이트 (고유 단어 개수)
+                    const posCount = posWordsSet.size;
+                    const neuCount = neuWordsSet.size;
+                    const negCount = negWordsSet.size;
+                    
                     result.sentiment_scores = {
                         positive: posCount,
                         neutral: neuCount,
@@ -477,8 +483,8 @@
             }
 
             // 전역 변수 설정 (원본 - 자카드 계산 및 재분류용)
-            globalPositiveWords = new Set(wordsOriginal.positive);
-            globalNegativeWords = new Set(wordsOriginal.negative);
+            globalP = new Set(wordsOriginal.positive);
+            globalN = new Set(wordsOriginal.negative);
 
             // 화면 표시용 (중복 제거)
             const words = {
@@ -599,38 +605,38 @@
 
             // 자카드 유사도 계산: 정확한 벤다이어그램 방식
             // 문장의 전체 단어 A (긍정+부정+중립 모두 포함)
-            const sentenceAllWords = new Set();
+            const A = new Set(); // 문장 전체 단어
             
             if (result.morphemes) {
                 result.morphemes.forEach(m => {
-                    sentenceAllWords.add(m.word);
+                    A.add(m.word);
                 });
             }
 
-            // J(A, X) = |A ∩ X| / |A ∪ X|  (문장 전체 vs 전체 긍정)
-            const intersectionAX = new Set([...sentenceAllWords].filter(x => globalPositiveWords.has(x)));
-            const unionAX = new Set([...sentenceAllWords, ...globalPositiveWords]);
-            const jaccardAX = unionAX.size > 0 ? (intersectionAX.size / unionAX.size * 100) : 0;
-
-            // J(A, P) = |A ∩ P| / |A ∪ P|  (문장 전체 vs 전체 부정)
-            const intersectionAP = new Set([...sentenceAllWords].filter(x => globalNegativeWords.has(x)));
-            const unionAP = new Set([...sentenceAllWords, ...globalNegativeWords]);
+            // J(A, P) = |A ∩ P| / |A ∪ P|  (문장 전체 vs 전체 긍정)
+            const intersectionAP = new Set([...A].filter(x => globalP.has(x)));
+            const unionAP = new Set([...A, ...globalP]);
             const jaccardAP = unionAP.size > 0 ? (intersectionAP.size / unionAP.size * 100) : 0;
+
+            // J(A, N) = |A ∩ N| / |A ∪ N|  (문장 전체 vs 전체 부정)
+            const intersectionAN = new Set([...A].filter(x => globalN.has(x)));
+            const unionAN = new Set([...A, ...globalN]);
+            const jaccardAN = unionAN.size > 0 ? (intersectionAN.size / unionAN.size * 100) : 0;
 
             // 자카드 유사도로 감성 재판단
             let jaccard, finalSentiment, finalEmoji, finalClass;
-            if (jaccardAX > jaccardAP) {
-                jaccard = jaccardAX;
+            if (jaccardAP > jaccardAN) {
+                jaccard = jaccardAP;
                 finalSentiment = '긍정적';
                 finalEmoji = '😊';
                 finalClass = 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700';
-            } else if (jaccardAP > jaccardAX) {
-                jaccard = jaccardAP;
+            } else if (jaccardAN > jaccardAP) {
+                jaccard = jaccardAN;
                 finalSentiment = '부정적';
                 finalEmoji = '😢';
                 finalClass = 'bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-700';
             } else {
-                jaccard = Math.max(jaccardAX, jaccardAP);
+                jaccard = Math.max(jaccardAP, jaccardAN);
                 finalSentiment = '중립적';
                 finalEmoji = '😐';
                 finalClass = 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700';
@@ -641,26 +647,57 @@
             const neg = result.sentiment_scores.negative || 0;
 
             // 문장 단어에 색상 입히기 (긍정=초록, 부정=빨강)
+            // globalP, globalN을 직접 사용!
             let coloredSentence = result.sentenceText;
-            if (result.morphemes) {
-                // 단어를 긴 것부터 정렬 (긴 단어가 먼저 치환되도록)
-                const sortedMorphemes = [...result.morphemes].sort((a, b) => b.word.length - a.word.length);
+            
+            console.log('=== 색상 적용 시작 ===');
+            console.log('원본 문장:', result.sentenceText);
+            console.log('globalP:', Array.from(globalP));
+            console.log('globalN:', Array.from(globalN));
+            
+            // globalP, globalN에서 단어 목록 가져오기
+            const positiveWords = Array.from(globalP);
+            const negativeWords = Array.from(globalN);
+            
+            console.log('긍정 단어:', positiveWords);
+            console.log('부정 단어:', negativeWords);
+            
+            // 긴 단어부터 처리
+            positiveWords.sort((a, b) => b.length - a.length);
+            negativeWords.sort((a, b) => b.length - a.length);
+            
+            // 긍정 단어 색상 적용
+            positiveWords.forEach(word => {
+                let stem = word.endsWith('다') ? word.slice(0, -1) : word;
+                const pattern = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[가-힣]*';
+                const regex = new RegExp(pattern, 'g');
                 
-                sortedMorphemes.forEach(m => {
-                    let color = '';
-                    if (m.sentiment === 'positive') {
-                        color = 'text-emerald-600 dark:text-emerald-400 font-bold';
-                    } else if (m.sentiment === 'negative') {
-                        color = 'text-rose-600 dark:text-rose-400 font-bold';
+                coloredSentence = coloredSentence.replace(regex, (matched) => {
+                    console.log(`긍정 매칭: ${matched}`);
+                    if (matched.includes('<') || matched.includes('>')) {
+                        return matched;
                     }
-                    
-                    if (color) {
-                        // 단어를 색상 span으로 치환
-                        const regex = new RegExp(`(${m.word})`, 'g');
-                        coloredSentence = coloredSentence.replace(regex, `<span class="${color}">$1</span>`);
-                    }
+                    return `<span class="text-emerald-600 dark:text-emerald-400 font-bold">${matched}</span>`;
                 });
-            }
+            });
+            
+            // 부정 단어 색상 적용
+            negativeWords.forEach(word => {
+                let stem = word.endsWith('다') ? word.slice(0, -1) : word;
+                const pattern = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '[가-힣]*';
+                const regex = new RegExp(pattern, 'g');
+                
+                coloredSentence = coloredSentence.replace(regex, (matched) => {
+                    console.log(`부정 매칭: ${matched}`);
+                    if (matched.includes('<') || matched.includes('>')) {
+                        return matched;
+                    }
+                    return `<span class="text-rose-600 dark:text-rose-400 font-bold">${matched}</span>`;
+                });
+            });
+            
+            console.log('최종 결과:', coloredSentence);
+            console.log('=== 색상 적용 끝 ===');
 
             const sentenceCard = document.createElement('div');
             sentenceCard.className = `p-6 border-2 rounded-xl ${finalClass}`;
@@ -675,7 +712,7 @@
                         <div class="text-xs text-slate-500 dark:text-slate-400">자카드 유사도</div>
                         <div class="text-lg font-bold text-violet-600 dark:text-violet-400">${jaccard.toFixed(1)}%</div>
                         <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                            J(A,X): ${jaccardAX.toFixed(1)}% / J(A,P): ${jaccardAP.toFixed(1)}%
+                            J(A,P): ${jaccardAP.toFixed(1)}% / J(A,N): ${jaccardAN.toFixed(1)}%
                         </div>
                     </div>
                 </div>
@@ -687,30 +724,38 @@
                 <div class="mb-4 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
                     <div class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">📊 자카드 유사도 계산 과정</div>
                     
-                    <!-- J(A, X) 계산 -->
-                    <div class="text-xs text-slate-600 dark:text-slate-400 mb-2">
-                        <div class="font-semibold text-emerald-600 dark:text-emerald-400 mb-1">J(A, X) = 긍정 유사도</div>
+                    <!-- 문장 단어집합 A -->
+                    <div class="text-xs text-slate-600 dark:text-slate-400 mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                        <div class="font-semibold text-blue-600 dark:text-blue-400 mb-1">문장 단어집합 A</div>
                         <div class="ml-2">
-                            A ∩ X = {${[...intersectionAX].join(', ')}} = ${intersectionAX.size}개<br>
-                            A ∪ X = {${[...unionAX].slice(0, 10).join(', ')}${unionAX.size > 10 ? '...' : ''}} = ${unionAX.size}개<br>
-                            <span class="font-semibold">J(A,X) = ${intersectionAX.size}/${unionAX.size} = ${jaccardAX.toFixed(1)}%</span>
+                            A = {${[...A].slice(0, 15).join(', ')}}${A.size > 15 ? '...' : ''}} = ${A.size}개
                         </div>
                     </div>
                     
                     <!-- J(A, P) 계산 -->
-                    <div class="text-xs text-slate-600 dark:text-slate-400">
-                        <div class="font-semibold text-rose-600 dark:text-rose-400 mb-1">J(A, P) = 부정 유사도</div>
+                    <div class="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                        <div class="font-semibold text-emerald-600 dark:text-emerald-400 mb-1">J(A, P) = 긍정 유사도</div>
                         <div class="ml-2">
                             A ∩ P = {${[...intersectionAP].join(', ')}} = ${intersectionAP.size}개<br>
-                            A ∪ P = {${[...unionAP].slice(0, 10).join(', ')}${unionAP.size > 10 ? '...' : ''}} = ${unionAP.size}개<br>
+                            A ∪ P = {${[...unionAP].slice(0, 10).join(', ')}}${unionAP.size > 10 ? '...' : ''} = ${unionAP.size}개<br>
                             <span class="font-semibold">J(A,P) = ${intersectionAP.size}/${unionAP.size} = ${jaccardAP.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- J(A, N) 계산 -->
+                    <div class="text-xs text-slate-600 dark:text-slate-400">
+                        <div class="font-semibold text-rose-600 dark:text-rose-400 mb-1">J(A, N) = 부정 유사도</div>
+                        <div class="ml-2">
+                            A ∩ N = {${[...intersectionAN].join(', ')}} = ${intersectionAN.size}개<br>
+                            A ∪ N = {${[...unionAN].slice(0, 10).join(', ')}}${unionAN.size > 10 ? '...' : ''} = ${unionAN.size}개<br>
+                            <span class="font-semibold">J(A,N) = ${intersectionAN.size}/${unionAN.size} = ${jaccardAN.toFixed(1)}%</span>
                         </div>
                     </div>
                     
                     <!-- 최종 판단 -->
                     <div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs">
                         <span class="font-semibold text-violet-600 dark:text-violet-400">
-                            최종: ${jaccardAX.toFixed(1)}% ${jaccardAX > jaccardAP ? '>' : jaccardAX < jaccardAP ? '<' : '='} ${jaccardAP.toFixed(1)}% → ${finalSentiment}
+                            최종: ${jaccardAP.toFixed(1)}% ${jaccardAP > jaccardAN ? '>' : jaccardAP < jaccardAN ? '<' : '='} ${jaccardAN.toFixed(1)}% → ${finalSentiment}
                         </span>
                     </div>
                 </div>
@@ -771,8 +816,8 @@
             finalSentiment.textContent = overallText;
 
             // 전체 긍정 vs 전체 부정 자카드 유사도
-            const allPosIntersection = new Set([...globalPositiveWords].filter(x => globalNegativeWords.has(x)));
-            const allPosUnion = new Set([...globalPositiveWords, ...globalNegativeWords]);
+            const allPosIntersection = new Set([...globalP].filter(x => globalN.has(x)));
+            const allPosUnion = new Set([...globalP, ...globalN]);
             const overallJaccard = allPosUnion.size > 0 ? (allPosIntersection.size / allPosUnion.size * 100) : 0;
 
             document.getElementById('formulaDisplay').innerHTML = `
@@ -794,14 +839,14 @@
                     </div>
                     <div class="mt-4 p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
                         <div class="text-base text-slate-600 dark:text-slate-400 mb-2">
-                            J(긍정, 부정) = |긍정 ∩ 부정| / |긍정 ∪ 부정|
+                            J(P, N) = |P ∩ N| / |P ∪ N|
                         </div>
                         <div class="text-base">
                             = ${allPosIntersection.size} / ${allPosUnion.size} = 
                             <strong class="text-violet-600 dark:text-violet-400 text-2xl">${overallJaccard.toFixed(1)}%</strong>
                         </div>
                         <div class="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                            전체 긍정단어(${globalPositiveWords.size}개)와 부정단어(${globalNegativeWords.size}개)의 유사도
+                            전체 긍정단어 P(${globalP.size}개)와 부정단어 N(${globalN.size}개)의 유사도
                         </div>
                     </div>
                 </div>

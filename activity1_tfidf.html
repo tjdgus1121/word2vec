@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TF-IDF 계산 체험 (형태소 분석)</title>
+    <link href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-light: #818CF8;
+            --primary-dark: #3730A3;
+            --bg: #F8FAFC;
+            --card: #FFFFFF;
+            --text: #1E293B;
+            --text-light: #64748B;
+            --border: #E2E8F0;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            font-size: 1.5rem;
+        }
+
+        /* 로딩 오버레이 */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.hidden {
+            display: none;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .loading-subtext {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-top: 8px;
+        }
+
+        /* 설정 영역 */
+        .settings {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .checkbox-label {
+            font-size: 0.95rem;
+            color: var(--text);
+            user-select: none;
+        }
+
+        /* 문서 입력 영역 */
+        .documents-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .document-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .document-label {
+            min-width: 70px;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.95rem;
+        }
+
+        .document-input {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .document-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-danger {
+            background: transparent;
+            color: var(--danger);
+            padding: 8px 12px;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        /* 품사 태그 선택 */
+        .pos-tags-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .pos-tags-title {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+        }
+
+        .pos-tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .pos-tag-btn {
+            padding: 8px 14px;
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            background: white;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .pos-tag-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .pos-tag-btn:hover:not(.active) {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .pos-tag-wrapper {
+            display: inline-flex;
+            align-items: stretch;
+            border: 2px solid var(--border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .pos-tag-wrapper:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.15);
+        }
+
+        .pos-tag-wrapper .pos-tag-btn {
+            border: none;
+            border-radius: 0;
+            margin: 0;
+            border-right: 1px solid var(--border);
+        }
+
+        .pos-tag-wrapper.active-wrapper {
+            border-color: var(--primary);
+            background: var(--primary);
+        }
+
+        .pos-tag-wrapper.active-wrapper .pos-tag-btn {
+            background: var(--primary);
+            color: white;
+            border-right-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .pos-info-icon {
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            transition: all 0.2s ease;
+            min-width: 36px;
+        }
+
+        .pos-info-icon:hover {
+            background: #F0F9FF;
+            transform: scale(1.05);
+        }
+
+        .pos-tag-wrapper.active-wrapper .pos-info-icon {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .pos-tag-wrapper.active-wrapper .pos-info-icon:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* 팝업 모달 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: var(--text-light);
+            background: none;
+            border: none;
+            padding: 4px 8px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--danger);
+            transform: scale(1.1);
+        }
+
+        .modal-body {
+            color: var(--text);
+            line-height: 1.8;
+        }
+
+        .modal-section {
+            margin-bottom: 20px;
+        }
+
+        .modal-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .modal-examples {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .modal-example-item {
+            padding: 4px 0;
+        }
+
+        /* 탭 네비게이션 */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            background: var(--bg);
+            padding: 6px;
+            border-radius: 14px;
+            margin-bottom: 24px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            color: var(--text-light);
+        }
+
+        .tab:hover {
+            color: var(--text);
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .tab.active {
+            background: var(--card);
+            color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 수식 영역 */
+        .formula-box {
+            background: linear-gradient(135deg, #F0F9FF, #E0F2FE);
+            border: 2px solid #BAE6FD;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .formula-title {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .formula {
+            font-size: 1.3rem;
+        }
+
+        /* 테이블 스타일 */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        th, td {
+            padding: 14px 18px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+
+        th:last-child, td:last-child {
+            border-right: none;
+        }
+
+        th {
+            background: var(--bg);
+            font-weight: 700;
+            color: var(--text);
+            position: sticky;
+            top: 0;
+        }
+
+        th:first-child {
+            text-align: left;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+        }
+
+        td:first-child {
+            text-align: left;
+            font-weight: 600;
+            background: #F8FAFC;
+            color: var(--primary);
+        }
+
+        tr:hover td {
+            background: #F1F5F9;
+        }
+
+        tr:hover td:first-child {
+            background: #EEF2FF;
+        }
+
+        /* 히트맵 색상 */
+        .heat-0 { background: #FEF2F2 !important; }
+        .heat-1 { background: #FEE2E2 !important; }
+        .heat-2 { background: #FECACA !important; }
+        .heat-3 { background: #FCA5A5 !important; }
+        .heat-4 { background: #F87171 !important; }
+        .heat-5 { background: #EF4444 !important; color: white; }
+        .heat-6 { background: #DC2626 !important; color: white; }
+        .heat-7 { background: #B91C1C !important; color: white; }
+        .heat-8 { background: #991B1B !important; color: white; }
+        .heat-9 { background: #7F1D1D !important; color: white; }
+
+        /* 탭 콘텐츠 */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* DF/IDF 특별 테이블 */
+        .df-row {
+            background: linear-gradient(135deg, #ECFDF5, #D1FAE5) !important;
+        }
+
+        .idf-row {
+            background: linear-gradient(135deg, #FEF3C7, #FDE68A) !important;
+        }
+
+        /* 설명 텍스트 */
+        .description {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #F8FAFC;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+        }
+
+        /* 단어 클릭 효과 */
+        .clickable-word {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clickable-word:hover {
+            color: var(--primary);
+            text-decoration: underline;
+        }
+
+        .selected-word {
+            background: #C7D2FE !important;
+            font-weight: 700;
+        }
+
+        /* 범례 */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        /* 토큰화 결과 미리보기 */
+        .preview-section {
+            margin-top: 16px;
+            padding: 16px;
+            background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+            border-radius: 10px;
+            border: 1px solid #BBF7D0;
+        }
+
+        .preview-title {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .preview-tokens {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .token {
+            padding: 6px 12px;
+            background: white;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            border: 1px solid #86EFAC;
+        }
+
+        .token .tag {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            margin-left: 4px;
+        }
+
+        /* 형태소 분석 결과 */
+        .morpheme-result {
+            margin-top: 16px;
+            padding: 16px;
+            background: #F8FAFC;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .morpheme-sentence {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .morpheme-sentence:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+        .morpheme-sentence-label {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+
+        .morpheme-tokens {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .morpheme-token-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .morpheme-token {
+            padding: 4px 10px;
+            background: white;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            border: 1px solid var(--border);
+        }
+
+        .morpheme-token .tag {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            font-weight: 400;
+            margin-left: 2px;
+        }
+
+        .morpheme-token .lex {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .morpheme-token.selected {
+            background: #DBEAFE;
+            border-color: #93C5FD;
+        }
+
+        .morpheme-token.excluded {
+            background: #FEE2E2;
+            border-color: #FECACA;
+            text-decoration: line-through;
+            opacity: 0.6;
+        }
+
+        .morpheme-token.stopword {
+            background: #FEE2E2;
+            border-color: #991B1B;
+            color: #991B1B;
+            font-weight: 600;
+        }
+
+        .morpheme-token:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+
+        .edit-icon {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .edit-icon:hover {
+            opacity: 1 !important;
+            transform: scale(1.3);
+        }
+
+        .stopword-tag {
+            background: #FEE2E2 !important;
+            color: #991B1B !important;
+            border: 2px solid #991B1B !important;
+            font-weight: 600;
+        }
+
+        .stopword-tag:hover {
+            background: #FCA5A5 !important;
+            transform: scale(1.05);
+        }
+
+        .inline-edit-box {
+            position: absolute;
+            z-index: 1000;
+            animation: fadeIn 0.15s ease;
+        }
+
+        /* 에러 메시지 */
+        .error-message {
+            background: #FEF2F2;
+            border: 1px solid #FECACA;
+            color: #991B1B;
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* 애니메이션 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab {
+                flex: 1 1 45%;
+            }
+
+            .settings {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            th, td {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* 상태 배지 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-badge.loading {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .status-badge.ready {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .status-badge.error {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+    </style>
+</head>
+<body>
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">🔤 형태소 분석기 로딩 중...</div>
+        <div class="loading-subtext">MeCab 모델을 불러오고 있습니다 (약 1초)</div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>📊 TF-IDF 계산 체험</h1>
+            <p class="subtitle">AI 형태소 분석으로 단어의 중요도를 계산해보세요</p>
+        </header>
+
+        <!-- 설정 카드 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="icon">⚙️</span>
+                    계산 설정
+                </div>
+                <span class="status-badge loading" id="statusBadge">
+                    <span id="statusIcon">⏳</span>
+                    <span id="statusText">로딩 중...</span>
+                </span>
+            </div>
+            <div class="settings">
+                <label class="checkbox-wrapper">
+                    <input type="checkbox" id="useLog">
+                    <span class="checkbox-label">IDF에 log 적용 (체크 해제 = 교과서 방식: N/DF)</span>
+                </label>
+            </div>
+
+            <!-- 품사 태그 선택 -->
+            <div class="pos-tags-section">
+                <div class="pos-tags-title">📝 추출할 품사 선택 (클릭하여 선택/해제, 🔍 아이콘 클릭 시 설명 보기)</div>
+                <div class="pos-tags-container" id="posTagsContainer">
+                    <!-- 동적으로 생성 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 품사 설명 모달 -->
+        <div class="modal-overlay" id="posModal" onclick="closeModal(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <div class="modal-title" id="modalTitle">품사 설명</div>
+                    <button class="modal-close" onclick="closeModal()">✕</button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <!-- 동적으로 생성 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 문장 입력 카드 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <span class="icon">📝</span>
+                    Step 1: 문장 입력
+                </div>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <div style="color: var(--text-light); font-size: 0.9rem; margin-bottom: 8px;">
+                    💡 한 줄에 하나씩 문장을 입력해주세요 (줄바꿈 또는 마침표로 문장 구분)
+                </div>
+                <textarea id="documentsTextarea" 
+                          class="document-input" 
+                          rows="8" 
+                          placeholder="문장을 입력하세요 (줄바꿈 또는 마침표로 구분)&#10;예: 첫 번째 문장&#10;두 번째 문장&#10;세 번째 문장"
+                          style="width: 100%; resize: vertical; min-height: 150px; font-family: inherit; line-height: 1.6;"></textarea>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-secondary" onclick="loadExample()">📚 예시 불러오기</button>
+                <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeSentences()" disabled>🔤 형태소 분석하기</button>
+            </div>
+
+            <!-- 형태소 분석 결과 미리보기 -->
+            <div class="morpheme-result" id="morphemeResult" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div class="preview-title">🔤 Step 2: 형태소 분석 결과 (단어 편집)</div>
+                </div>
+                <div style="background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 0.9rem;">
+                    💡 <strong>편집 기능:</strong><br>
+                    • <strong>자동 변환:</strong> 자주 쓰는 단어는 기본형으로 자동 변환 (✓ 표시)<br>
+                    • <strong>불용어 제거:</strong> 단어 클릭하여 불용어로 지정/해제<br>
+                    • <strong>단어 수정:</strong> ✏️ 아이콘 클릭하여 모든 단어 수정 가능
+                </div>
+                <div id="morphemeContent"></div>
+                <div style="margin-top: 16px; text-align: center; padding-top: 16px; border-top: 2px dashed #3B82F6;">
+                    <div style="color: var(--primary); font-weight: 600; margin-bottom: 12px; font-size: 1.1rem;">
+                        👇 Step 3: TF-IDF 분석
+                    </div>
+                    <button class="btn btn-primary" id="calculateBtn" onclick="calculate()" style="font-size: 1.1rem; padding: 14px 28px;">
+                        📊 분석하기
+                    </button>
+                </div>
+            </div>
+
+            <!-- 추출된 단어 미리보기 -->
+            <div class="preview-section" id="previewSection" style="display: none;">
+                <div class="preview-title">✅ 추출된 단어 (TF-IDF 계산에 사용)</div>
+                <div class="preview-tokens" id="previewTokens"></div>
+            </div>
+        </div>
+
+        <!-- 결과 카드 -->
+        <div class="card" id="resultCard" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('tf')">TF (단어 빈도)</button>
+                <button class="tab" onclick="switchTab('df')">DF (문장 빈도)</button>
+                <button class="tab" onclick="switchTab('idf')">IDF (역문장 빈도)</button>
+                <button class="tab" onclick="switchTab('tfidf')">TF-IDF</button>
+            </div>
+
+            <!-- TF 탭 -->
+            <div class="tab-content active" id="tab-tf">
+                <div class="formula-box">
+                    <div class="formula-title">TF (Term Frequency) 계산 공식</div>
+                    <div class="formula" id="formula-tf"></div>
+                </div>
+                <div class="description">
+                    <strong>TF(단어 빈도)</strong>는 특정 문장에서 해당 단어가 몇 번 등장하는지를 나타냅니다. 
+                    값이 클수록 해당 문장에서 자주 사용된 단어입니다.
+                </div>
+                <div class="table-container">
+                    <table id="tfTable"></table>
+                </div>
+            </div>
+
+            <!-- DF 탭 -->
+            <div class="tab-content" id="tab-df">
+                <div class="formula-box">
+                    <div class="formula-title">DF (Document Frequency) 계산 공식</div>
+                    <div class="formula" id="formula-df"></div>
+                </div>
+                <div class="description">
+                    <strong>DF(문장 빈도)</strong>는 해당 단어가 전체 문장 중 몇 개의 문장에 등장하는지를 나타냅니다.
+                    모든 문장에 등장하는 단어는 DF가 높고, 특정 문장에만 있는 단어는 DF가 낮습니다.
+                </div>
+                <div class="table-container">
+                    <table id="dfTable"></table>
+                </div>
+            </div>
+
+            <!-- IDF 탭 -->
+            <div class="tab-content" id="tab-idf">
+                <div class="formula-box">
+                    <div class="formula-title">IDF (Inverse Document Frequency) 계산 공식</div>
+                    <div class="formula" id="formula-idf"></div>
+                </div>
+                <div class="description">
+                    <strong>IDF(역문장 빈도)</strong>는 DF의 역수 개념으로, 희귀한 단어일수록 값이 커집니다.
+                    많은 문장에 등장하는 흔한 단어는 IDF가 낮고, 특정 문장에만 있는 단어는 IDF가 높습니다.
+                </div>
+                <div class="table-container">
+                    <table id="idfTable"></table>
+                </div>
+            </div>
+
+            <!-- TF-IDF 탭 -->
+            <div class="tab-content" id="tab-tfidf">
+                <div class="formula-box">
+                    <div class="formula-title">TF-IDF 최종 계산 공식</div>
+                    <div class="formula" id="formula-tfidf"></div>
+                </div>
+                <div class="description">
+                    <strong>TF-IDF</strong>는 TF와 IDF를 곱한 값입니다. 
+                    특정 문장에서 자주 등장하면서(TF 높음) 다른 문장에는 잘 없는(IDF 높음) 단어가 높은 값을 갖습니다.
+                    이런 단어가 해당 문장을 대표하는 <strong>핵심 키워드</strong>입니다.
+                </div>
+                <div class="table-container">
+                    <table id="tfidfTable"></table>
+                </div>
+                <div class="legend" id="legend"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MeCab.js 로드 -->
+    <script src="https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js"></script>
+    <!-- mecab-ko-wasm을 사용 -->
+    <script>
+        // ====================================================================
+        // 명사 사전 (상위 1000개 고빈도 명사)
+        // ====================================================================
+        const NOUN_DICT = new Set([
+            "영어", "미국", "대한민국", "선수", "일본", "일본어", "배우", "위치", "음반", "축구",
+            "사용", "영화", "지역", "인구", "도시", "세계", "독일", "발매", "활동", "이름",
+            "영국", "국가", "기준", "프랑스", "대표", "정치인", "올림픽", "독일어", "포함", "가수",
+            "감독", "밴드", "포지션", "이후", "스튜디오", "리그", "유럽", "소속", "대통령", "이탈리아",
+            "프로", "스페인어", "시절", "프랑스어", "사이", "활약", "출신", "철도", "사람", "유명",
+            "구성", "한국", "시대", "러시아", "면적", "제작", "개발", "게임", "지구", "그룹",
+            "지정", "최초", "일반", "시작", "기록", "음악", "일부", "중국어", "드라마", "여성",
+            "중국", "의미", "발견", "지방", "대학", "하계", "역사", "처음", "작품", "데뷔",
+            "여자", "연방", "기관", "공화국", "주요", "수상", "세포", "동안", "브라질", "당시",
+            "이상", "국도", "획득", "연구", "현재", "역임", "학교", "레코드", "독립", "행정",
+            "문화", "설립", "존재", "목록", "교육", "스위스", "러시아어", "철도역", "사회", "현역",
+            "역할", "센터", "세기", "제국", "야구", "작가", "시간", "대전", "서울", "발생",
+            "스페인", "전쟁", "그리스", "주도", "노래", "정부", "공립", "구역", "이전", "해당",
+            "조선", "인도", "소설", "길이", "가운데", "국제", "도쿄", "중심", "경기", "노선",
+            "구조", "녹음", "도로", "대회", "농구", "다양", "대학교", "참가", "스웨덴", "출연",
+            "병음", "최고", "국립", "전투", "미드필더", "제도", "운영", "시리즈", "동쪽", "일종",
+            "유래", "수도", "캐나다", "교수", "보컬", "클럽", "최대", "대부분", "장관", "고등학교",
+            "북부", "명칭", "남쪽", "은퇴", "발표", "전직", "나라", "포르투갈어", "북쪽", "이용",
+            "텔레비전", "태양", "멤버", "공식", "기능", "의원", "참여", "연결", "시즌", "서쪽",
+            "앨범", "인간", "종목", "높이", "형태", "회사", "사망", "건물", "용어", "마지막",
+            "중앙", "로마", "오스트리아", "생산", "과정", "종류", "분야", "문화어", "장치", "네덜란드",
+            "유일", "남부", "우크라이나", "부문", "관할", "아르헨티나", "정치", "모양", "평가",
+            "형성", "시기", "자유", "산업", "세대", "영향", "신경", "총리", "소련", "기술",
+            "번호", "수비수", "거리", "상태", "경기장", "공개", "규모", "제품", "단위", "스포츠",
+            "지도자", "제공", "동물", "베트남", "관계", "공항", "시스템", "차지", "스타", "공원",
+            "모델", "결합", "프로듀서", "동부", "항공", "남자", "정규", "작곡가", "아프리카",
+            "위원", "사건", "전통", "판매", "언어", "진행", "버스", "효소", "발음", "대상",
+            "빌보드", "현대", "아랍어", "육군", "뉴욕", "예술", "초대", "일원", "지진",
+            "공군", "제임스", "공간", "아일랜드", "기반", "폴란드", "수행", "바이러스", "지원",
+            "기업", "조직", "능력", "성공", "특정", "문자", "등장", "래퍼", "사운드", "서비스",
+            "영화배우", "연기", "고대", "교회", "경제", "단백질", "후보", "방법", "분포", "종교",
+            "인기", "물질", "전체", "프로그램", "교통", "공격수", "해군", "중요", "공동", "선정",
+            "컴퓨터", "구간", "사립", "주의", "주변", "관련", "차트", "자동차", "학명", "설계",
+            "건설", "과거", "서울특별시", "서부", "민족", "동계", "우승", "조약", "사단", "등록",
+            "관리", "박물관", "여객", "크기", "노벨", "본부", "육상", "금메달", "본관", "작업",
+            "그리스어", "은메달", "주연", "군인", "승강장", "운동가", "산맥", "전철", "도서관",
+            "생성", "강원", "비디오", "선거", "디자인", "줄무늬", "설치", "지배", "구분",
+            "아래", "황제", "목적", "공격", "자리", "소행성", "말레이시아", "멕시코", "군사",
+            "분자", "발전", "문제", "인물", "대만", "중심지", "약칭", "리드", "종합",
+            "시설", "골키퍼", "사진", "이론", "통합", "정보", "전기", "넓이", "소프트웨어",
+            "결정", "중부", "전역", "아카데미", "위원회", "개념", "이집트", "개통", "전선",
+            "치료", "지명", "고전", "분류", "신호", "운동", "이야기", "헝가리", "고체",
+            "태풍", "시인", "전자", "빙하", "연주자", "전달", "온도", "투수", "콜롬비아",
+            "국민", "가능", "작전", "부대", "전차", "칠레", "결과", "보호", "자연",
+            "표준", "네트워크", "세균", "상징", "계열", "파리", "인정", "담당", "핸드볼",
+            "선거구", "집단", "구별", "다음", "국경", "카운티", "협회", "본사", "랠리",
+            "사고", "대사", "화학", "생활", "출생", "기간", "정상", "정책", "범죄",
+            "상대", "포도", "민주", "학자", "출시", "계획", "관측", "영역", "워싱턴",
+            "합성", "민주당", "표현", "무역", "작곡", "메이저", "서식", "탄생", "국회",
+            "초기", "특징", "영상", "대신", "성장", "중간", "주장", "임시", "소비자",
+            "안전", "의회", "마이클", "방송", "실험", "건축", "측정", "오픈", "정교회",
+            "우주", "호른", "필리핀", "필터", "아미노", "제외", "기계", "로버트", "열차",
+            "현상", "전용", "건축물", "아들", "묘사", "유산", "개봉", "지바", "연구소",
+            "비교", "붕괴", "빌딩", "중학교", "화학자", "작용", "지대", "골든", "궤도",
+            "공관", "정의", "통과", "간주", "표기", "유기", "내각", "조사", "프로젝트",
+            "자신", "제목", "요리", "문서", "시장", "계약", "기타", "아시아", "윌리엄",
+            "평론가", "노르웨이", "홍콩", "탈퇴", "꼬리", "왕국", "학생", "외부", "상업",
+            "출전", "국립공원", "선수단", "수록", "지점", "운행", "루이스", "연극", "지하철",
+            "남동부", "과학", "생물", "태국", "태평양", "방식", "식물", "행성", "미국인",
+            "성당", "한국어", "전문", "주니어", "전지", "성분", "자회사", "설치류", "연속",
+            "칼리지", "제조", "오늘날", "정점", "별명", "애플", "개최", "아버지", "경계",
+            "시각", "음악가", "공무원", "업무", "대중", "지지", "추정", "밀도", "스타일",
+            "기본", "추산", "순위", "다리", "원래", "이동", "회의", "동맥", "재즈",
+            "체계", "시리아", "이란", "계단", "갤럭시", "바다", "식품", "저장", "유지",
+            "코치", "보유", "화합물", "일대", "남아메리카", "마드리드", "방향", "데이비스",
+            "정맥", "문신", "일제", "강점기", "경주", "방영", "타워", "마천루", "사랑",
+            "동메달", "인근", "그림", "이미지", "모바일", "올해", "계급", "카드", "설명",
+            "피터", "문화재", "필요", "복합", "달성", "볼리비아", "생물학", "트랙", "기념",
+            "천체", "원작", "신화", "여신", "라틴어", "소설가", "혁명", "사용자", "연합",
+            "악기", "변화", "영향력", "효과", "미술", "브라운", "국왕", "결성", "기체",
+            "데이터", "속도", "분리", "찰스", "영토", "디스크", "개인", "점령", "소니",
+            "소재지", "차례", "아이", "근육", "장소", "제정", "역대", "메달", "런던",
+            "동명", "박쥐", "렌즈", "구단", "솔로", "냉장고", "이하", "히트", "대체",
+            "회장", "물건", "기구", "평균", "우수", "정체", "국군", "아내", "안정",
+            "라이트", "진도", "박사", "일정", "이온", "항성", "확인", "차이", "전력",
+            "체육", "요소", "유전자", "북동부", "글로브", "남우", "여우", "동맹",
+            "각본", "모습", "윈도우", "최종", "마을", "냄새", "노동", "특별시", "포도주",
+            "장르", "플레이어", "시민", "부족", "약물", "제한", "암컷", "음식", "실시",
+            "질병", "상원", "이자", "사업", "질량", "고리", "근처", "근무", "관구",
+            "윙어", "코마", "차원", "조절", "감염", "진단", "코드", "분해", "호수",
+            "힙합", "케이블", "줄기", "케네디", "어머니", "라인", "몰도바", "인터넷",
+            "연설", "당선", "자료", "레이저", "특이", "문학", "관심", "가스", "용해도",
+            "헌법", "위장", "남성", "거대", "봉황", "자전거", "환경", "장군", "경력",
+            "외야수", "처리", "임명", "유형", "취급", "유엔", "산하", "쌍둥이", "인접",
+            "기지", "결혼", "보이", "콩고", "최근", "철학자", "기원", "필름", "초점",
+            "안드로이드", "투어", "종료", "예정", "명명", "헨리", "기존", "북서부",
+            "정식", "스톰", "항공기", "화재", "체제", "단선", "브랜드", "적용", "질환",
+            "불교", "시상식", "전철역", "사상", "주재", "아미노산", "협력", "내용", "머리",
+            "동일", "너비", "이유", "주목", "지칭", "반대", "접촉", "우루과이", "제어",
+            "분지", "화석", "성우", "전국", "날개", "연재", "장애", "지금", "구성원",
+            "화가", "바탕", "가사", "단계", "해체", "여행", "공국", "해안", "출간",
+            "거주", "신분", "빅토리아", "리스트", "모스크바", "기획", "상호", "압력",
+            "합류", "경로", "수컷", "아테네", "뉴질랜드", "어워드", "기질", "편집",
+            "연장", "베른", "피닉스", "연출", "디자이너", "자음", "삼성", "챔피언",
+            "발사", "후반", "합병", "리옹", "향토", "반도", "기독교", "출발", "핑크",
+            "보병", "법률", "제사장", "자바", "유치원", "페놀", "아이폰", "범위",
+            "선언", "정차", "에너지", "방출", "조합", "동생", "패스", "동료", "확장",
+            "군청", "단지", "사령부", "운반", "음력", "말기", "개장", "장기", "유사",
+            "재임", "내전", "물체", "펜싱", "월드", "권투", "등재", "장편", "기상청",
+            "강아지", "간식", "냄새", "알레르기", "걱정", "입맛", "반응", "가격", "성분", "산책",
+            "스마트폰", "카메라", "성능", "배터리", "디자인", "무게", "사진", "제품",
+            "문제집", "설명", "시험", "대비", "책", "난이도", "수학", "유형", "반복", "학습", "개념", "정리",
+            "피자", "치즈", "학생", "친구", "크기", "주문", "음식", "점심", "시간", "자리",
+            "사과", "바나나", "딸기", "주스"
+        ]);
+
+        // ====================================================================
+        // 개선된 형태소 분석기 클래스
+        // ====================================================================
+        class MeCabWrapper {
+            constructor() {
+                this.initialized = false;
+            }
+
+            async initialize() {
+                this.initialized = true;
+                return this;
+            }
+
+            analyze(text) {
+                const words = [];
+                // 공백과 구두점으로 분리
+                const tokens = text.split(/\s+/);
+
+                tokens.forEach(token => {
+                    if (!token) return;
+                    
+                    // 구두점 제거
+                    token = token.replace(/[.,!?;:'"()]/g, '');
+                    if (!token) return;
+
+                    const morphs = this.maxMatchingParse(token);
+                    if (morphs.length > 0) {
+                        words.push({ morphs });
+                    }
+                });
+
+                return words;
+            }
+
+            // 최대 매칭 알고리즘을 사용한 형태소 분석
+            maxMatchingParse(word) {
+                const morphemes = [];
+                let pos = 0;
+
+                while (pos < word.length) {
+                    let maxLen = 0;
+                    let foundNoun = null;
+
+                    // 현재 위치에서 가장 긴 명사 찾기 (최대 10글자까지)
+                    for (let len = Math.min(10, word.length - pos); len >= 1; len--) {
+                        const substr = word.substring(pos, pos + len);
+                        if (NOUN_DICT.has(substr)) {
+                            maxLen = len;
+                            foundNoun = substr;
+                            break;
+                        }
+                    }
+
+                    if (foundNoun) {
+                        // 명사 사전에서 발견
+                        morphemes.push({ lex: foundNoun, tag: 'NNG' });
+                        pos += maxLen;
+                    } else {
+                        // 명사 사전에 없으면 조사/어미 분리 시도
+                        const remaining = word.substring(pos);
+                        const parsed = this.parseParticle(remaining);
+                        
+                        if (parsed.length > 0) {
+                            morphemes.push(...parsed);
+                            break; // 나머지 전체 처리 완료
+                        } else {
+                            // 파싱 실패 시 1글자 명사로 처리
+                            morphemes.push({ lex: word.charAt(pos), tag: 'NNG' });
+                            pos++;
+                        }
+                    }
+                }
+
+                return morphemes;
+            }
+
+            // 조사/어미 분리
+            parseParticle(word) {
+                const morphemes = [];
+
+                // 조사 패턴 (빈도순)
+                const particles = [
+                    // 2글자 조사
+                    { suffix: '에서', tag: 'JKB' },
+                    { suffix: '에게', tag: 'JKB' },
+                    { suffix: '한테', tag: 'JKB' },
+                    { suffix: '까지', tag: 'JX' },
+                    { suffix: '부터', tag: 'JX' },
+                    { suffix: '조차', tag: 'JX' },
+                    { suffix: '마저', tag: 'JX' },
+                    { suffix: '으로', tag: 'JKB', needFinal: true },
+                    { suffix: '이랑', tag: 'JC', needFinal: true },
+                    // 1글자 조사
+                    { suffix: '은', tag: 'JX', needFinal: true },
+                    { suffix: '을', tag: 'JKO', needFinal: true },
+                    { suffix: '과', tag: 'JC', needFinal: true },
+                    { suffix: '는', tag: 'JX', needFinal: false },
+                    { suffix: '를', tag: 'JKO', needFinal: false },
+                    { suffix: '와', tag: 'JC', needFinal: false },
+                    { suffix: '로', tag: 'JKB', needFinal: false },
+                    { suffix: '랑', tag: 'JC', needFinal: false },
+                    { suffix: '이', tag: 'JKS', needFinal: true },
+                    { suffix: '가', tag: 'JKS', needFinal: false },
+                    { suffix: '에', tag: 'JKB' },
+                    { suffix: '도', tag: 'JX' },
+                    { suffix: '만', tag: 'JX' }
+                ];
+
+                // 어미 패턴
+                const endings = [
+                    { suffix: '습니다', tag: 'EF' },
+                    { suffix: 'ㅂ니다', tag: 'EF' },
+                    { suffix: '었어요', tag: 'EF' },
+                    { suffix: '았어요', tag: 'EF' },
+                    { suffix: '겠어요', tag: 'EF' },
+                    { suffix: '했어요', tag: 'EF' },
+                    { suffix: '이에요', tag: 'EF' },
+                    { suffix: '예요', tag: 'EF' },
+                    { suffix: '었다', tag: 'EF' },
+                    { suffix: '았다', tag: 'EF' },
+                    { suffix: '했다', tag: 'EF' },
+                    { suffix: '한다', tag: 'EF' },
+                    { suffix: '된다', tag: 'EF' },
+                    { suffix: '겠다', tag: 'EF' },
+                    { suffix: '어요', tag: 'EF' },
+                    { suffix: '아요', tag: 'EF' },
+                    { suffix: '요', tag: 'EF' },
+                    { suffix: '다', tag: 'EF' }
+                ];
+
+                // 조사 먼저 시도
+                for (const particle of particles) {
+                    if (word.endsWith(particle.suffix) && word.length > particle.suffix.length + 1) {
+                        const base = word.slice(0, -particle.suffix.length);
+                        
+                        // 받침 조건 검사
+                        if (particle.needFinal !== undefined) {
+                            const lastChar = base[base.length - 1];
+                            const hasFinal = this.hasFinalConsonant(lastChar);
+                            if (particle.needFinal !== hasFinal) continue;
+                        }
+
+                        morphemes.push({ lex: base, tag: 'NNG' });
+                        morphemes.push({ lex: particle.suffix, tag: particle.tag });
+                        return morphemes;
+                    }
+                }
+
+                // 어미 시도
+                for (const ending of endings) {
+                    if (word.endsWith(ending.suffix) && word.length > ending.suffix.length) {
+                        const base = word.slice(0, -ending.suffix.length);
+                        morphemes.push({ lex: base, tag: 'VV' });
+                        morphemes.push({ lex: ending.suffix, tag: ending.tag });
+                        return morphemes;
+                    }
+                }
+
+                // 파싱 실패 - 전체를 명사로
+                if (word.length > 0) {
+                    morphemes.push({ lex: word, tag: 'NNG' });
+                }
+
+                return morphemes;
+            }
+
+            // 받침 유무 확인
+            hasFinalConsonant(char) {
+                if (!char) return false;
+                const code = char.charCodeAt(0) - 0xAC00;
+                if (code < 0 || code > 11171) return false;
+                return (code % 28) !== 0;
+            }
+        }
+    </script>
+    
+    <script>
+        // 전역 변수
+        let mecab = null;
+        let documents = [];
+        let words = [];
+        let tfMatrix = [];
+        let dfVector = [];
+        let idfVector = [];
+        let tfidfMatrix = [];
+        let selectedWord = null;
+        let stopWords = new Set(); // 불용어 목록
+        let allMorphemes = []; // 형태소 분석 결과 저장
+
+        // 자주 쓰는 동사/형용사/명사 자동 변환 사전
+        const verbStemDict = {
+            // 좋다 계열 (확장)
+            '좋아하': '좋다', '좋아해': '좋다', '좋아': '좋다', '좋은': '좋다', '좋': '좋다',
+            '좋고': '좋다', '좋아요': '좋다', '좋네요': '좋다', '좋습니다': '좋다',
+            // 하다 계열 (확장)
+            '했': '하다', '해': '하다', '하': '하다', '하는': '하다', '한': '하다',
+            '하고': '하다', '해요': '하다', '합니다': '하다', '하네요': '하다',
+            // 있다 계열 (확장)
+            '있어': '있다', '있는': '있다', '있': '있다', '있고': '있다', 
+            '있어요': '있다', '있습니다': '있다', '있네요': '있다',
+            // 없다 계열 (확장)
+            '없어': '없다', '없는': '없다', '없': '없다', '없고': '없다',
+            '없어요': '없다', '없습니다': '없다', '없네요': '없다',
+            // 사다 계열
+            '사': '사다', '샀': '사다', '사는': '사다', '산': '사다',
+            '사고': '사다', '사요': '사다', '삽니다': '사다',
+            // 먹다 계열 (확장)
+            '먹': '먹다', '먹어': '먹다', '먹는': '먹다', '먹은': '먹다',
+            '먹고': '먹다', '먹어요': '먹다', '먹습니다': '먹다',
+            // 만들다 계열 (확장)
+            '만들': '만들다', '만드': '만들다', '만든': '만들다', '만들어': '만들다',
+            '만들고': '만들다', '만들어요': '만들다', '만듭니다': '만들다',
+            // 보다 계열 (확장)
+            '보': '보다', '봐': '보다', '보는': '보다', '본': '보다',
+            '보고': '보다', '봐요': '보다', '봅니다': '보다',
+            // 가다 계열 (확장)
+            '가': '가다', '간': '가다', '가는': '가다', '가고': '가다',
+            '가요': '가다', '갑니다': '가다',
+            // 오다 계열 (확장)
+            '와': '오다', '온': '오다', '오는': '오다', '오고': '오다',
+            '와요': '오다', '옵니다': '오다',
+            // 되다 계열 (확장)
+            '되': '되다', '된': '되다', '되는': '되다', '돼': '되다',
+            '되고': '되다', '돼요': '되다', '됩니다': '되다',
+            // 주다 계열 (확장)
+            '주': '주다', '준': '주다', '주는': '주다', '줘': '주다',
+            '주고': '주다', '줘요': '주다', '줍니다': '주다',
+            // 받다 계열 (확장)
+            '받': '받다', '받아': '받다', '받는': '받다', '받은': '받다',
+            '받고': '받다', '받아요': '받다', '받습니다': '받다',
+            // 쓰다 계열 (확장)
+            '써': '쓰다', '쓴': '쓰다', '쓰는': '쓰다', '쓰고': '쓰다',
+            '써요': '쓰다', '씁니다': '쓰다',
+            // 찾다 계열 (확장)
+            '찾': '찾다', '찾아': '찾다', '찾는': '찾다', '찾은': '찾다',
+            '찾고': '찾다', '찾아요': '찾다', '찾습니다': '찾다',
+            // 나오다 계열 (확장)
+            '나와': '나오다', '나온': '나오다', '나오는': '나오다',
+            '나오고': '나오다', '나와요': '나오다', '나옵니다': '나오다',
+            // 들어가다 계열 (확장)
+            '들어가': '들어가다', '들어간': '들어가다', '들어가는': '들어가다',
+            '들어가고': '들어가다', '들어가요': '들어가다',
+            // 어울리다 계열 (확장)
+            '어울려': '어울리다', '어울리': '어울리다', '어울린': '어울리다',
+            '어울리고': '어울리다', '어울려요': '어울리다',
+            // 괜찮다 계열 (확장 - 명사형 포함)
+            '괜찮아': '괜찮다', '괜찮은': '괜찮다', '괜찮': '괜찮다',
+            '괜찮고': '괜찮다', '괜찮아요': '괜찮다', '괜찮습니다': '괜찮다',
+            // 맛있다 계열 (확장)
+            '맛있어': '맛있다', '맛있는': '맛있다', '맛있': '맛있다',
+            '맛있고': '맛있다', '맛있어요': '맛있다', '맛있습니다': '맛있다',
+            // 재밌다 계열 (확장)
+            '재밌어': '재밌다', '재밌는': '재밌다', '재밌': '재밌다',
+            '재밌고': '재밌다', '재밌어요': '재밌다', '재밌습니다': '재밌다',
+            // 싸다 계열 (확장)
+            '싸': '싸다', '싼': '싸다', '싸고': '싸다', '싸요': '싸다',
+            // 비싸다 계열 (확장)
+            '비싸': '비싸다', '비싼': '비싸다', '비싸고': '비싸다', '비싸요': '비싸다',
+            // 크다 계열 (확장)
+            '크': '크다', '큰': '크다', '크고': '크다', '커요': '크다', '큽니다': '크다',
+            // 작다 계열 (확장)
+            '작아': '작다', '작은': '작다', '작': '작다', '작고': '작다',
+            '작아요': '작다', '작습니다': '작다',
+            // 많다 계열 (확장 - 중요!)
+            '많아': '많다', '많은': '많다', '많': '많다', '많고': '많다',
+            '많아요': '많다', '많습니다': '많다', '많네요': '많다',
+            // 적다 계열 (확장)
+            '적어': '적다', '적은': '적다', '적': '적다', '적고': '적다',
+            '적어요': '적다', '적습니다': '적다',
+            // 빠르다 계열 (확장)
+            '빨라': '빠르다', '빠른': '빠르다', '빨리': '빠르다', '빠르고': '빠르다',
+            '빨라요': '빠르다', '빠릅니다': '빠르다',
+            // 느리다 계열 (확장)
+            '느려': '느리다', '느린': '느리다', '느리고': '느리다', '느려요': '느리다',
+            // 예쁘다 계열 (확장)
+            '예쁘': '예쁘다', '예쁜': '예쁘다', '예쁘고': '예쁘다', '예뻐요': '예쁘다',
+            // 아름답다 계열 (확장)
+            '아름다워': '아름답다', '아름다운': '아름답다', '아름답고': '아름답다',
+            // 쉽다 계열 (확장)
+            '쉬워': '쉽다', '쉬운': '쉽다', '쉽': '쉽다', '쉽고': '쉽다',
+            '쉬워요': '쉽다', '쉽습니다': '쉽다',
+            // 어렵다 계열 (확장)
+            '어려워': '어렵다', '어려운': '어렵다', '어렵': '어렵다', '어렵고': '어렵다',
+            '어려워요': '어렵다', '어렵습니다': '어렵다',
+            // 가볍다 계열 (확장)
+            '가벼워': '가볍다', '가벼운': '가볍다', '가볍고': '가볍다', '가벼워요': '가볍다',
+            // 무겁다 계열 (확장)
+            '무거워': '무겁다', '무거운': '무겁다', '무겁고': '무겁다', '무거워요': '무겁다',
+            // 차다 계열 (확장)
+            '차': '차다', '찬': '차다', '차고': '차다', '차요': '차다',
+            // 놀다 계열 (확장)
+            '놀': '놀다', '노': '놀다', '노는': '놀다', '놀고': '놀다', '놀아요': '놀다',
+            // 저렴하다 계열
+            '저렴하': '저렴하다', '저렴한': '저렴하다', '저렴해': '저렴하다', '저렴하고': '저렴하다', '저렴해요': '저렴하다',
+            // 안심하다 계열
+            '안심하': '안심하다', '안심해': '안심하다', '안심되': '안심하다', '안심돼': '안심하다', '안심돼요': '안심하다',
+            // 자세하다 계열
+            '자세하': '자세하다', '자세한': '자세하다', '자세해': '자세하다', '자세해요': '자세하다',
+            // 다양하다 계열
+            '다양하': '다양하다', '다양한': '다양하다', '다양해': '다양하다', '다양해요': '다양하다',
+            // 간단하다 계열
+            '간단하': '간단하다', '간단한': '간단하다', '간단해': '간단하다', '간단해요': '간단하다'
+        };
+
+        // 품사 태그 정의
+        const posTagInfo = {
+            'NNG': {
+                name: '일반명사',
+                desc: '사물, 개념, 장소 등을 나타내는 일반적인 명사',
+                examples: ['사과', '학교', '사랑', '컴퓨터', '친구'],
+                detail: '가장 기본적인 명사로, 구체적이거나 추상적인 대상을 지칭합니다. TF-IDF 분석에서 핵심 키워드가 되는 경우가 많습니다.',
+                selected: true
+            },
+            'NNP': {
+                name: '고유명사',
+                desc: '특정한 대상을 가리키는 이름',
+                examples: ['서울', '대한민국', '삼성', 'BTS', '한강'],
+                detail: '사람, 장소, 조직 등의 특정 고유한 이름입니다. 문서의 주제를 파악하는 데 중요한 역할을 합니다.',
+                selected: true
+            },
+            'NNB': {
+                name: '의존명사',
+                desc: '단독으로 쓰이지 않고 다른 말에 기대어 쓰이는 명사',
+                examples: ['것', '수', '등', '바', '지', '데'],
+                detail: '반드시 관형어의 수식을 받아야 하는 명사입니다. 일반적으로 TF-IDF 분석에서는 제외하는 경우가 많습니다.',
+                selected: false
+            },
+            'NR': {
+                name: '수사',
+                desc: '수량이나 순서를 나타내는 말',
+                examples: ['하나', '둘', '첫째', '제일', '열'],
+                detail: '숫자나 순서를 나타냅니다. 문서의 내용에 따라 중요도가 달라집니다.',
+                selected: false
+            },
+            'NP': {
+                name: '대명사',
+                desc: '사람이나 사물을 대신하여 가리키는 말',
+                examples: ['나', '너', '우리', '그것', '여기'],
+                detail: '명사를 대신하는 말입니다. 일반적으로 TF-IDF 분석에서는 불용어로 처리됩니다.',
+                selected: false
+            },
+            'VV': {
+                name: '동사',
+                desc: '동작이나 작용을 나타내는 말',
+                examples: ['먹다', '가다', '만들다', '생각하다', '말하다'],
+                detail: '주어의 동작이나 상태를 나타냅니다. 문서의 행위나 활동을 파악하는 데 중요합니다.',
+                selected: true
+            },
+            'VA': {
+                name: '형용사',
+                desc: '성질이나 상태를 나타내는 말',
+                examples: ['예쁘다', '크다', '좋다', '빠르다', '새롭다'],
+                detail: '사물의 성질, 상태를 나타냅니다. 감정 분석이나 의견 마이닝에서 중요한 역할을 합니다.',
+                selected: true
+            },
+            'VX': {
+                name: '보조용언',
+                desc: '본용언을 도와주는 용언',
+                examples: ['하다', '되다', '싶다', '보다', '주다'],
+                detail: '다른 용언 뒤에서 의미를 보조합니다. 단독으로는 의미가 약하므로 제외하는 경우가 많습니다.',
+                selected: false
+            },
+            'VCP': {
+                name: '긍정지정사',
+                desc: '"이다"를 나타내는 품사',
+                examples: ['이다'],
+                detail: '체언 뒤에서 서술어 역할을 합니다. 일반적으로 분석에서 제외됩니다.',
+                selected: false
+            },
+            'VCN': {
+                name: '부정지정사',
+                desc: '"아니다"를 나타내는 품사',
+                examples: ['아니다'],
+                detail: '부정을 나타내는 지정사입니다. 일반적으로 분석에서 제외됩니다.',
+                selected: false
+            },
+            'MM': {
+                name: '관형사',
+                desc: '체언을 꾸며주는 말',
+                examples: ['새', '헌', '이', '그', '모든'],
+                detail: '명사 앞에서 명사를 수식합니다. TF-IDF 분석에서는 주로 제외됩니다.',
+                selected: false
+            },
+            'MAG': {
+                name: '일반부사',
+                desc: '용언을 꾸며주는 말',
+                examples: ['매우', '아주', '빨리', '천천히', '정말'],
+                detail: '동사나 형용사를 수식하여 정도나 방법을 나타냅니다.',
+                selected: false
+            },
+            'MAJ': {
+                name: '접속부사',
+                desc: '문장이나 단어를 이어주는 부사',
+                examples: ['그리고', '하지만', '그러나', '또는', '즉'],
+                detail: '문장 간의 관계를 나타냅니다. 일반적으로 분석에서 제외됩니다.',
+                selected: false
+            },
+            'IC': {
+                name: '감탄사',
+                desc: '감정이나 느낌을 나타내는 말',
+                examples: ['아', '와', '어머', '헐', '오'],
+                detail: '감정이나 부름, 대답 등을 나타냅니다. 감정 분석에서 유용할 수 있습니다.',
+                selected: false
+            },
+            'SL': {
+                name: '외국어',
+                desc: '외국어로 된 단어',
+                examples: ['AI', 'Python', 'Computer', 'Algorithm'],
+                detail: '영어 등 외국어로 된 단어입니다. 기술 문서 분석에서 중요할 수 있습니다.',
+                selected: true
+            },
+            'SH': {
+                name: '한자',
+                desc: '한자로 표기된 단어',
+                examples: ['漢字', '大韓民國', '學校'],
+                detail: '한자로 쓰인 단어입니다.',
+                selected: false
+            },
+            'SN': {
+                name: '숫자',
+                desc: '아라비아 숫자',
+                examples: ['123', '2024', '3.14'],
+                detail: '숫자로 표기된 단어입니다. 데이터 분석에서 유용할 수 있습니다.',
+                selected: false
+            },
+            'JKS': {
+                name: '주격조사',
+                desc: '주어를 나타내는 조사',
+                examples: ['이', '가', '에서', '께서'],
+                detail: '주어를 표시하는 조사입니다. 일반적으로 TF-IDF 분석에서는 제외됩니다.',
+                selected: false
+            },
+            'JKO': {
+                name: '목적격조사',
+                desc: '목적어를 나타내는 조사',
+                examples: ['을', '를'],
+                detail: '목적어를 표시하는 조사입니다. 일반적으로 분석에서 제외됩니다.',
+                selected: false
+            },
+            'JX': {
+                name: '보조사',
+                desc: '의미를 보조하는 조사',
+                examples: ['은', '는', '도', '만', '까지', '부터'],
+                detail: '명사에 특별한 의미를 더하는 조사입니다. 일반적으로 분석에서 제외됩니다.',
+                selected: false
+            },
+            'EF': {
+                name: '종결어미',
+                desc: '문장을 끝맺는 어미',
+                examples: ['다', '습니다', 'ㅂ니다'],
+                detail: '문장의 끝을 나타내는 어미입니다. 일반적으로 분석에서 제외됩니다.',
+                selected: false
+            },
+        };
+
+        let selectedPosTags = new Set(
+            Object.entries(posTagInfo)
+                .filter(([tag, info]) => info.selected)
+                .map(([tag]) => tag)
+        );
+
+        // 초기화
+        document.addEventListener('DOMContentLoaded', async () => {
+            renderFormulas();
+            renderPosTagButtons();
+            await initMeCab();
+        });
+
+        // ESC 키로 모달 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // MeCab 초기화
+        async function initMeCab() {
+            try {
+                updateStatus('loading', '⏳', '형태소 분석기 로딩 중...');
+
+                mecab = new MeCabWrapper();
+                await mecab.initialize();
+
+                updateStatus('ready', '✅', '준비 완료');
+                document.getElementById('analyzeBtn').disabled = false;
+                document.getElementById('loadingOverlay').classList.add('hidden');
+
+            } catch (error) {
+                console.error('MeCab 초기화 실패:', error);
+                updateStatus('error', '❌', '로딩 실패');
+                document.getElementById('loadingOverlay').innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">❌</div>
+                        <div style="font-size: 1.2rem; color: #991B1B; font-weight: 600; margin-bottom: 12px;">
+                            형태소 분석기 로딩 실패
+                        </div>
+                        <div style="color: #64748B; margin-bottom: 20px;">
+                            MeCab 초기화 중 오류가 발생했습니다.<br>
+                            페이지를 새로고침해주세요.
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 상태 업데이트
+        function updateStatus(type, icon, text) {
+            const badge = document.getElementById('statusBadge');
+            const iconEl = document.getElementById('statusIcon');
+            const textEl = document.getElementById('statusText');
+            
+            badge.className = 'status-badge ' + type;
+            iconEl.textContent = icon;
+            textEl.textContent = text;
+        }
+
+        // 품사 태그 버튼 렌더링
+        function renderPosTagButtons() {
+            const container = document.getElementById('posTagsContainer');
+            container.innerHTML = Object.entries(posTagInfo).map(([tag, info]) => `
+                <div class="pos-tag-wrapper ${selectedPosTags.has(tag) ? 'active-wrapper' : ''}">
+                    <button class="pos-tag-btn ${selectedPosTags.has(tag) ? 'active' : ''}"
+                            onclick="togglePosTag('${tag}')"
+                            title="${info.desc}">
+                        ${info.name} (${tag})
+                    </button>
+                    <span class="pos-info-icon" onclick="showPosInfo('${tag}')" title="품사 설명 보기">🔍</span>
+                </div>
+            `).join('');
+        }
+
+        // 품사 설명 모달 열기
+        function showPosInfo(tag) {
+            const info = posTagInfo[tag];
+            const modal = document.getElementById('posModal');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+
+            title.innerHTML = `${info.name} <span style="color: #94a3b8; font-size: 1rem;">(${tag})</span>`;
+
+            body.innerHTML = `
+                <div class="modal-section">
+                    <div class="modal-section-title">📖 정의</div>
+                    <div>${info.desc}</div>
+                </div>
+
+                <div class="modal-section">
+                    <div class="modal-section-title">✨ 예시</div>
+                    <div class="modal-examples">
+                        ${info.examples.map(ex => `<div class="modal-example-item">• ${ex}</div>`).join('')}
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <div class="modal-section-title">💡 TF-IDF 분석에서의 활용</div>
+                    <div>${info.detail}</div>
+                </div>
+
+                <div class="modal-section">
+                    <div style="background: ${selectedPosTags.has(tag) ? '#D1FAE5' : '#FEE2E2'};
+                                padding: 12px; border-radius: 8px; text-align: center;">
+                        <strong>${selectedPosTags.has(tag) ? '✅ 현재 선택됨' : '❌ 현재 선택 안 됨'}</strong>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add('show');
+        }
+
+        // 모달 닫기
+        function closeModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            const modal = document.getElementById('posModal');
+            modal.classList.remove('show');
+        }
+
+        // 품사 태그 토글
+        function togglePosTag(tag) {
+            if (selectedPosTags.has(tag)) {
+                selectedPosTags.delete(tag);
+            } else {
+                selectedPosTags.add(tag);
+            }
+            renderPosTagButtons();
+            if (documents.length > 0 && mecab) {
+                calculate();
+            }
+        }
+
+        // KaTeX으로 수식 렌더링
+        function renderFormulas() {
+            katex.render("TF(t, d) = \\text{문장 } d \\text{에서 단어 } t \\text{의 등장 횟수}", 
+                document.getElementById('formula-tf'));
+            katex.render("DF(t) = \\text{단어 } t \\text{가 등장한 문장의 수}", 
+                document.getElementById('formula-df'));
+            updateIdfFormula();
+            updateTfidfFormula();
+        }
+
+        function updateIdfFormula() {
+            const useLog = document.getElementById('useLog').checked;
+            const formula = useLog 
+                ? "IDF(t) = \\log\\frac{N}{DF(t)}"
+                : "IDF(t) = \\frac{N}{DF(t)}";
+            katex.render(formula, document.getElementById('formula-idf'));
+        }
+
+        function updateTfidfFormula() {
+            const useLog = document.getElementById('useLog').checked;
+            const formula = useLog
+                ? "TF\\text{-}IDF(t, d) = TF(t, d) \\times \\log\\frac{N}{DF(t)}"
+                : "TF\\text{-}IDF(t, d) = TF(t, d) \\times \\frac{N}{DF(t)}";
+            katex.render(formula, document.getElementById('formula-tfidf'));
+        }
+
+        // 예시 불러오기
+        function loadExample() {
+            const examples = [
+                `이 강아지 간식은 강아지가 정말 좋아하는 간식이에요.
+냄새도 좋아요.
+알레르기 걱정 없이 먹일 수 있는 간식이라서 안심돼요.
+우리 강아지가 요즘 입맛이 없어서 사봤어요.
+강아지 반응은 괜찮아요.
+가격은 조금 있지만 성분이 믿을 만해요.
+이 간식은 산책 후에 주면 반응이 좋아요.`,
+                `이 스마트폰은 스마트폰 중에서도 카메라 성능이 정말 좋아요.
+배터리가 오래가서 하루 종일 써도 불편하지 않아요.
+스마트폰 디자인이 예쁘고 스마트폰 무게도 가벼워요.
+사진을 자주 찍는 사람에게 잘 어울려요.
+가격 대비 성능이 괜찮은 제품이에요.`,
+                `이 문제집은 문제집 설명이 자세해서 혼자 공부하기 좋아요.
+시험 대비로 풀기 좋은 책이에요.
+난이도도 적당해요.
+수학 문제집을 찾다가 이 문제집을 선택했어요.
+문제 유형이 다양해서 반복 학습에 도움이 돼요.
+개념 정리가 잘 되어 있어서 이해하기 쉬워요.`,
+                `이 게임은 게임 그래픽이 좋아서 보는 재미가 있어요.
+친구랑 같이 하면 훨씬 재밌어요.
+멀티플레이가 핵심이에요.
+게임 난이도가 적당해서 오래 즐길 수 있는 게임이에요.
+스토리가 생각보다 몰입감 있어요.
+조작이 간단해서 처음 하는 사람도 괜찮아요.`,
+                `이 집 피자는 피자 치즈가 많아서 정말 맛있어요.
+가격이 저렴해서 학생들이 많이 와요.
+친구들이랑 먹기 좋은 피자집이에요.
+피자 크기도 커요.
+주문하면 음식이 빨리 나와서 좋아요.
+점심시간에 가면 자리가 금방 차요.`,
+                `국세청이 대형 베이커리카페의 운영 실태를 집중 점검한다. 이는 가업상속공제 제도가 편법 상속·증여 수단으로 악용된다는 지적을 확인하기 위한 조치로, 25일 실태조사 계획을 발표했다. 조사 대상은 자산 규모, 부동산 비중, 매출액 등을 종합해 선정하며, 탈세 혐의가 발견될 경우 별도 세무조사로 전환할 방침이다. 일부 대형 베이커리카페는 제과점업으로 등록해 상속세 감면 혜택을 받았지만, 실제로는 음료 판매가 주를 이루는 것으로 드러났다. 예를 들어 경기도의 한 베이커리카페는 제과점업으로 등록했으나 음료 원재료 매입 비중이 2배 이상 높았으며, 제과 제품은 완제품 케익 소량만 판매했다. 이러한 운영 방식은 가업상속공제 제도의 본래 목적을 훼손하고 탈세 가능성을 내포하고 있어 국세청은 제도 개선을 위한 기초 자료로 활용할 계획이다.`
+            ];
+
+            const randomExample = examples[Math.floor(Math.random() * examples.length)];
+            const textarea = document.getElementById('documentsTextarea');
+            textarea.value = randomExample;
+        }
+
+        // 형태소 분석
+        function analyzeMorphemes(text) {
+            if (!mecab) return [];
+
+            try {
+                const result = mecab.analyze(text);
+                const morphemes = [];
+
+                result.forEach(word => {
+                    word.morphs.forEach(morph => {
+                        let lex = morph.lex;
+                        
+                        // 모든 품사에 대해 자동 변환 사전 확인
+                        if (verbStemDict[lex]) {
+                            lex = verbStemDict[lex];
+                        }
+                        
+                        morphemes.push({
+                            lex: lex,
+                            tag: morph.tag,
+                            selected: selectedPosTags.has(morph.tag),
+                            original: lex !== morph.lex ? morph.lex : null // 변환된 경우만 original 저장
+                        });
+                    });
+                });
+
+                return morphemes;
+            } catch (error) {
+                console.error('형태소 분석 오류:', error);
+                return [];
+            }
+        }
+
+        // 형태소 분석 결과 표시
+        function renderMorphemeResult(allMorphemes) {
+            const container = document.getElementById('morphemeContent');
+            const section = document.getElementById('morphemeResult');
+            
+            container.innerHTML = allMorphemes.map((morphemes, sentenceIdx) => `
+                <div class="morpheme-sentence">
+                    <div class="morpheme-sentence-label">문장 ${sentenceIdx + 1}</div>
+                    <div class="morpheme-tokens">
+                        ${morphemes.map((m, morphIdx) => {
+                            const isStopWord = stopWords.has(m.lex);
+                            const cssClass = isStopWord ? 'stopword' : (m.selected ? 'selected' : 'excluded');
+                            const isAutoConverted = m.original && m.original !== m.lex; // 자동 변환됨
+                            
+                            return `
+                                <span class="morpheme-token-wrapper" style="position: relative; display: inline-block;">
+                                    <span class="morpheme-token ${cssClass}" 
+                                          style="cursor: pointer; position: relative; display: inline-flex; align-items: center;" 
+                                          title="${isStopWord ? '클릭하여 불용어 해제' : '클릭하여 불용어 추가'}">
+                                        <span onclick="toggleStopWord('${m.lex}')" style="display: inline-flex; align-items: center;">
+                                            ${isAutoConverted ? `
+                                                <span class="lex" style="position: relative;">
+                                                    ${m.lex}
+                                                    <span style="position: absolute; top: -10px; right: -8px; font-size: 0.6rem; color: #10B981; background: #D1FAE5; padding: 1px 4px; border-radius: 3px; white-space: nowrap;" title="원본: ${m.original}">
+                                                        ✓
+                                                    </span>
+                                                </span>
+                                            ` : `
+                                                <span class="lex">${m.lex}</span>
+                                            `}
+                                            <span class="tag">/${m.tag}</span>
+                                        </span>
+                                        <span class="edit-icon" 
+                                              onclick="event.stopPropagation(); showEditBox(${sentenceIdx}, ${morphIdx}, this)" 
+                                              title="단어 수정"
+                                              style="margin-left: 4px; cursor: pointer; color: #3B82F6; font-size: 0.75rem; opacity: 0.7;">
+                                            ✏️
+                                        </span>
+                                    </span>
+                                </span>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
+            
+            section.style.display = 'block';
+            renderStopWords();
+        }
+
+        // 인라인 편집창 표시
+        function showEditBox(sentenceIdx, morphIdx, iconElement) {
+            // 기존 편집창이 있으면 제거
+            const existingBox = document.querySelector('.inline-edit-box');
+            if (existingBox) {
+                existingBox.remove();
+            }
+
+            const morpheme = allMorphemes[sentenceIdx][morphIdx];
+            const currentLex = morpheme.lex;
+            const originalLex = morpheme.original || currentLex;
+            
+            // 편집창 생성
+            const wrapper = iconElement.closest('.morpheme-token-wrapper');
+            const editBox = document.createElement('div');
+            editBox.className = 'inline-edit-box';
+            editBox.innerHTML = `
+                <div style="background: white; border: 2px solid #3B82F6; border-radius: 8px; padding: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 200px;">
+                    <div style="font-size: 0.85rem; color: #64748B; margin-bottom: 8px;">
+                        ${originalLex !== currentLex ? `원본: <strong>${originalLex}</strong><br>` : ''}
+                        현재: <strong>${currentLex}</strong>
+                    </div>
+                    <input type="text" 
+                           id="editInput_${sentenceIdx}_${morphIdx}" 
+                           value="${currentLex}" 
+                           style="width: 100%; padding: 8px; border: 1px solid #CBD5E1; border-radius: 4px; font-size: 0.95rem; margin-bottom: 8px;"
+                           placeholder="새로운 단어 입력">
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="applyEdit(${sentenceIdx}, ${morphIdx})" 
+                                style="flex: 1; background: #3B82F6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                            확인
+                        </button>
+                        <button onclick="cancelEdit()" 
+                                style="flex: 1; background: #E2E8F0; color: #475569; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.85rem;">
+                            취소
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            editBox.style.position = 'absolute';
+            editBox.style.top = '100%';
+            editBox.style.left = '0';
+            editBox.style.marginTop = '4px';
+            editBox.style.zIndex = '1000';
+            
+            wrapper.appendChild(editBox);
+            
+            // 입력창에 포커스
+            const input = document.getElementById(`editInput_${sentenceIdx}_${morphIdx}`);
+            input.focus();
+            input.select();
+            
+            // Enter 키로 확인
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    applyEdit(sentenceIdx, morphIdx);
+                }
+            });
+            
+            // ESC 키로 취소
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    cancelEdit();
+                }
+            });
+        }
+
+        // 편집 적용
+        function applyEdit(sentenceIdx, morphIdx) {
+            const input = document.getElementById(`editInput_${sentenceIdx}_${morphIdx}`);
+            const newLex = input.value.trim();
+            const morpheme = allMorphemes[sentenceIdx][morphIdx];
+            const currentLex = morpheme.lex;
+            
+            if (newLex !== '' && newLex !== currentLex) {
+                // original이 없으면 현재 lex를 original로 저장
+                if (!morpheme.original) {
+                    morpheme.original = currentLex;
+                }
+                morpheme.lex = newLex;
+            }
+            
+            cancelEdit();
+            renderMorphemeResult(allMorphemes);
+        }
+
+        // 편집 취소
+        function cancelEdit() {
+            const editBox = document.querySelector('.inline-edit-box');
+            if (editBox) {
+                editBox.remove();
+            }
+        }
+
+        // 외부 클릭 시 편집창 닫기
+        document.addEventListener('click', (e) => {
+            const editBox = document.querySelector('.inline-edit-box');
+            if (editBox && !editBox.contains(e.target) && !e.target.closest('.edit-icon')) {
+                cancelEdit();
+            }
+        });
+
+        // 불용어 토글
+        function toggleStopWord(word) {
+            if (stopWords.has(word)) {
+                stopWords.delete(word);
+            } else {
+                stopWords.add(word);
+            }
+            // 형태소 분석 결과만 다시 렌더링 (재계산 안 함)
+            renderMorphemeResult(allMorphemes);
+        }
+
+        // 불용어 목록 렌더링
+        function renderStopWords() {
+            let stopWordsSection = document.getElementById('stopWordsSection');
+            
+            // 섹션이 없으면 생성
+            if (!stopWordsSection) {
+                const morphemeResult = document.getElementById('morphemeResult');
+                stopWordsSection = document.createElement('div');
+                stopWordsSection.id = 'stopWordsSection';
+                stopWordsSection.style.marginTop = '16px';
+                stopWordsSection.style.paddingTop = '16px';
+                stopWordsSection.style.borderTop = '1px solid var(--border)';
+                morphemeResult.appendChild(stopWordsSection);
+            }
+            
+            if (stopWords.size === 0) {
+                stopWordsSection.innerHTML = `
+                    <div class="preview-title">🚫 불용어 목록 (클릭하여 제거)</div>
+                    <div style="color: var(--text-light); font-size: 0.9rem; padding: 12px; text-align: center;">
+                        형태소를 클릭하여 불용어로 지정하세요
+                    </div>
+                `;
+            } else {
+                const stopWordsList = Array.from(stopWords).sort();
+                stopWordsSection.innerHTML = `
+                    <div class="preview-title">🚫 불용어 목록 (<span style="color: var(--primary);">${stopWords.size}</span>개) - 클릭하여 제거</div>
+                    <div class="preview-tokens">
+                        ${stopWordsList.map(word => `
+                            <span class="token stopword-tag" 
+                                  onclick="toggleStopWord('${word}')" 
+                                  style="cursor: pointer; background: #FEE2E2; color: #991B1B;"
+                                  title="클릭하여 제거">
+                                ${word} ✕
+                            </span>
+                        `).join('')}
+                    </div>
+                    <button class="btn btn-secondary btn-small" onclick="clearStopWords()" style="margin-top: 12px;">
+                        전체 불용어 초기화
+                    </button>
+                `;
+            }
+        }
+
+        // 전체 불용어 초기화
+        function clearStopWords() {
+            if (stopWords.size === 0) return;
+            if (confirm('모든 불용어를 초기화하시겠습니까?')) {
+                stopWords.clear();
+                renderMorphemeResult(allMorphemes);
+            }
+        }
+
+        // 단어 사전 렌더링
+        function renderVocabulary(vocabulary, docWords) {
+            const container = document.getElementById('vocabularyTokens');
+            const countEl = document.getElementById('vocabCount');
+            const card = document.getElementById('dictionaryCard');
+
+            countEl.textContent = vocabulary.length;
+
+            container.innerHTML = vocabulary.map((token, index) => {
+                // 이 단어가 등장하는 문장 번호 찾기
+                const docIndices = [];
+                docWords.forEach((words, docIndex) => {
+                    if (words.includes(token)) {
+                        docIndices.push(docIndex + 1);
+                    }
+                });
+
+                const docBadges = docIndices.map(n =>
+                    `<span style="background: #E0E7FF; color: #4338CA; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-left: 4px;">문장${n}</span>`
+                ).join('');
+
+                return `
+                    <span class="token" style="position: relative; display: inline-flex; align-items: center;">
+                        <span style="font-size: 0.7rem; color: #94a3b8; margin-right: 4px;">${index + 1}.</span>
+                        <strong>${token}</strong>
+                        ${docBadges}
+                    </span>
+                `;
+            }).join('');
+
+            card.style.display = 'block';
+            // card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); // 스크롤 제거
+        }
+
+        // 추출된 단어 미리보기
+        function renderPreview(allTokens) {
+            const container = document.getElementById('previewTokens');
+            const section = document.getElementById('previewSection');
+
+            const uniqueTokens = [...new Set(allTokens.flat())].sort();
+
+            container.innerHTML = uniqueTokens.map(token => `
+                <span class="token">${token}</span>
+            `).join('');
+
+            section.style.display = 'block';
+        }
+
+        // Step 1: 형태소 분석하기
+        function analyzeSentences() {
+            if (!mecab) {
+                alert('형태소 분석기가 아직 로딩되지 않았습니다.');
+                return;
+            }
+
+            // textarea에서 문장 수집
+            const textarea = document.getElementById('documentsTextarea');
+            const textLines = textarea.value
+                .split('\n')
+                .map(line => line.trim())
+                .filter(text => text.length > 0);
+            
+            // 각 줄을 마침표로 추가 분리 (문장 구분 개선)
+            documents = [];
+            textLines.forEach(line => {
+                // 마침표로 문장 분리 (마침표 + 공백 또는 마침표가 끝)
+                const sentences = line.split(/\.\s+|\.$/)
+                    .map(s => s.trim())
+                    .filter(s => s.length > 0);
+                
+                sentences.forEach(sentence => {
+                    // 마침표가 제거되었으므로 다시 추가 (선택적)
+                    if (!sentence.endsWith('.')) {
+                        sentence = sentence + '.';
+                    }
+                    documents.push(sentence);
+                });
+            });
+
+            if (documents.length < 2) {
+                alert('최소 2개의 문장을 입력해주세요.');
+                return;
+            }
+
+            // 형태소 분석
+            allMorphemes = documents.map(doc => analyzeMorphemes(doc));
+            renderMorphemeResult(allMorphemes);
+        }
+
+        // Step 2: TF-IDF 계산 실행
+        function calculate() {
+            if (!allMorphemes || allMorphemes.length === 0) {
+                alert('먼저 형태소 분석을 수행해주세요.');
+                return;
+            }
+
+            // 선택된 품사만 추출하여 단어 사전 구축 (불용어 제외)
+            const wordSet = new Set();
+            const docWords = allMorphemes.map(morphemes => {
+                const tokens = morphemes
+                    .filter(m => m.selected && !stopWords.has(m.lex)) // 불용어 제외
+                    .map(m => m.lex);
+                tokens.forEach(w => wordSet.add(w));
+                return tokens;
+            });
+            words = Array.from(wordSet).sort();
+
+            if (words.length === 0) {
+                alert('추출된 단어가 없습니다. 품사 선택을 확인해주세요.');
+                return;
+            }
+
+            // 단어 사전 표시 제거 (학생들에게 보여줄 필요 없음)
+            // renderVocabulary(words, docWords);
+
+            // 미리보기
+            renderPreview(docWords);
+
+            // TF 계산
+            tfMatrix = documents.map((doc, i) => {
+                const row = {};
+                words.forEach(word => {
+                    row[word] = docWords[i].filter(w => w === word).length;
+                });
+                return row;
+            });
+
+            // DF 계산
+            dfVector = {};
+            words.forEach(word => {
+                dfVector[word] = documents.filter((doc, i) => tfMatrix[i][word] > 0).length;
+            });
+
+            // IDF 계산
+            const useLog = document.getElementById('useLog').checked;
+            const N = documents.length;
+            idfVector = {};
+            words.forEach(word => {
+                const df = dfVector[word];
+                if (useLog) {
+                    idfVector[word] = Math.log10(N / df);
+                } else {
+                    idfVector[word] = N / df;
+                }
+            });
+
+            // TF-IDF 계산
+            tfidfMatrix = tfMatrix.map(row => {
+                const tfidfRow = {};
+                words.forEach(word => {
+                    tfidfRow[word] = row[word] * idfVector[word];
+                });
+                return tfidfRow;
+            });
+
+            // 수식 업데이트
+            updateIdfFormula();
+            updateTfidfFormula();
+
+            // 테이블 렌더링
+            renderTables();
+
+            // 결과 카드 표시
+            document.getElementById('resultCard').style.display = 'block';
+            // document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' }); // 스크롤 제거
+        }
+
+        // 테이블 렌더링
+        function renderTables() {
+            renderTfTable();
+            renderDfTable();
+            renderIdfTable();
+            renderTfidfTable();
+        }
+
+        // TF 테이블
+        function renderTfTable() {
+            const table = document.getElementById('tfTable');
+            let html = '<thead><tr><th></th>';
+            words.forEach(word => {
+                html += `<th class="clickable-word" onclick="selectWord('${word}')">${word}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            tfMatrix.forEach((row, i) => {
+                html += `<tr><td>문장 ${i + 1}</td>`;
+                words.forEach(word => {
+                    const value = row[word];
+                    const cls = selectedWord === word ? 'selected-word' : '';
+                    html += `<td class="${cls}">${value}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        // DF 테이블
+        function renderDfTable() {
+            const table = document.getElementById('dfTable');
+            let html = '<thead><tr><th></th>';
+            words.forEach(word => {
+                html += `<th class="clickable-word" onclick="selectWord('${word}')">${word}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            html += '<tr class="df-row"><td>DF</td>';
+            words.forEach(word => {
+                const cls = selectedWord === word ? 'selected-word' : '';
+                html += `<td class="${cls}">${dfVector[word]}</td>`;
+            });
+            html += '</tr>';
+
+            html += '<tr><td style="white-space: nowrap;">N<br>(문장 수)</td>';
+            html += `<td colspan="${words.length}" style="text-align:center; font-weight:600; color: var(--primary);">${documents.length}</td>`;
+            html += '</tr>';
+
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        // IDF 테이블
+        function renderIdfTable() {
+            const table = document.getElementById('idfTable');
+            const useLog = document.getElementById('useLog').checked;
+            
+            let html = '<thead><tr><th></th>';
+            words.forEach(word => {
+                html += `<th class="clickable-word" onclick="selectWord('${word}')">${word}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            html += '<tr class="df-row"><td>DF</td>';
+            words.forEach(word => {
+                const cls = selectedWord === word ? 'selected-word' : '';
+                html += `<td class="${cls}">${dfVector[word]}</td>`;
+            });
+            html += '</tr>';
+
+            html += '<tr><td>N / DF</td>';
+            words.forEach(word => {
+                const value = documents.length / dfVector[word];
+                const cls = selectedWord === word ? 'selected-word' : '';
+                html += `<td class="${cls}">${value.toFixed(2)}</td>`;
+            });
+            html += '</tr>';
+
+            html += '<tr class="idf-row"><td>IDF' + (useLog ? ' (log₁₀)' : '') + '</td>';
+            words.forEach(word => {
+                const cls = selectedWord === word ? 'selected-word' : '';
+                html += `<td class="${cls}">${idfVector[word].toFixed(3)}</td>`;
+            });
+            html += '</tr>';
+
+            html += '</tbody>';
+            table.innerHTML = html;
+        }
+
+        // TF-IDF 테이블 (히트맵)
+        function renderTfidfTable() {
+            let maxValue = 0;
+            tfidfMatrix.forEach(row => {
+                words.forEach(word => {
+                    if (row[word] > maxValue) maxValue = row[word];
+                });
+            });
+
+            const table = document.getElementById('tfidfTable');
+            let html = '<thead><tr><th></th>';
+            words.forEach(word => {
+                html += `<th class="clickable-word" onclick="selectWord('${word}')">${word}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            tfidfMatrix.forEach((row, i) => {
+                html += `<tr><td>문장 ${i + 1}</td>`;
+                words.forEach(word => {
+                    const value = row[word];
+                    const heatLevel = maxValue > 0 ? Math.floor((value / maxValue) * 9) : 0;
+                    const cls = selectedWord === word ? 'selected-word' : `heat-${heatLevel}`;
+                    html += `<td class="${cls}">${value.toFixed(2)}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody>';
+            table.innerHTML = html;
+
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '<span style="margin-right: 8px;">값 크기:</span>';
+            for (let i = 0; i <= 9; i += 3) {
+                const percent = Math.round((i / 9) * 100);
+                legend.innerHTML += `
+                    <div class="legend-item">
+                        <div class="legend-color heat-${i}"></div>
+                        <span>${percent}%</span>
+                    </div>
+                `;
+            }
+        }
+
+        // 단어 선택
+        function selectWord(word) {
+            selectedWord = selectedWord === word ? null : word;
+            renderTables();
+        }
+
+        // 탭 전환
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // useLog 변경 시 재계산
+        document.getElementById('useLog').addEventListener('change', () => {
+            if (documents.length > 0 && mecab) calculate();
+        });
+    </script>
+</body>
+</html>

@@ -44,6 +44,15 @@
             font-weight: 600;
             color: #6366f1;
         }
+
+        /* 세부 감정 스타일 */
+        .emotion-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 9999px;
+            margin-left: 4px;
+            font-weight: normal;
+        }
         
         @keyframes spin {
             to { transform: rotate(360deg); }
@@ -114,30 +123,6 @@
             </div>
         </header>
 
-        <!-- Worker URL 설정 -->
-        <div class="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-            <div class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                <div class="flex-1">
-                    <label class="block text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
-                        Cloudflare Worker URL 
-                        <span class="text-xs font-normal text-blue-600 dark:text-blue-400">(tjdgus1121.github.io 전용)</span>
-                    </label>
-                    <input 
-                        type="text" 
-                        id="workerUrl" 
-                        placeholder="https://your-worker.workers.dev"
-                        class="w-full px-4 py-2 border-2 border-blue-300 dark:border-blue-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-                    >
-                    <p class="mt-2 text-xs text-blue-600 dark:text-blue-400">
-                        💡 배포 가이드 참고: CORS가 이 도메인(tjdgus1121.github.io)에서만 작동하도록 설정되어 있습니다.
-                    </p>
-                </div>
-            </div>
-        </div>
-
         <!-- Main Content Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Left Column -->
@@ -155,8 +140,19 @@
                     <textarea 
                         id="inputText" 
                         class="w-full h-40 p-4 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:border-violet-500 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-800 outline-none resize-none text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 transition-all"
-                        placeholder="분석하고 싶은 문장을 입력하세요. 예: 오늘 시험에 합격해서 정말 기쁘고 행복하지만, 몸은 조금 피곤해요."
+                        placeholder="분석하고 싶은 문장을 입력하세요. (최대 100자)"
+                        maxlength="100"
                     ></textarea>
+                    <div class="flex justify-end mt-1 mb-2">
+                         <span id="charCount" class="text-sm text-slate-500 dark:text-slate-400">0 / 100</span>
+                    </div>
+
+                    <!-- Options -->
+                    <div class="flex items-center gap-2 mb-4">
+                        <input type="checkbox" id="detailAnalysisCheck" class="w-4 h-4 text-violet-600 bg-gray-100 border-gray-300 rounded focus:ring-violet-500 dark:focus:ring-violet-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                        <label for="detailAnalysisCheck" class="text-sm font-medium text-gray-900 dark:text-gray-300">세부 감정 분석 (기쁨, 슬픔, 분노 등) 추가</label>
+                    </div>
+
                     <button 
                         id="analyzeBtn"
                         class="mt-4 w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95"
@@ -181,7 +177,7 @@
                         <h2 class="text-lg font-semibold text-slate-800 dark:text-white">형태소 감성 분석</h2>
                     </div>
                     <div id="morphemeDisplay" class="space-y-2"></div>
-                    <div class="flex gap-4 mt-4 text-sm">
+                    <div class="flex gap-4 mt-4 text-sm flex-wrap">
                         <div class="flex items-center gap-2">
                             <span class="morpheme-positive">긍정</span>
                         </div>
@@ -243,6 +239,12 @@
                         <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3 text-center">📐 자카드 유사도</h3>
                         <div id="formulaDisplay" class="text-center text-slate-700 dark:text-slate-300 text-sm"></div>
                     </div>
+
+                    <!-- Detailed Emotion Result (Optional) -->
+                    <div id="detailEmotionResult" class="mt-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl hidden">
+                        <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3 text-center">📊 세부 감정 분포</h3>
+                        <div id="detailEmotionList" class="space-y-2 text-sm text-slate-700 dark:text-slate-300"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -252,37 +254,40 @@
         // DOM Elements
         const inputText = document.getElementById('inputText');
         const analyzeBtn = document.getElementById('analyzeBtn');
-        const workerUrlInput = document.getElementById('workerUrl');
         const morphemeSection = document.getElementById('morphemeSection');
         const morphemeDisplay = document.getElementById('morphemeDisplay');
         const vennSection = document.getElementById('vennSection');
         const resultsSection = document.getElementById('resultsSection');
         const darkModeToggle = document.getElementById('darkModeToggle');
+        const charCount = document.getElementById('charCount');
+        const detailAnalysisCheck = document.getElementById('detailAnalysisCheck');
+        const detailEmotionResult = document.getElementById('detailEmotionResult');
+        const detailEmotionList = document.getElementById('detailEmotionList');
 
-        // Load saved Worker URL
-        const savedWorkerUrl = localStorage.getItem('workerUrl');
-        if (savedWorkerUrl) {
-            workerUrlInput.value = savedWorkerUrl;
-        }
-
-        // Save Worker URL
-        workerUrlInput.addEventListener('change', () => {
-            localStorage.setItem('workerUrl', workerUrlInput.value.trim());
+        // Character Count
+        inputText.addEventListener('input', () => {
+            const currentLength = inputText.value.length;
+            charCount.textContent = `${currentLength} / 100`;
+            if (currentLength > 100) {
+                charCount.classList.add('text-red-500');
+            } else {
+                charCount.classList.remove('text-red-500');
+            }
         });
 
         // Main analysis function
         async function analyzeSentiment() {
             const text = inputText.value.trim();
-            const workerUrl = workerUrlInput.value.trim();
+            const workerUrl = "https://hidden-math-555a.tjdgus1121.workers.dev/";
+            const isDetailAnalysis = detailAnalysisCheck.checked;
             
             if (!text) {
                 alert('텍스트를 입력해주세요!');
                 return;
             }
 
-            if (!workerUrl) {
-                alert('Cloudflare Worker URL을 입력해주세요!');
-                workerUrlInput.focus();
+            if (text.length > 100) {
+                alert('문장은 100자를 초과할 수 없습니다.');
                 return;
             }
 
@@ -297,7 +302,10 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ text })
+                    body: JSON.stringify({ 
+                        text,
+                        detailAnalysis: isDetailAnalysis
+                    })
                 });
 
                 if (!response.ok) {
@@ -308,9 +316,9 @@
                 const result = await response.json();
                 
                 // Display results
-                displayMorphemes(result.morphemes);
+                displayMorphemes(result.morphemes, isDetailAnalysis);
                 displayVennDiagram(result.sentiment_scores);
-                displayResults(result);
+                displayResults(result, isDetailAnalysis);
                 
                 // Show sections
                 morphemeSection.classList.remove('hidden');
@@ -328,12 +336,30 @@
         }
 
         // Display morphemes
-        function displayMorphemes(morphemes) {
+        function displayMorphemes(morphemes, isDetail) {
             let html = '<div class="flex flex-wrap gap-2 items-center">';
             
             morphemes.forEach(m => {
                 const sentimentClass = `morpheme-${m.sentiment}`;
-                html += `<span class="${sentimentClass}" title="${m.pos}">${m.word}</span>`;
+                let detailBadge = '';
+                if (isDetail && m.specific_emotion && m.specific_emotion !== '중립') {
+                    // 감정에 따른 색상 (간단히)
+                    const colorMap = {
+                        '기쁨': 'bg-yellow-100 text-yellow-800',
+                        '슬픔': 'bg-blue-100 text-blue-800',
+                        '분노': 'bg-red-100 text-red-800',
+                        '놀람': 'bg-purple-100 text-purple-800',
+                        '두려움': 'bg-gray-100 text-gray-800',
+                        '혐오': 'bg-green-100 text-green-800'
+                    };
+                    const badgeClass = colorMap[m.specific_emotion] || 'bg-gray-100 text-gray-600';
+                    detailBadge = `<span class="emotion-badge ${badgeClass}">${m.specific_emotion}</span>`;
+                }
+                
+                html += `<div class="inline-flex items-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1">
+                            <span class="${sentimentClass} mr-1" title="${m.pos}">${m.word}</span>
+                            ${detailBadge}
+                         </div>`;
             });
             
             html += '</div>';
@@ -371,7 +397,7 @@
         }
 
         // Display results
-        function displayResults(result) {
+        function displayResults(result, isDetail) {
             const finalSentiment = document.getElementById('finalSentiment');
             const overall = result.overall_sentiment;
             
@@ -393,12 +419,58 @@
             const intersection = 0; // 긍정과 부정은 겹치지 않음
             const jaccard = union > 0 ? (intersection / union * 100) : 0;
             
-            document.getElementById('formulaDisplay').innerHTML = `
+            let formulaHtml = `
                 <div class="space-y-2">
                     <div>J(긍정, 부정) = |교집합| / |합집합|</div>
                     <div>= ${intersection} / ${union} = <strong class="text-violet-600 dark:text-violet-400">${jaccard.toFixed(1)}%</strong></div>
+                    <div class="text-xs text-slate-500 mt-2">(긍정과 부정은 서로 반대되므로 교집합은 항상 0에 가깝습니다)</div>
                 </div>
             `;
+            document.getElementById('formulaDisplay').innerHTML = formulaHtml;
+
+            // Detailed Emotion Display
+            if (isDetail && result.specific_emotion_scores) {
+                detailEmotionResult.classList.remove('hidden');
+                let detailHtml = '<div class="flex flex-wrap gap-4 justify-center">';
+                const emotions = result.specific_emotion_scores;
+                
+                // Sort emotions by count desc
+                const sortedEmotions = Object.entries(emotions)
+                    .filter(([key, val]) => val > 0 && key !== '중립')
+                    .sort((a, b) => b[1] - a[1]);
+                
+                if (sortedEmotions.length > 0) {
+                    sortedEmotions.forEach(([emo, count]) => {
+                        detailHtml += `
+                            <div class="flex flex-col items-center">
+                                <span class="text-lg font-bold text-slate-700 dark:text-slate-300">${emo}</span>
+                                <span class="text-sm text-slate-500">${count}개</span>
+                            </div>
+                        `;
+                    });
+                } else {
+                    detailHtml += '<p class="text-center w-full text-slate-500">뚜렷한 세부 감정이 발견되지 않았습니다 (대부분 중립).</p>';
+                }
+                detailHtml += '</div>';
+                
+                // Add Jaccard for detailed emotions (e.g., Joy vs Sadness) if both exist
+                if (emotions['기쁨'] > 0 && emotions['슬픔'] > 0) {
+                     const joy = emotions['기쁨'];
+                     const sad = emotions['슬픔'];
+                     const unionJS = joy + sad;
+                     const jaccardJS = 0; // Disjoint
+                     detailHtml += `
+                        <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 text-center">
+                            <p class="text-sm font-semibold mb-1">😃 기쁨 vs 😭 슬픔 유사도</p>
+                            <p class="text-xs text-slate-500">J(기쁨, 슬픔) = 0 / ${unionJS} = 0%</p>
+                        </div>
+                     `;
+                }
+
+                detailEmotionList.innerHTML = detailHtml;
+            } else {
+                detailEmotionResult.classList.add('hidden');
+            }
         }
 
         // Dark mode toggle

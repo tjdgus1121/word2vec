@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 핵심 키워드 감성 분석 (Gemini)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        
+        .morpheme-positive {
+            background: linear-gradient(120deg, #fef08a 0%, #fef08a 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 80%;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+            color: #059669;
+        }
+        
+        .morpheme-negative {
+            background: linear-gradient(120deg, #fecaca 0%, #fecaca 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 80%;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+            color: #dc2626;
+        }
+        
+        .morpheme-neutral {
+            background: linear-gradient(120deg, #e0e7ff 0%, #e0e7ff 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 80%;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+            color: #6366f1;
+        }
+
+        /* 세부 감정 스타일 */
+        .emotion-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 9999px;
+            margin-left: 4px;
+            font-weight: normal;
+        }
+        
+        /* 벤다이어그램 단어 애니메이션 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .word-hover {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tooltip-trigger:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen transition-colors duration-300">
+    <div class="container mx-auto px-4 py-8" style="max-width: 2304px;">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-800 dark:text-white">AI 핵심 키워드 감성 분석</h1>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Gemini API + 자카드 유사도 (명사/용언 추출)</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Info Button -->
+                    <div class="relative tooltip-trigger">
+                        <button class="w-10 h-10 bg-white dark:bg-slate-700 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center border border-slate-200 dark:border-slate-600">
+                            <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </button>
+                        <div class="tooltip absolute right-0 mt-2 w-80 bg-white dark:bg-slate-700 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 p-4 z-10">
+                            <h3 class="font-semibold text-slate-800 dark:text-white mb-2">🤖 Gemini AI 분석</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
+                                Google Gemini가 문장에서 의미 있는 핵심 단어(명사, 동사, 형용사)를 추출하고 감성을 분석합니다.
+                            </p>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">
+                                • 키워드 추출: 명사, 용언 위주<br>
+                                • 감성 분석: 긍정/중립/부정<br>
+                                • 자카드 유사도 계산
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Dark Mode Toggle -->
+                    <button id="darkModeToggle" class="w-10 h-10 bg-white dark:bg-slate-700 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center border border-slate-200 dark:border-slate-600">
+                        <svg class="w-5 h-5 text-slate-600 dark:text-yellow-400 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path>
+                        </svg>
+                        <svg class="w-5 h-5 text-slate-600 dark:hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="space-y-8">
+            <!-- 1행: 입력 + 전체 요약 + 감성단어사전 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- 입력 섹션 -->
+                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-8">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </div>
+                            <h2 class="text-lg font-semibold text-slate-800 dark:text-white">텍스트 입력</h2>
+                        </div>
+                        <textarea 
+                            id="inputText" 
+                            class="w-full h-56 p-4 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:border-violet-500 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-800 outline-none resize-none text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 transition-all"
+                            placeholder="분석하고 싶은 텍스트를 입력하세요. 여러 문장 입력 가능. (최대 300자)"
+                            maxlength="300"
+                        ></textarea>
+                        <div class="flex justify-end mt-1 mb-2">
+                             <span id="charCount" class="text-sm text-slate-500 dark:text-slate-400">0 / 300</span>
+                        </div>
+
+                        <!-- Options -->
+                        <div class="flex items-center gap-2 mb-4">
+                            <input type="checkbox" id="detailAnalysisCheck" class="w-4 h-4 text-violet-600 bg-gray-100 border-gray-300 rounded focus:ring-violet-500 dark:focus:ring-violet-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                            <label for="detailAnalysisCheck" class="text-sm font-medium text-gray-900 dark:text-gray-300">세부 감정 분석</label>
+                        </div>
+
+                        <button 
+                            id="analyzeBtn"
+                            class="mt-4 w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95"
+                        >
+                            <span class="flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                </svg>
+                                AI 키워드 분석하기
+                            </span>
+                        </button>
+                    </div>
+
+                    <!-- 전체 요약 섹션 -->
+                    <div id="resultsSection" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-8 hidden">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <h2 class="text-lg font-semibold text-slate-800 dark:text-white">전체 요약</h2>
+                        </div>
+                        
+                        <!-- Sentiment Result -->
+                        <div id="finalSentiment" class="p-4 rounded-xl text-center font-semibold text-lg mb-4"></div>
+
+                        <!-- Formula Display -->
+                        <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                            <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3 text-center">📐 자카드 유사도</h3>
+                            <div id="formulaDisplay" class="text-center text-slate-700 dark:text-slate-300 text-sm"></div>
+                        </div>
+
+                        <!-- Detailed Emotion Result (Optional) -->
+                        <div id="detailEmotionResult" class="mt-4 p-4 bg-slate-50 dark:bg-slate-900 rounded-xl hidden">
+                            <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3 text-center">📊 세부 감정 분포</h3>
+                            <div id="detailEmotionList" class="space-y-2 text-sm text-slate-700 dark:text-slate-300"></div>
+                        </div>
+                    </div>
+
+                    <!-- 감성단어사전으로 분석 -->
+                    <div id="dictionarySection" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-8 hidden">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                </svg>
+                            </div>
+                            <h2 class="text-lg font-semibold text-slate-800 dark:text-white">감성사전</h2>
+                        </div>
+                        
+                        <!-- 긍정 단어 -->
+                        <div class="mb-3">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">😊 긍정</span>
+                                <span id="positiveWordCount" class="text-xs px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full font-bold">0개</span>
+                            </div>
+                            <div id="positiveWordsList" class="flex flex-wrap gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/10 rounded-lg min-h-[50px] items-start text-xs">
+                                <span class="text-slate-400">분석 결과</span>
+                            </div>
+                        </div>
+
+                        <!-- 중립 단어 -->
+                        <div class="mb-3">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-sm font-semibold text-indigo-700 dark:text-indigo-300">😐 중립</span>
+                                <span id="neutralWordCount" class="text-xs px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full font-bold">0개</span>
+                            </div>
+                            <div id="neutralWordsList" class="flex flex-wrap gap-2 p-3 bg-indigo-50 dark:bg-indigo-900/10 rounded-lg min-h-[50px] items-start text-xs">
+                                <span class="text-slate-400">분석 결과</span>
+                            </div>
+                        </div>
+
+                        <!-- 부정 단어 -->
+                        <div class="mb-3">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-sm font-semibold text-rose-700 dark:text-rose-300">😢 부정</span>
+                                <span id="negativeWordCount" class="text-xs px-2 py-0.5 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 rounded-full font-bold">0개</span>
+                            </div>
+                            <div id="negativeWordsList" class="flex flex-wrap gap-2 p-3 bg-rose-50 dark:bg-rose-900/10 rounded-lg min-h-[50px] items-start text-xs">
+                                <span class="text-slate-400">분석 결과</span>
+                            </div>
+                        </div>
+
+                        <!-- 교집합 (긍정 ∩ 부정) -->
+                        <div class="mb-0">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-sm font-semibold text-violet-700 dark:text-violet-300">🔄 교집합</span>
+                                <span id="intersectionWordCount" class="text-xs px-2 py-0.5 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 rounded-full font-bold">0개</span>
+                            </div>
+                            <div id="intersectionWordsList" class="flex flex-wrap gap-2 p-3 bg-violet-50 dark:bg-violet-900/10 rounded-lg min-h-[50px] items-start text-xs">
+                                <span class="text-slate-400">교집합 단어</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2행: 문장별 분석 결과 (전체 너비) -->
+                <div id="sentenceResultsSection" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-8 hidden">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-800 dark:text-white">문장별 감성 분석</h2>
+                    </div>
+                    <div id="sentenceResultsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+            <!-- 숨겨진 섹션들 (사용 안 함) -->
+            <div id="morphemeSection" class="hidden"></div>
+            <div id="vennSection" class="hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const inputText = document.getElementById('inputText');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const morphemeSection = document.getElementById('morphemeSection');
+        const morphemeDisplay = document.getElementById('morphemeDisplay');
+        const vennSection = document.getElementById('vennSection');
+        const dictionarySection = document.getElementById('dictionarySection');
+        const sentenceResultsSection = document.getElementById('sentenceResultsSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const charCount = document.getElementById('charCount');
+        const detailAnalysisCheck = document.getElementById('detailAnalysisCheck');
+        const detailEmotionResult = document.getElementById('detailEmotionResult');
+        const detailEmotionList = document.getElementById('detailEmotionList');
+
+        // 전체 긍정/부정 단어 집합 (자카드 유사도 계산용)
+        let globalPositiveWords = new Set();
+        let globalNegativeWords = new Set();
+
+        // Character Count
+        inputText.addEventListener('input', () => {
+            const currentLength = inputText.value.length;
+            charCount.textContent = `${currentLength} / 300`;
+            if (currentLength > 300) {
+                charCount.classList.add('text-red-500');
+            } else {
+                charCount.classList.remove('text-red-500');
+            }
+        });
+
+        // Main analysis function - 문장별 분석
+        async function analyzeSentiment() {
+            const text = inputText.value.trim();
+            const workerUrl = "https://hidden-math-555a.tjdgus1121.workers.dev/";
+            const isDetailAnalysis = detailAnalysisCheck.checked;
+            
+            if (!text) {
+                alert('텍스트를 입력해주세요!');
+                return;
+            }
+
+            if (text.length > 300) {
+                alert('텍스트는 300자를 초과할 수 없습니다.');
+                return;
+            }
+
+            // 텍스트를 문장으로 분할 (마침표, 느낌표, 물음표 기준)
+            const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 0);
+            
+            if (sentences.length === 0) {
+                alert('문장을 입력해주세요!');
+                return;
+            }
+
+            // Disable button and show loading
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>AI 분석 중...</span>';
+
+            try {
+                // 1단계: 모든 문장 개별 분석 (감성사전 구성용)
+                analyzeBtn.innerHTML = `<span class="flex items-center justify-center gap-2"><svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>문장별 분석 중... (${sentences.length}개)</span>`;
+                
+                // 문장별 결과 저장
+                const sentenceResults = [];
+                const sentenceResultsList = document.getElementById('sentenceResultsList');
+                sentenceResultsList.innerHTML = '';
+
+                // 각 문장을 개별적으로 분석
+                for (let i = 0; i < sentences.length; i++) {
+                    const sentence = sentences[i];
+                    
+                    // API 호출
+                    const response = await fetch(workerUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            text: sentence,
+                            detailAnalysis: isDetailAnalysis
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'API 호출 실패');
+                    }
+
+                    const result = await response.json();
+                    result.sentenceText = sentence; // 원문 저장
+                    sentenceResults.push(result);
+
+                    // 문장별 결과 즉시 표시는 나중에 (감성사전 구성 후)
+                }
+
+                // 2단계: 모든 문장의 morphemes를 모아서 감성사전 구성
+                const allMorphemes = [];
+                sentenceResults.forEach(result => {
+                    if (result.morphemes) {
+                        allMorphemes.push(...result.morphemes);
+                    }
+                });
+                
+                // 가짜 wholeTextResult 생성 (displayDictionary 호환용)
+                const wholeTextResult = {
+                    morphemes: allMorphemes
+                };
+                
+                // 감성단어사전 표시 (전역 변수 설정)
+                displayDictionary(wholeTextResult);
+
+                // 3단계: 각 문장의 감성 개수를 감성사전 기준으로 재계산
+                sentenceResults.forEach((result, i) => {
+                    // 감성사전 기준으로 카운트
+                    let posCount = 0, neuCount = 0, negCount = 0;
+                    
+                    if (result.morphemes) {
+                        result.morphemes.forEach(m => {
+                            // 전역 감성사전에 있는 단어만 카운트
+                            if (globalPositiveWords.has(m.word)) {
+                                posCount++;
+                                m.sentiment = 'positive'; // 재분류
+                            } else if (globalNegativeWords.has(m.word)) {
+                                negCount++;
+                                m.sentiment = 'negative'; // 재분류
+                            } else {
+                                neuCount++;
+                                m.sentiment = 'neutral'; // 재분류
+                            }
+                        });
+                    }
+                    
+                    // 감성 점수 업데이트
+                    result.sentiment_scores = {
+                        positive: posCount,
+                        neutral: neuCount,
+                        negative: negCount
+                    };
+                    
+                    // 전체 감성 재판단
+                    if (posCount > negCount) {
+                        result.overall_sentiment = 'positive';
+                    } else if (negCount > posCount) {
+                        result.overall_sentiment = 'negative';
+                    } else {
+                        result.overall_sentiment = 'neutral';
+                    }
+                    
+                    // 문장별 결과 표시
+                    displaySentenceResult(i + 1, result, isDetailAnalysis);
+                });
+
+                // 전체 결과 표시
+                displayOverallResults(sentenceResults, isDetailAnalysis);
+                
+                // Show sections
+                morphemeSection.classList.add('hidden'); // 전체 키워드는 숨김
+                vennSection.classList.add('hidden'); // 전체 벤다이어그램 숨김
+                dictionarySection.classList.remove('hidden'); // 감성단어사전 표시 ✨
+                sentenceResultsSection.classList.remove('hidden'); // 문장별 결과 표시
+                resultsSection.classList.remove('hidden'); // 전체 요약 표시
+                
+            } catch (error) {
+                console.error('분석 오류:', error);
+                alert(`분석 중 오류가 발생했습니다: ${error.message}`);
+            } finally {
+                // Re-enable button
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>AI 키워드 분석하기</span>';
+            }
+        }
+
+        // 감성단어사전 표시 함수
+        function displayDictionary(result) {
+            // 단어를 감성별로 분류 (원본 - 중복 제거 전)
+            const wordsOriginal = {
+                positive: [],
+                negative: [],
+                neutral: []
+            };
+
+            if (result.morphemes) {
+                result.morphemes.forEach(m => {
+                    if (m.sentiment === 'positive') wordsOriginal.positive.push(m.word);
+                    else if (m.sentiment === 'negative') wordsOriginal.negative.push(m.word);
+                    else wordsOriginal.neutral.push(m.word);
+                });
+            }
+
+            // 전역 변수 설정 (원본 - 자카드 계산 및 재분류용)
+            globalPositiveWords = new Set(wordsOriginal.positive);
+            globalNegativeWords = new Set(wordsOriginal.negative);
+
+            // 화면 표시용 (중복 제거)
+            const words = {
+                positive: removeDuplicates(wordsOriginal.positive),
+                negative: removeDuplicates(wordsOriginal.negative),
+                neutral: removeDuplicates(wordsOriginal.neutral)
+            };
+
+            // 긍정 단어 표시
+            const positiveWordsList = document.getElementById('positiveWordsList');
+            const positiveWordCount = document.getElementById('positiveWordCount');
+            if (words.positive.length > 0) {
+                positiveWordsList.innerHTML = words.positive.map(word => 
+                    `<span class="px-2 py-1 bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200 rounded font-semibold text-xs">${word}</span>`
+                ).join('');
+                positiveWordCount.textContent = `${words.positive.length}개`;
+            } else {
+                positiveWordsList.innerHTML = '<span class="text-xs text-slate-400">없음</span>';
+                positiveWordCount.textContent = '0개';
+            }
+
+            // 중립 단어 표시
+            const neutralWordsList = document.getElementById('neutralWordsList');
+            const neutralWordCount = document.getElementById('neutralWordCount');
+            if (words.neutral.length > 0) {
+                neutralWordsList.innerHTML = words.neutral.map(word => 
+                    `<span class="px-2 py-1 bg-indigo-200 dark:bg-indigo-800 text-indigo-800 dark:text-indigo-200 rounded font-semibold text-xs">${word}</span>`
+                ).join('');
+                neutralWordCount.textContent = `${words.neutral.length}개`;
+            } else {
+                neutralWordsList.innerHTML = '<span class="text-xs text-slate-400">없음</span>';
+                neutralWordCount.textContent = '0개';
+            }
+
+            // 부정 단어 표시
+            const negativeWordsList = document.getElementById('negativeWordsList');
+            const negativeWordCount = document.getElementById('negativeWordCount');
+            if (words.negative.length > 0) {
+                negativeWordsList.innerHTML = words.negative.map(word => 
+                    `<span class="px-2 py-1 bg-rose-200 dark:bg-rose-800 text-rose-800 dark:text-rose-200 rounded font-semibold text-xs">${word}</span>`
+                ).join('');
+                negativeWordCount.textContent = `${words.negative.length}개`;
+            } else {
+                negativeWordsList.innerHTML = '<span class="text-xs text-slate-400">없음</span>';
+                negativeWordCount.textContent = '0개';
+            }
+
+            // 교집합 단어 계산 (긍정 ∩ 부정)
+            const posSet = new Set(words.positive);
+            const negSet = new Set(words.negative);
+            const intersection = [...posSet].filter(x => negSet.has(x));
+            
+            const intersectionWordsList = document.getElementById('intersectionWordsList');
+            const intersectionWordCount = document.getElementById('intersectionWordCount');
+            if (intersection.length > 0) {
+                intersectionWordsList.innerHTML = intersection.map(word => 
+                    `<span class="px-2 py-1 bg-violet-200 dark:bg-violet-800 text-violet-800 dark:text-violet-200 rounded font-semibold text-xs">${word}</span>`
+                ).join('');
+                intersectionWordCount.textContent = `${intersection.length}개`;
+            } else {
+                intersectionWordsList.innerHTML = '<span class="text-xs text-slate-400">교집합 없음</span>';
+                intersectionWordCount.textContent = '0개';
+            }
+        }
+
+        // 어근 기반 중복 제거 함수
+        function removeDuplicates(wordList) {
+            // 완전 중복 제거
+            const filtered = [...new Set(wordList)];
+            
+            // 포함 관계 제거: 긴 단어가 짧은 단어를 포함하면 긴 단어 제거
+            const result = [];
+            for (let i = 0; i < filtered.length; i++) {
+                let shouldKeep = true;
+                const word1 = filtered[i];
+                
+                for (let j = 0; j < filtered.length; j++) {
+                    if (i === j) continue;
+                    const word2 = filtered[j];
+                    
+                    // word1이 word2를 포함하고, word1이 더 길면
+                    // word1을 제거하고 짧은 word2를 남김
+                    if (word1.includes(word2) && word1.length > word2.length) {
+                        shouldKeep = false;
+                        break;
+                    }
+                }
+                
+                if (shouldKeep) {
+                    result.push(word1);
+                }
+            }
+            
+            return result;
+        }
+
+        // 문장별 결과 표시 함수
+        function displaySentenceResult(sentenceNum, result, isDetail) {
+            const sentenceResultsList = document.getElementById('sentenceResultsList');
+            const isDark = document.documentElement.classList.contains('dark');
+            
+            // 감성 판단
+            const overall = result.overall_sentiment;
+            let sentimentClass, sentimentText, sentimentEmoji;
+            if (overall === 'positive') {
+                sentimentClass = 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700';
+                sentimentText = '긍정적';
+                sentimentEmoji = '😊';
+            } else if (overall === 'negative') {
+                sentimentClass = 'bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-700';
+                sentimentText = '부정적';
+                sentimentEmoji = '😢';
+            } else {
+                sentimentClass = 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700';
+                sentimentText = '중립적';
+                sentimentEmoji = '😐';
+            }
+
+            // 자카드 유사도 계산: 정확한 벤다이어그램 방식
+            // 문장의 전체 단어 A (긍정+부정+중립 모두 포함)
+            const sentenceAllWords = new Set();
+            
+            if (result.morphemes) {
+                result.morphemes.forEach(m => {
+                    sentenceAllWords.add(m.word);
+                });
+            }
+
+            // J(A, X) = |A ∩ X| / |A ∪ X|  (문장 전체 vs 전체 긍정)
+            const intersectionAX = new Set([...sentenceAllWords].filter(x => globalPositiveWords.has(x)));
+            const unionAX = new Set([...sentenceAllWords, ...globalPositiveWords]);
+            const jaccardAX = unionAX.size > 0 ? (intersectionAX.size / unionAX.size * 100) : 0;
+
+            // J(A, P) = |A ∩ P| / |A ∪ P|  (문장 전체 vs 전체 부정)
+            const intersectionAP = new Set([...sentenceAllWords].filter(x => globalNegativeWords.has(x)));
+            const unionAP = new Set([...sentenceAllWords, ...globalNegativeWords]);
+            const jaccardAP = unionAP.size > 0 ? (intersectionAP.size / unionAP.size * 100) : 0;
+
+            // 자카드 유사도로 감성 재판단
+            let jaccard, finalSentiment, finalEmoji, finalClass;
+            if (jaccardAX > jaccardAP) {
+                jaccard = jaccardAX;
+                finalSentiment = '긍정적';
+                finalEmoji = '😊';
+                finalClass = 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700';
+            } else if (jaccardAP > jaccardAX) {
+                jaccard = jaccardAP;
+                finalSentiment = '부정적';
+                finalEmoji = '😢';
+                finalClass = 'bg-rose-50 dark:bg-rose-900/20 border-rose-300 dark:border-rose-700';
+            } else {
+                jaccard = Math.max(jaccardAX, jaccardAP);
+                finalSentiment = '중립적';
+                finalEmoji = '😐';
+                finalClass = 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-700';
+            }
+
+            const pos = result.sentiment_scores.positive || 0;
+            const neu = result.sentiment_scores.neutral || 0;
+            const neg = result.sentiment_scores.negative || 0;
+
+            // 문장 단어에 색상 입히기 (긍정=초록, 부정=빨강)
+            let coloredSentence = result.sentenceText;
+            if (result.morphemes) {
+                // 단어를 긴 것부터 정렬 (긴 단어가 먼저 치환되도록)
+                const sortedMorphemes = [...result.morphemes].sort((a, b) => b.word.length - a.word.length);
+                
+                sortedMorphemes.forEach(m => {
+                    let color = '';
+                    if (m.sentiment === 'positive') {
+                        color = 'text-emerald-600 dark:text-emerald-400 font-bold';
+                    } else if (m.sentiment === 'negative') {
+                        color = 'text-rose-600 dark:text-rose-400 font-bold';
+                    }
+                    
+                    if (color) {
+                        // 단어를 색상 span으로 치환
+                        const regex = new RegExp(`(${m.word})`, 'g');
+                        coloredSentence = coloredSentence.replace(regex, `<span class="${color}">$1</span>`);
+                    }
+                });
+            }
+
+            const sentenceCard = document.createElement('div');
+            sentenceCard.className = `p-6 border-2 rounded-xl ${finalClass}`;
+            sentenceCard.innerHTML = `
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base font-bold text-slate-600 dark:text-slate-300">문장 ${sentenceNum}</span>
+                        <span class="text-2xl">${finalEmoji}</span>
+                        <span class="font-semibold text-base text-slate-700 dark:text-slate-200">${finalSentiment}</span>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-slate-500 dark:text-slate-400">자카드 유사도</div>
+                        <div class="text-lg font-bold text-violet-600 dark:text-violet-400">${jaccard.toFixed(1)}%</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            J(A,X): ${jaccardAX.toFixed(1)}% / J(A,P): ${jaccardAP.toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+                <div class="text-base text-slate-700 dark:text-slate-300 mb-4 p-3 bg-white dark:bg-slate-800 rounded-lg">
+                    ${coloredSentence}
+                </div>
+                
+                <!-- 자카드 유사도 계산 과정 -->
+                <div class="mb-4 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <div class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">📊 자카드 유사도 계산 과정</div>
+                    
+                    <!-- J(A, X) 계산 -->
+                    <div class="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                        <div class="font-semibold text-emerald-600 dark:text-emerald-400 mb-1">J(A, X) = 긍정 유사도</div>
+                        <div class="ml-2">
+                            A ∩ X = {${[...intersectionAX].join(', ')}} = ${intersectionAX.size}개<br>
+                            A ∪ X = {${[...unionAX].slice(0, 10).join(', ')}${unionAX.size > 10 ? '...' : ''}} = ${unionAX.size}개<br>
+                            <span class="font-semibold">J(A,X) = ${intersectionAX.size}/${unionAX.size} = ${jaccardAX.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- J(A, P) 계산 -->
+                    <div class="text-xs text-slate-600 dark:text-slate-400">
+                        <div class="font-semibold text-rose-600 dark:text-rose-400 mb-1">J(A, P) = 부정 유사도</div>
+                        <div class="ml-2">
+                            A ∩ P = {${[...intersectionAP].join(', ')}} = ${intersectionAP.size}개<br>
+                            A ∪ P = {${[...unionAP].slice(0, 10).join(', ')}${unionAP.size > 10 ? '...' : ''}} = ${unionAP.size}개<br>
+                            <span class="font-semibold">J(A,P) = ${intersectionAP.size}/${unionAP.size} = ${jaccardAP.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 최종 판단 -->
+                    <div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 text-xs">
+                        <span class="font-semibold text-violet-600 dark:text-violet-400">
+                            최종: ${jaccardAX.toFixed(1)}% ${jaccardAX > jaccardAP ? '>' : jaccardAX < jaccardAP ? '<' : '='} ${jaccardAP.toFixed(1)}% → ${finalSentiment}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-3 text-sm">
+                    <div class="text-center p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded">
+                        <div class="font-semibold text-emerald-700 dark:text-emerald-300">긍정</div>
+                        <div class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${pos}</div>
+                    </div>
+                    <div class="text-center p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded">
+                        <div class="font-semibold text-indigo-700 dark:text-indigo-300">중립</div>
+                        <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">${neu}</div>
+                    </div>
+                    <div class="text-center p-2 bg-rose-100 dark:bg-rose-900/30 rounded">
+                        <div class="font-semibold text-rose-700 dark:text-rose-300">부정</div>
+                        <div class="text-2xl font-bold text-rose-600 dark:text-rose-400">${neg}</div>
+                    </div>
+                </div>
+            `;
+            
+            sentenceResultsList.appendChild(sentenceCard);
+        }
+
+        // 전체 요약 표시 함수
+        function displayOverallResults(sentenceResults, isDetail) {
+            const finalSentiment = document.getElementById('finalSentiment');
+            
+            // 전체 긍정/부정 카운트
+            let totalPos = 0, totalNeu = 0, totalNeg = 0;
+            let posCount = 0, negCount = 0, neuCount = 0;
+            
+            sentenceResults.forEach(result => {
+                totalPos += result.sentiment_scores.positive || 0;
+                totalNeu += result.sentiment_scores.neutral || 0;
+                totalNeg += result.sentiment_scores.negative || 0;
+                
+                if (result.overall_sentiment === 'positive') posCount++;
+                else if (result.overall_sentiment === 'negative') negCount++;
+                else neuCount++;
+            });
+
+            const totalSentences = sentenceResults.length;
+            
+            // 전체 감성 판단
+            let overallText, overallClass;
+            if (posCount > negCount) {
+                overallClass = 'bg-gradient-to-r from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30 text-emerald-700 dark:text-emerald-300';
+                overallText = `😊 전체적으로 긍정적입니다! (긍정 ${posCount}/${totalSentences} 문장)`;
+            } else if (negCount > posCount) {
+                overallClass = 'bg-gradient-to-r from-rose-100 to-rose-200 dark:from-rose-900/30 dark:to-rose-800/30 text-rose-700 dark:text-rose-300';
+                overallText = `😢 전체적으로 부정적입니다! (부정 ${negCount}/${totalSentences} 문장)`;
+            } else {
+                overallClass = 'bg-gradient-to-r from-indigo-100 to-indigo-200 dark:from-indigo-900/30 dark:to-indigo-800/30 text-indigo-700 dark:text-indigo-300';
+                overallText = `😐 전체적으로 중립적입니다! (중립 ${neuCount}/${totalSentences} 문장)`;
+            }
+
+            finalSentiment.className = `p-4 rounded-xl text-center font-semibold text-lg mb-4 ${overallClass}`;
+            finalSentiment.textContent = overallText;
+
+            // 전체 긍정 vs 전체 부정 자카드 유사도
+            const allPosIntersection = new Set([...globalPositiveWords].filter(x => globalNegativeWords.has(x)));
+            const allPosUnion = new Set([...globalPositiveWords, ...globalNegativeWords]);
+            const overallJaccard = allPosUnion.size > 0 ? (allPosIntersection.size / allPosUnion.size * 100) : 0;
+
+            document.getElementById('formulaDisplay').innerHTML = `
+                <div class="space-y-2">
+                    <div class="text-xl font-bold text-slate-700 dark:text-slate-300">전체 통계</div>
+                    <div class="grid grid-cols-3 gap-3 mt-3">
+                        <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded">
+                            <div class="text-sm text-emerald-600 dark:text-emerald-400">긍정</div>
+                            <div class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">${totalPos}</div>
+                        </div>
+                        <div class="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded">
+                            <div class="text-sm text-indigo-600 dark:text-indigo-400">중립</div>
+                            <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400">${totalNeu}</div>
+                        </div>
+                        <div class="p-3 bg-rose-50 dark:bg-rose-900/20 rounded">
+                            <div class="text-sm text-rose-600 dark:text-rose-400">부정</div>
+                            <div class="text-3xl font-bold text-rose-600 dark:text-rose-400">${totalNeg}</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-4 bg-violet-50 dark:bg-violet-900/20 rounded-lg">
+                        <div class="text-base text-slate-600 dark:text-slate-400 mb-2">
+                            J(긍정, 부정) = |긍정 ∩ 부정| / |긍정 ∪ 부정|
+                        </div>
+                        <div class="text-base">
+                            = ${allPosIntersection.size} / ${allPosUnion.size} = 
+                            <strong class="text-violet-600 dark:text-violet-400 text-2xl">${overallJaccard.toFixed(1)}%</strong>
+                        </div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                            전체 긍정단어(${globalPositiveWords.size}개)와 부정단어(${globalNegativeWords.size}개)의 유사도
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Display morphemes
+        function displayMorphemes(morphemes, isDetail) {
+            // 강력한 중복 제거: 
+            // 1. 완전히 같은 단어 제거
+            // 2. 포함 관계: "감동"과 "감동받다" → 짧은 "감동"만 남김
+            const uniqueMorphemes = [];
+            const seenWords = new Set();
+            
+            // 먼저 완전 중복 제거
+            const filtered = [];
+            morphemes.forEach(m => {
+                if (!seenWords.has(m.word)) {
+                    seenWords.add(m.word);
+                    filtered.push(m);
+                }
+            });
+            
+            // 포함 관계 제거: 긴 단어가 짧은 단어를 포함하면 긴 단어 제거
+            for (let i = 0; i < filtered.length; i++) {
+                let shouldKeep = true;
+                const word1 = filtered[i].word;
+                
+                for (let j = 0; j < filtered.length; j++) {
+                    if (i === j) continue;
+                    const word2 = filtered[j].word;
+                    
+                    // word1이 word2를 포함하고, word1이 더 길면
+                    // word1을 제거하고 짧은 word2를 남김
+                    if (word1.includes(word2) && word1.length > word2.length) {
+                        shouldKeep = false;
+                        break;
+                    }
+                }
+                
+                if (shouldKeep) {
+                    uniqueMorphemes.push(filtered[i]);
+                }
+            }
+            
+            let html = '<div class="flex flex-wrap gap-2 items-center">';
+            
+            uniqueMorphemes.forEach(m => {
+                const sentimentClass = `morpheme-${m.sentiment}`;
+                let detailBadge = '';
+                if (isDetail && m.specific_emotion && m.specific_emotion !== '중립') {
+                    // 감정에 따른 색상 (간단히)
+                    const colorMap = {
+                        '기쁨': 'bg-yellow-100 text-yellow-800',
+                        '슬픔': 'bg-blue-100 text-blue-800',
+                        '분노': 'bg-red-100 text-red-800',
+                        '놀람': 'bg-purple-100 text-purple-800',
+                        '두려움': 'bg-gray-100 text-gray-800',
+                        '혐오': 'bg-green-100 text-green-800'
+                    };
+                    const badgeClass = colorMap[m.specific_emotion] || 'bg-gray-100 text-gray-600';
+                    detailBadge = `<span class="emotion-badge ${badgeClass}">${m.specific_emotion}</span>`;
+                }
+                
+                html += `<div class="inline-flex items-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1">
+                            <span class="${sentimentClass} mr-1" title="${m.pos}">${m.word}</span>
+                            ${detailBadge}
+                         </div>`;
+            });
+            
+            html += '</div>';
+            morphemeDisplay.innerHTML = html;
+        }
+
+        // Display Venn Diagram with Words
+        function displayVennDiagram(scores, morphemes) {
+            const svg = document.getElementById('vennDiagram');
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#e2e8f0' : '#1e293b';
+            const subTextColor = isDark ? '#94a3b8' : '#64748b';
+
+            // 1. 단어 분류 및 중복 제거
+            const words = {
+                positive: [],
+                negative: [],
+                neutral: []
+            };
+
+            if (morphemes) {
+                morphemes.forEach(m => {
+                    if (m.sentiment === 'positive') words.positive.push(m.word);
+                    else if (m.sentiment === 'negative') words.negative.push(m.word);
+                    else words.neutral.push(m.word);
+                });
+                // 중복 제거
+                words.positive = [...new Set(words.positive)];
+                words.negative = [...new Set(words.negative)];
+                words.neutral = [...new Set(words.neutral)];
+            }
+
+            // 2. 벤다이어그램 구조
+            const leftCx = 150, leftCy = 160, rightCx = 350, rightCy = 160, radius = 100;
+            
+            let svgContent = `
+                <!-- 배경 원들 -->
+                <circle cx="${leftCx}" cy="${leftCy}" r="${radius}" fill="#10b981" opacity="0.15" stroke="#10b981" stroke-width="3"/>
+                <circle cx="${rightCx}" cy="${rightCy}" r="${radius}" fill="#ef4444" opacity="0.15" stroke="#ef4444" stroke-width="3"/>
+                
+                <!-- 교집합 영역 -->
+                <ellipse cx="250" cy="160" rx="65" ry="95" fill="#6366f1" opacity="0.25" stroke="#6366f1" stroke-width="2" stroke-dasharray="5,5"/>
+                
+                <!-- 상단 레이블 -->
+                <text x="${leftCx}" y="30" font-size="16" fill="${textColor}" font-weight="bold" text-anchor="middle">긍정 집합</text>
+                <text x="250" y="30" font-size="16" fill="${textColor}" font-weight="bold" text-anchor="middle">중립 (교집합)</text>
+                <text x="${rightCx}" y="30" font-size="16" fill="${textColor}" font-weight="bold" text-anchor="middle">부정 집합</text>
+                
+                <!-- 하단 개수 -->
+                <text x="${leftCx}" y="290" font-size="14" fill="${subTextColor}" text-anchor="middle">${words.positive.length}개</text>
+                <text x="250" y="290" font-size="14" fill="${subTextColor}" text-anchor="middle">${words.neutral.length}개</text>
+                <text x="${rightCx}" y="290" font-size="14" fill="${subTextColor}" text-anchor="middle">${words.negative.length}개</text>
+            `;
+
+            // 3. 단어 배치 함수 (충돌 방지)
+            function placeWordsInGrid(wordList, region, color) {
+                if (wordList.length === 0) return '';
+                
+                // 글자 크기 자동 조절
+                const baseSize = wordList.length > 10 ? 11 : wordList.length > 5 ? 13 : 14;
+                
+                let result = '';
+                let { startX, endX, startY, endY, rows, cols } = region;
+                
+                // 격자 설정
+                const cellWidth = (endX - startX) / cols;
+                const cellHeight = (endY - startY) / rows;
+                
+                wordList.forEach((word, idx) => {
+                    const row = Math.floor(idx / cols);
+                    const col = idx % cols;
+                    
+                    if (row >= rows) return; // 영역 초과 시 무시
+                    
+                    const x = startX + col * cellWidth + cellWidth / 2;
+                    const y = startY + row * cellHeight + cellHeight / 2;
+                    
+                    // 호버 효과와 그림자 추가
+                    result += `
+                        <text 
+                            x="${x}" 
+                            y="${y}" 
+                            font-size="${baseSize}" 
+                            fill="${color}" 
+                            text-anchor="middle" 
+                            dominant-baseline="middle"
+                            font-weight="600" 
+                            class="word-hover"
+                            style="text-shadow: 0 1px 3px rgba(255,255,255,0.9); cursor: pointer; transition: all 0.2s;"
+                            onmouseover="this.setAttribute('font-size', '${baseSize + 3}'); this.setAttribute('font-weight', '700');"
+                            onmouseout="this.setAttribute('font-size', '${baseSize}'); this.setAttribute('font-weight', '600');"
+                        >${word}</text>`;
+                });
+                
+                return result;
+            }
+
+            // 4. 영역별 단어 배치
+            // 긍정 영역 (왼쪽)
+            const positiveRegion = {
+                startX: 60,
+                endX: 180,
+                startY: 80,
+                endY: 240,
+                rows: 5,
+                cols: 2
+            };
+            svgContent += placeWordsInGrid(words.positive, positiveRegion, '#059669');
+
+            // 중립 영역 (가운데 교집합)
+            const neutralRegion = {
+                startX: 210,
+                endX: 290,
+                startY: 75,
+                endY: 245,
+                rows: 6,
+                cols: 2
+            };
+            svgContent += placeWordsInGrid(words.neutral, neutralRegion, '#4f46e5');
+
+            // 부정 영역 (오른쪽)
+            const negativeRegion = {
+                startX: 320,
+                endX: 440,
+                startY: 80,
+                endY: 240,
+                rows: 5,
+                cols: 2
+            };
+            svgContent += placeWordsInGrid(words.negative, negativeRegion, '#dc2626');
+
+            svg.innerHTML = svgContent;
+            
+            // 하단 개수 업데이트
+            document.getElementById('positiveCount').textContent = words.positive.length;
+            document.getElementById('neutralCount').textContent = words.neutral.length;
+            document.getElementById('negativeCount').textContent = words.negative.length;
+        }
+
+        // Dark mode toggle
+        darkModeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        });
+
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Event listeners
+        analyzeBtn.addEventListener('click', analyzeSentiment);
+        inputText.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                analyzeSentiment();
+            }
+        });
+    </script>
+</body>
+</html>

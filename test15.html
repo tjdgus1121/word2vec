@@ -1,0 +1,5460 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>텍스트 분석 체험 - AI Mathematics</title>
+
+    <!-- 한국어 형태소 분석 사전 (폴백용) -->
+    <script src="korean-dict.js"></script>
+
+    <!-- 확장 명사 사전 (3000+ 단어) -->
+    <script src="명사사전.js"></script>
+
+    <!-- Hangul.js - 한글 자모 분해/조합 -->
+    <script src="https://cdn.jsdelivr.net/npm/hangul-js@0.2.6/hangul.min.js"></script>
+
+    <!-- wordcloud2.js 라이브러리 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Gamja+Flower&family=Gaegu:wght@300;400;700&family=Dokdo&family=Jua&family=Black+Han+Sans&family=Roboto+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Noto Sans KR", sans-serif;
+        background: #e8eef4;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      header h1 {
+        font-family: "Do Hyeon", sans-serif;
+        font-weight: 500;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-family: "Noto Sans KR", sans-serif;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+      }
+
+      header {
+        background: #1e3a5f;
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      header h1 {
+        font-family: "Do Hyeon", sans-serif;
+        font-size: 2.8em;
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+
+      header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+      }
+
+      .tabs {
+        display: flex;
+        background: #f5f5f5;
+        border-bottom: 2px solid #ddd;
+      }
+
+      .tab {
+        flex: 1;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        background: #f5f5f5;
+        border: none;
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #666;
+        transition: all 0.3s;
+        position: relative;
+      }
+
+      .tab.active {
+        background: white;
+        color: #1e3a5f;
+      }
+
+      .tab.active::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: #c9a227;
+      }
+
+      .tab:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .tab-content {
+        display: none;
+        padding: 30px;
+        animation: fadeIn 0.3s;
+        position: relative;
+        z-index: 1;
+        background: white;
+        min-height: 400px;
+      }
+
+      .tab-content.active {
+        display: block !important;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          box-shadow: 0 2px 8px rgba(30, 58, 95, 0.2);
+        }
+        50% {
+          transform: scale(1.05);
+          box-shadow: 0 4px 16px rgba(93, 173, 226, 0.5);
+        }
+      }
+
+      .welcome-screen {
+        text-align: center;
+        padding: 50px 20px;
+      }
+
+      .welcome-screen h2 {
+        color: #1e3a5f;
+        font-size: 2em;
+        margin-bottom: 30px;
+      }
+
+      .role-selection {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+        margin-top: 40px;
+      }
+
+      .role-card {
+        background: #1e3a5f;
+        color: white;
+        padding: 40px;
+        border-radius: 15px;
+        cursor: pointer;
+        transition:
+          transform 0.3s,
+          box-shadow 0.3s;
+        width: 250px;
+      }
+
+      .role-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(30, 58, 95, 0.3);
+      }
+
+      .role-card h3 {
+        font-size: 1.8em;
+        margin-bottom: 15px;
+      }
+
+      .role-card p {
+        font-size: 1em;
+        opacity: 0.9;
+      }
+
+      .room-code-display {
+        text-align: center;
+        padding: 40px;
+        background: #f8f9fa;
+        border-radius: 15px;
+        margin: 20px 0;
+      }
+
+      .room-code-display h3 {
+        color: #1e3a5f;
+        font-size: 1.5em;
+        margin-bottom: 20px;
+      }
+
+      .room-code {
+        font-size: 3em;
+        font-weight: bold;
+        color: #c9a227;
+        letter-spacing: 5px;
+        margin: 20px 0;
+        font-family: "Courier New", monospace;
+      }
+
+      #qrcode {
+        display: inline-block;
+        margin: 20px 0;
+        padding: 20px;
+        background: white;
+        border-radius: 10px;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin-top: 20px;
+      }
+
+      button {
+        padding: 15px 30px;
+        font-size: 1em;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 600;
+      }
+
+      .btn-primary {
+        background: #1e3a5f;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-secondary {
+        background: #4a6fa5;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #3d5a87;
+      }
+
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #218838;
+      }
+
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        max-width: 400px;
+        padding: 15px;
+        font-size: 1.1em;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        margin: 10px 0;
+        transition: border-color 0.3s;
+      }
+
+      input[type="text"]:focus {
+        outline: none;
+        border-color: #1e3a5f;
+      }
+
+      .student-input-area {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
+      }
+
+      .student-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+      }
+
+      .student-card.completed {
+        border-color: #28a745;
+        background: #d4edda;
+      }
+
+      .student-card h4 {
+        color: #1e3a5f;
+        margin-bottom: 10px;
+      }
+
+      textarea {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 1em;
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .participation-status {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+      }
+
+      .participation-status h3 {
+        color: #1e3a5f;
+        margin-bottom: 15px;
+      }
+
+      .status-bar {
+        background: #e9ecef;
+        height: 30px;
+        border-radius: 15px;
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+
+      .status-progress {
+        height: 100%;
+        background: #1e3a5f;
+        transition: width 0.5s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+      }
+
+      .analysis-section {
+        margin: 30px 0;
+      }
+
+      .analysis-section h3 {
+        color: #1e3a5f;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+      }
+
+      #wordcloud-container {
+        background: white;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        padding: 20px;
+        min-height: 550px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      #wordcloud-canvas {
+        width: 100%;
+        max-width: 900px;
+        height: 550px;
+        margin: 0 auto;
+      }
+
+      .shape-settings {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .shape-option {
+        display: inline-block;
+        margin: 5px;
+        padding: 15px 25px;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 14px;
+        background: white;
+      }
+
+      .shape-option:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .shape-option.active {
+        background: #1e3a5f;
+        color: white;
+        border-color: #1e3a5f;
+      }
+
+      .frequency-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        table-layout: fixed;
+      }
+
+      .frequency-table th,
+      .frequency-table td {
+        padding: 12px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .frequency-table th:nth-child(1),
+      .frequency-table th:nth-child(5),
+      .frequency-table td:nth-child(1),
+      .frequency-table td:nth-child(5) {
+        width: 8%;
+      }
+
+      .frequency-table th:nth-child(2),
+      .frequency-table th:nth-child(6),
+      .frequency-table td:nth-child(2),
+      .frequency-table td:nth-child(6) {
+        width: 22%;
+        text-align: left;
+      }
+
+      .frequency-table th:nth-child(3),
+      .frequency-table th:nth-child(7),
+      .frequency-table td:nth-child(3),
+      .frequency-table td:nth-child(7) {
+        width: 10%;
+      }
+
+      .frequency-table th:nth-child(4),
+      .frequency-table th:nth-child(8),
+      .frequency-table td:nth-child(4),
+      .frequency-table td:nth-child(8) {
+        width: 10%;
+      }
+
+      .frequency-table th {
+        background: #1e3a5f;
+        color: white;
+      }
+
+      .frequency-table tr:hover {
+        background: #f8f9fa;
+      }
+
+      .chart-container {
+        margin-top: 30px;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid #ddd;
+      }
+
+      .word-selection {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin: 20px 0;
+      }
+
+      .word-checkbox {
+        display: flex;
+        align-items: center;
+        background: #f8f9fa;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .word-checkbox:hover {
+        background: #e9ecef;
+      }
+
+      .word-checkbox input[type="checkbox"] {
+        margin-right: 10px;
+        cursor: pointer;
+      }
+
+      /* 문장 선택 스타일 */
+      .sentence-selection {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 10px;
+      }
+
+      .sentence-item {
+        padding: 12px 15px;
+        background: white;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .sentence-item:hover {
+        border-color: #1e3a5f;
+        background: #f0f4f8;
+      }
+
+      .sentence-item.selected {
+        border-color: #1e3a5f;
+        background: #e8f4fd;
+        box-shadow: 0 2px 8px rgba(30, 58, 95, 0.2);
+      }
+
+      .sentence-item .sentence-number {
+        background: #1e3a5f;
+        color: white;
+        padding: 4px 10px;
+        border-radius: 5px;
+        font-weight: 600;
+        font-size: 0.85em;
+        white-space: nowrap;
+      }
+
+      .sentence-item.selected .sentence-number {
+        background: #c9a227;
+      }
+
+      .sentence-item .sentence-text {
+        flex: 1;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      .matrix-table {
+        width: 100%;
+        overflow-x: auto;
+        margin: 20px 0;
+      }
+
+      .matrix-table table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9em;
+      }
+
+      .matrix-table th,
+      .matrix-table td {
+        padding: 8px;
+        text-align: center;
+        border: 1px solid #ddd;
+      }
+
+      .matrix-table th {
+        background: #1e3a5f;
+        color: white;
+        position: sticky;
+        top: 0;
+      }
+
+      .matrix-table td {
+        background: white;
+      }
+
+      .similarity-results {
+        margin-top: 30px;
+      }
+
+      .similarity-card {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 10px 0;
+        border-left: 4px solid #1e3a5f;
+      }
+
+      .similarity-card .similarity-value {
+        font-family: "Roboto Mono", "SF Mono", Consolas, monospace;
+        font-size: 1.3em;
+        font-weight: 600;
+        color: #1e3a5f;
+        background: #e8f4fd;
+        padding: 4px 10px;
+        border-radius: 5px;
+      }
+
+      .heatmap-container {
+        margin-top: 30px;
+        text-align: center;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .tutorial {
+        background: #fff3cd;
+        border: 2px solid #ffc107;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+      }
+
+      .tutorial h4 {
+        color: #856404;
+        margin-bottom: 10px;
+      }
+
+      .tutorial-step {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .role-selection {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .student-input-area {
+          grid-template-columns: 1fr;
+        }
+
+        .tabs {
+          flex-wrap: wrap;
+        }
+
+        .tab {
+          flex: 1 1 50%;
+        }
+      }
+      /* 형태소 분석 스타일 */
+      .morpheme-card {
+        background: var(--bg);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+
+      .morpheme-header {
+        font-weight: 700;
+        color: #1e3a5f;
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+      }
+
+      .morpheme-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .morpheme-item {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 6px 10px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        user-select: none;
+        position: relative;
+        font-family: "Noto Sans KR", sans-serif;
+      }
+
+      .morpheme-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .morpheme-item.selected {
+        background: #3498db;
+        border-color: #2471a3;
+        color: white;
+      }
+
+      .morpheme-item.deselected {
+        background: #95a5a6;
+        border-color: #7f8c8d;
+        color: white;
+        opacity: 0.85;
+      }
+
+      .morpheme-item.marked {
+        background: #f39c12;
+        border: 2px solid #d68910;
+        box-shadow: 0 0 12px rgba(243, 156, 18, 0.5);
+        color: white;
+      }
+
+      .morpheme-item.editing {
+        background: #fff9e6;
+        border-color: #f39c12;
+      }
+
+      .morpheme-edit-input {
+        width: 60px;
+        padding: 2px 4px;
+        border: 1px solid #1e3a5f;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        text-align: center;
+        font-family: inherit;
+      }
+
+      .morpheme-edit-buttons {
+        display: flex;
+        gap: 4px;
+        margin-top: 4px;
+      }
+
+      .morpheme-edit-btn {
+        padding: 2px 6px;
+        font-size: 0.7rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .morpheme-edit-btn.save {
+        background: #27ae60;
+        color: white;
+      }
+
+      .morpheme-edit-btn.cancel {
+        background: #e74c3c;
+        color: white;
+      }
+
+      .morpheme-split-btn {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 20px;
+        height: 20px;
+        background: #1e3a5f;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        font-size: 0.7rem;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+
+      .morpheme-item:hover .morpheme-split-btn {
+        display: flex;
+      }
+
+      .morpheme-split-btn:hover {
+        background: #0d1f38;
+        transform: scale(1.1);
+      }
+
+      .morpheme-word {
+        font-weight: 700;
+        color: #2c3e50;
+        font-family: "Noto Sans KR", sans-serif;
+      }
+
+      .morpheme-pos {
+        font-size: 0.75rem;
+        color: #7f8c8d;
+        margin-top: 2px;
+        font-family: "Noto Sans KR", sans-serif;
+      }
+
+      /* selected/deselected/marked 상태에서 텍스트 색상 */
+      .morpheme-item.selected .morpheme-word,
+      .morpheme-item.selected .morpheme-pos,
+      .morpheme-item.deselected .morpheme-word,
+      .morpheme-item.deselected .morpheme-pos,
+      .morpheme-item.marked .morpheme-word,
+      .morpheme-item.marked .morpheme-pos {
+        color: white;
+      }
+
+      /* 모달 스타일 */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 0;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        overflow-y: auto;
+        animation: slideDown 0.3s;
+      }
+
+      @keyframes slideDown {
+        from {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .modal-header {
+        background: linear-gradient(135deg, #9b59b6, #8e44ad);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .modal-header h2 {
+        margin: 0;
+        font-family: "Noto Sans KR", sans-serif;
+        font-size: 1.5em;
+      }
+
+      .modal-close {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 2em;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s;
+      }
+
+      .modal-close:hover {
+        transform: scale(1.2);
+      }
+
+      .modal-body {
+        padding: 30px;
+        font-family: "Noto Sans KR", sans-serif;
+      }
+
+      .pos-category {
+        margin-bottom: 25px;
+      }
+
+      .pos-category h3 {
+        color: #8e44ad;
+        font-size: 1.2em;
+        margin-bottom: 12px;
+        border-bottom: 2px solid #8e44ad;
+        padding-bottom: 8px;
+      }
+
+      .pos-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+
+      .pos-table th {
+        background: #f5f0fa;
+        color: #8e44ad;
+        padding: 10px;
+        text-align: left;
+        font-weight: 700;
+        border: 1px solid #e0d4ed;
+      }
+
+      .pos-table td {
+        padding: 10px;
+        border: 1px solid #e0d4ed;
+      }
+
+      .pos-table tr:hover {
+        background: #faf8fc;
+      }
+
+      .pos-tag {
+        display: inline-block;
+        background: #9b59b6;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-family: "Roboto Mono", monospace;
+        font-size: 0.9em;
+        font-weight: 600;
+        min-width: 50px;
+        text-align: center;
+      }
+
+      .pos-example {
+        color: #555;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>📊 텍스트 분석 체험</h1>
+        <p>단어 빈도 분석부터 코사인 유사도까지 체험하기</p>
+      </header>
+
+      <div class="tabs" id="tab-navigation">
+        <button class="tab active" id="tab-btn-collection">📝 문장 수집</button>
+        <button class="tab" id="tab-btn-morpheme" disabled>
+          🔍 형태소 분리
+        </button>
+        <button class="tab" id="tab-btn-analysis" disabled>
+          📊 텍스트 분석
+        </button>
+        <button class="tab" id="tab-btn-vector" disabled>🔢 벡터 계산</button>
+      </div>
+
+      <div id="tab-collection" class="tab-content active">
+        <div id="role-selection-screen">
+          <div class="welcome-screen">
+            <h2>텍스트 분석 체험에 오신 것을 환영합니다!</h2>
+            <p>역할을 선택해주세요</p>
+            <div class="role-selection">
+              <div
+                class="role-card"
+                data-role="teacher"
+                style="background: #1e3a5f"
+              >
+                <h3>👨‍🏫 선생님</h3>
+                <p>새로운 수업 방을 만들고<br />학생들을 관리합니다</p>
+              </div>
+              <div
+                class="role-card"
+                data-role="student"
+                style="background: #2d5a87"
+              >
+                <h3>👨‍🎓 학생</h3>
+                <p>방 코드를 입력하고<br />수업에 참여합니다</p>
+              </div>
+              <div
+                class="role-card"
+                data-role="demo"
+                style="background: #3d7ab0"
+              >
+                <h3>🧪 체험하기</h3>
+                <p>방 코드 없이 혼자서<br />빠르게 테스트합니다</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="teacher-view" class="hidden">
+          <div class="tutorial">
+            <h4>📚 수업 진행 가이드</h4>
+            <div class="tutorial-step">
+              1. 아래 방 코드를 학생들에게 공유하세요
+            </div>
+            <div class="tutorial-step">
+              2. 이미지를 업로드하여 학생들에게 보여줄 주제를 설정하세요
+            </div>
+            <div class="tutorial-step">
+              3. 학생들이 입력을 완료하면 "입력 마감" 버튼을 클릭하세요
+            </div>
+            <div class="tutorial-step">
+              4. "텍스트 분석" 탭으로 이동하여 워드클라우드를 확인하세요
+            </div>
+          </div>
+
+          <div class="room-code-display">
+            <h3>🔑 방 코드</h3>
+            <div class="room-code" id="room-code-text">------</div>
+            <div id="qrcode"></div>
+            <div class="button-group">
+              <button class="btn-primary" id="copy-room-code-btn">
+                📋 코드 복사
+              </button>
+              <button class="btn-primary" id="copy-room-url-btn">
+                🔗 링크 복사
+              </button>
+            </div>
+          </div>
+
+          <!-- 이미지 업로드 섹션 -->
+          <div
+            class="image-upload-section"
+            style="
+              background: #f8f9fa;
+              border-radius: 15px;
+              padding: 25px;
+              margin: 20px 0;
+              border: 2px dashed #1e3a5f;
+            "
+          >
+            <h3 style="color: #1e3a5f; margin-bottom: 15px">
+              🖼️ 주제 이미지 업로드
+            </h3>
+            <p style="color: #666; margin-bottom: 15px">
+              학생들이 보고 문장을 작성할 이미지를 업로드하세요
+            </p>
+
+            <div style="margin-top: 20px">
+              <h4 style="color: #1e3a5f; margin-bottom: 10px">
+                📷 주제 이미지 (선택사항)
+              </h4>
+              <div
+                id="image-upload-box"
+                style="
+                  border: 3px dashed #1e3a5f;
+                  border-radius: 12px;
+                  padding: 40px;
+                  text-align: center;
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  background: white;
+                  min-height: 200px;
+                  display: flex;
+                  flex-direction: column;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <div id="image-upload-placeholder">
+                  <p style="color: #1e3a5f; font-size: 1.1em; margin: 10px 0">
+                    🖼️ 클릭하여 이미지 선택
+                  </p>
+                  <p style="font-size: 0.9em; color: #666">
+                    학생들이 참고할 이미지를 업로드하세요
+                  </p>
+                </div>
+                <img
+                  id="topic-image-preview"
+                  style="
+                    max-width: 100%;
+                    max-height: 400px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                    display: none;
+                  "
+                />
+              </div>
+              <input
+                type="file"
+                id="topic-image-input"
+                accept="image/*"
+                style="display: none"
+              />
+              <div style="margin-top: 15px; text-align: center">
+                <button
+                  class="btn-danger"
+                  id="remove-image-btn"
+                  style="display: none"
+                >
+                  🗑️ 이미지 삭제
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 통계 카드 -->
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              gap: 20px;
+              margin: 30px 0;
+            "
+          >
+            <div
+              style="
+                background: #e74c3c;
+                color: white;
+                padding: 25px;
+                border-radius: 12px;
+                text-align: center;
+                box-shadow: 0 2px 10px rgba(231, 76, 60, 0.2);
+              "
+            >
+              <div
+                style="font-size: 2.5em; font-weight: 700; margin-bottom: 10px"
+                id="participant-count"
+              >
+                0
+              </div>
+              <div style="font-size: 1.1em; opacity: 0.95">👥 참가자 수</div>
+            </div>
+            <div
+              style="
+                background: #27ae60;
+                color: white;
+                padding: 25px;
+                border-radius: 12px;
+                text-align: center;
+                box-shadow: 0 2px 10px rgba(39, 174, 96, 0.2);
+              "
+            >
+              <div
+                style="font-size: 2.5em; font-weight: 700; margin-bottom: 10px"
+                id="completed-count"
+              >
+                0
+              </div>
+              <div style="font-size: 1.1em; opacity: 0.95">✅ 제출 완료</div>
+            </div>
+          </div>
+
+          <div class="participation-status">
+            <h3>📊 실시간 참여 현황</h3>
+            <div class="status-bar">
+              <div class="status-progress" id="progress-bar" style="width: 0%">
+                0명 참여
+              </div>
+            </div>
+            <p id="participation-text">대기 중...</p>
+          </div>
+
+          <div class="student-input-area" id="students-grid"></div>
+
+          <div class="button-group" style="margin-top: 30px">
+            <button class="btn-secondary" onclick="goHome()">🏠 홈으로</button>
+            <button class="btn-danger" id="close-input-btn">
+              🔒 입력 마감
+            </button>
+            <button class="btn-success" id="start-analysis-btn" disabled>
+              ▶️ 분석 시작
+            </button>
+          </div>
+        </div>
+
+        <div id="student-view" class="hidden">
+          <div id="room-join" class="welcome-screen">
+            <h2>방 코드를 입력하세요</h2>
+            <input
+              type="text"
+              id="room-code-input"
+              placeholder="예: ABC123"
+              maxlength="6"
+            />
+            <br />
+            <button class="btn-primary" id="join-room-btn">🚪 입장하기</button>
+            <button
+              class="btn-secondary"
+              onclick="goHome()"
+              style="margin-top: 10px"
+            >
+              🏠 홈으로
+            </button>
+          </div>
+
+          <div id="student-input" class="hidden">
+            <!-- 주제 이미지 표시 영역 (맨 위) -->
+            <div
+              id="student-topic-image"
+              style="text-align: center; margin: 20px 0; display: none"
+            >
+              <h3 style="color: #1e3a5f; margin-bottom: 15px">
+                🖼️ 주제 이미지
+              </h3>
+              <img
+                id="student-image-display"
+                style="
+                  max-width: 100%;
+                  max-height: 350px;
+                  border-radius: 10px;
+                  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+                "
+              />
+            </div>
+
+            <div id="nickname-section">
+              <div class="tutorial">
+                <h4>📝 문장 작성 가이드</h4>
+                <div class="tutorial-step">
+                  위 이미지를 보고 떠오르는 문장을 작성해주세요
+                </div>
+              </div>
+
+              <div style="text-align: center; margin: 30px 0">
+                <h3>👤 닉네임 입력</h3>
+                <p style="color: #4a5568; margin: 10px 0 20px 0">
+                  학번 또는 이름을 입력하거나, 닉네임을 입력하고 아래 버튼을
+                  누르세요
+                </p>
+                <input
+                  type="text"
+                  id="nickname-input"
+                  placeholder="예: 10101 홍길동"
+                />
+                <br />
+                <button class="btn-primary" id="set-nickname-btn">
+                  ✅ 시작하기
+                </button>
+              </div>
+            </div>
+
+            <div id="sentence-input" class="hidden">
+              <div style="text-align: right; margin-bottom: 15px">
+                <button class="btn-secondary" onclick="goBackToNickname()">
+                  ⬅️ 닉네임 입력으로 돌아가기
+                </button>
+              </div>
+
+              <h3 style="color: #1e3a5f; margin-bottom: 20px">
+                📝 문장 작성 (<span id="student-nickname"></span>)
+              </h3>
+
+              <div style="margin: 20px 0">
+                <label><strong>문장:</strong></label>
+                <textarea
+                  id="sentence1"
+                  placeholder="문장을 입력하세요..."
+                  style="
+                    width: 100%;
+                    padding: 15px;
+                    font-size: 1.1em;
+                    border: 2px solid #ddd;
+                    border-radius: 10px;
+                    font-family: &quot;Noto Sans KR&quot;, sans-serif;
+                    min-height: 100px;
+                  "
+                ></textarea>
+              </div>
+
+              <button class="btn-success" id="submit-sentences-btn">
+                📤 제출하기
+              </button>
+
+              <div
+                id="submission-status"
+                class="hidden"
+                style="
+                  margin-top: 20px;
+                  padding: 20px;
+                  background: #d4edda;
+                  border-radius: 10px;
+                  text-align: center;
+                "
+              >
+                <h3 style="color: #155724">✅ 제출 완료!</h3>
+                <p>선생님이 분석을 시작하면 결과를 볼 수 있습니다.</p>
+                <div
+                  style="
+                    margin-top: 15px;
+                    display: flex;
+                    gap: 10px;
+                    justify-content: center;
+                    flex-wrap: wrap;
+                  "
+                >
+                  <button class="btn-primary" id="view-analysis-student-btn">
+                    📊 분석 결과 보기
+                  </button>
+                  <button class="btn-secondary" onclick="goHome()">
+                    🏠 홈으로
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="demo-view" class="hidden">
+          <div
+            class="tutorial"
+            style="
+              background: linear-gradient(135deg, #e0f7fa 0%, #e1f5fe 100%);
+              border-color: #00bcd4;
+            "
+          >
+            <h4 style="color: #006064">🧪 체험 모드 가이드</h4>
+            <div class="tutorial-step">
+              1. 아래에서 문장을 직접 입력하세요 (최소 1개 이상)
+            </div>
+            <div class="tutorial-step">
+              2. 각 줄마다 하나의 문장을 입력하세요
+            </div>
+            <div class="tutorial-step">
+              3. "분석 시작" 버튼을 누르면 결과를 바로 확인할 수 있습니다
+            </div>
+          </div>
+
+          <div
+            style="
+              background: white;
+              padding: 30px;
+              border-radius: 15px;
+              margin-top: 20px;
+            "
+          >
+            <h3 style="color: #00bcd4; margin-bottom: 20px">
+              📝 분석할 문장 입력
+            </h3>
+            <textarea
+              id="demo-sentences"
+              rows="15"
+              style="
+                width: 100%;
+                padding: 15px;
+                font-size: 1.1em;
+                border: 2px solid #00bcd4;
+                border-radius: 10px;
+                font-family: &quot;Noto Sans KR&quot;, sans-serif;
+                line-height: 1.8;
+              "
+              placeholder="예시:
+급식이 정말 맛있었어요
+오늘 짜장면이 최고였어요
+체육시간이 재미있었어요
+친구들과 놀았어요
+수학 시험이 어려웠어요
+선생님이 친절하셨어요
+
+(한 줄에 하나의 문장을 입력하세요)"
+            ></textarea>
+
+            <div style="margin-top: 20px; text-align: center">
+              <button
+                class="btn-success"
+                id="start-demo-btn"
+                style="font-size: 1.2em; padding: 15px 40px"
+              >
+                🚀 분석 시작하기
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 형태소 분리 탭 -->
+      <div id="tab-morpheme" class="tab-content">
+        <div class="tutorial">
+          <h4>🔍 형태소 분리 단계</h4>
+          <div class="tutorial-step">1. 각 문장이 단어로 자동 분리됩니다</div>
+          <div class="tutorial-step">
+            2. 조사와 어미가 자동으로 분리됩니다 (예: "학생은" → "학생" + "은")
+          </div>
+          <div class="tutorial-step">
+            3. 형태소를 클릭하면 분석에 포함/제외할 수 있습니다
+          </div>
+          <div class="tutorial-step">
+            4. Shift+클릭으로 여러 형태소를 선택하여 합칠 수 있습니다
+          </div>
+          <div class="tutorial-step">
+            5. 더블클릭하면 직접 수정할 수 있습니다
+          </div>
+          <div class="tutorial-step">
+            6. ✂️ 버튼을 클릭하면 단어를 분리할 수 있습니다
+          </div>
+        </div>
+
+        <div class="analysis-section" id="morphemeMainCard">
+          <h3>🔍 형태소 분석 결과</h3>
+          <div
+            style="
+              background: rgba(93, 173, 226, 0.1);
+              padding: 15px;
+              border-radius: 8px;
+              margin-bottom: 20px;
+              font-size: 1em;
+              color: #555;
+              border-left: 4px solid #5dade2;
+            "
+          >
+            💡 <strong>사용 방법:</strong> <br /><br />
+            <strong>• 클릭:</strong> 형태소를 분석에 포함하거나 제외합니다
+            <br /><strong>• Shift+클릭:</strong> 여러 형태소를 선택하여 합칩니다
+            (주황색으로 표시) <br /><strong>• 더블클릭:</strong> 형태소의 내용을
+            직접 수정합니다 <br /><strong>• ✂️ 버튼:</strong> 단어를 두 개로
+            분리합니다 <br /><br />
+            <span style="color: #3498db; font-weight: 700;">✅ 파란색 = 분석에 포함</span> /
+            <span style="color: #95a5a6; font-weight: 700;">⬜ 회색 = 제외됨</span> /
+            <span style="color: #f39c12; font-weight: 700;">🟨 주황색 = 합치기 위해 선택됨</span>
+          </div>
+
+          <div id="morphemeMainContainer"></div>
+
+          <div
+            id="merge-button-container"
+            style="margin-top: 20px; text-align: center; display: none"
+          >
+            <button
+              class="btn-primary"
+              onclick="mergeMorphemes()"
+              style="background: #ffc107; color: #333; font-weight: 600"
+            >
+              🔗 선택한 형태소 합치기 (<span id="merge-count">0</span>개)
+            </button>
+            <button
+              class="btn-secondary"
+              onclick="clearMarkedMorphemes()"
+              style="margin-left: 10px"
+            >
+              ✖️ 선택 취소
+            </button>
+          </div>
+
+          <div
+            id="morpheme-bottom-buttons"
+            style="
+              margin-top: 30px;
+              text-align: center;
+              display: flex;
+              gap: 15px;
+              justify-content: center;
+              flex-wrap: wrap;
+            "
+          >
+            <button class="btn-secondary" onclick="goBackToCollection()">
+              ⬅️ 문장 수집으로 돌아가기
+            </button>
+            <button
+              class="btn-primary"
+              onclick="showMorphemeGuide()"
+              style="background: #9b59b6; font-size: 1em; padding: 12px 24px"
+            >
+              📖 형태소 설명
+            </button>
+            <button
+              class="btn-success"
+              onclick="proceedToAnalysis()"
+              style="font-size: 1.1em; padding: 15px 30px"
+            >
+              ➡️ 텍스트 분석 시작
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-analysis" class="tab-content">
+        <div class="tutorial">
+          <h4>📊 텍스트 분석 단계</h4>
+          <div class="tutorial-step">
+            1. 워드클라우드에서 자주 등장하는 단어를 확인하세요
+          </div>
+          <div class="tutorial-step">
+            2. 빈도 테이블에서 정확한 등장 횟수를 확인하세요
+          </div>
+          <div class="tutorial-step">
+            3. 상위 8~12개 단어를 선택하여 벡터 계산으로 넘어갑니다
+          </div>
+        </div>
+
+        <div class="analysis-section">
+          <h3>☁️ 워드클라우드</h3>
+
+          <div class="shape-settings">
+            <div style="margin-bottom: 15px">
+              <strong>🎨 모양 선택:</strong><br />
+              <!-- 마스크 이미지 방식 사용 -->
+              <button class="shape-option active" data-shape="circle">
+                ⚪ 원형
+              </button>
+              <button class="shape-option" data-shape="heart">❤️ 하트</button>
+              <button class="shape-option" data-shape="star">⭐ 별</button>
+              <button class="shape-option" data-shape="cloud">☁️ 구름</button>
+              <button class="shape-option" data-shape="diamond">
+                💎 다이아
+              </button>
+              <button class="shape-option" data-shape="square">
+                ⬜ 사각형
+              </button>
+            </div>
+
+            <div style="margin-bottom: 15px">
+              <strong>🔤 폰트 선택:</strong><br />
+              <button
+                class="shape-option font-option active"
+                data-font="Do Hyeon"
+                style="font-family: &quot;Do Hyeon&quot;"
+              >
+                도현
+              </button>
+              <button
+                class="shape-option font-option"
+                data-font="Black Han Sans"
+                style="font-family: &quot;Black Han Sans&quot;"
+              >
+                검은고딕
+              </button>
+              <button
+                class="shape-option font-option"
+                data-font="Jua"
+                style="font-family: &quot;Jua&quot;"
+              >
+                주아
+              </button>
+              <button
+                class="shape-option font-option"
+                data-font="Dokdo"
+                style="font-family: &quot;Dokdo&quot;"
+              >
+                독도
+              </button>
+              <button
+                class="shape-option font-option"
+                data-font="Gamja Flower"
+                style="font-family: &quot;Gamja Flower&quot;"
+              >
+                감자꽃
+              </button>
+            </div>
+
+            <div style="text-align: center">
+              <label>
+                <input type="checkbox" id="stopwords-toggle" checked />
+                불용어 제거 (조사, 어미 등)
+              </label>
+            </div>
+          </div>
+
+          <div id="wordcloud-container">
+            <canvas id="wordcloud-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="analysis-section">
+          <h3>📈 단어 빈도 분석</h3>
+          <table class="frequency-table" id="frequency-table">
+            <thead>
+              <tr>
+                <th>순위</th>
+                <th>단어</th>
+                <th>빈도</th>
+                <th>비율</th>
+                <th style="border-left: 2px solid #ddd">순위</th>
+                <th>단어</th>
+                <th>빈도</th>
+                <th>비율</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="frequency-chart"></canvas>
+        </div>
+
+        <div
+          style="
+            text-align: center;
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+          "
+        >
+          <button class="btn-secondary" onclick="goBackToMorpheme()">
+            ⬅️ 형태소 분리로 돌아가기
+          </button>
+          <button class="btn-success" id="proceed-vector-btn">
+            ➡️ 벡터 계산으로 이동
+          </button>
+        </div>
+      </div>
+
+      <div id="tab-vector" class="tab-content">
+        <div style="text-align: right; margin-bottom: 15px">
+          <button class="btn-secondary" onclick="goBackToAnalysis()">
+            ⬅️ 텍스트 분석으로 돌아가기
+          </button>
+        </div>
+        <div class="tutorial">
+          <h4>🔢 벡터 계산 단계</h4>
+          <div class="tutorial-step">
+            1. 분석할 문장을 선택하세요 (클릭하여 선택/해제)
+          </div>
+          <div class="tutorial-step">2. 분석할 단어 8~12개를 선택하세요</div>
+          <div class="tutorial-step">
+            3. 코사인 유사도를 계산하여 비슷한 문장을 찾습니다
+          </div>
+        </div>
+
+        <!-- 문장 선택 섹션 -->
+        <div class="analysis-section">
+          <h3>📝 분석할 문장 선택</h3>
+          <div style="margin-bottom: 15px">
+            <button class="btn-secondary" id="select-all-sentences-btn">
+              전체 선택
+            </button>
+            <button class="btn-secondary" id="deselect-all-sentences-btn">
+              전체 해제
+            </button>
+            <span
+              id="selected-sentence-count"
+              style="margin-left: 15px; color: #1e3a5f; font-weight: 600"
+              >0개 선택됨</span
+            >
+          </div>
+          <div class="sentence-selection" id="sentence-selection"></div>
+        </div>
+
+        <div class="analysis-section">
+          <h3>✅ 단어 선택</h3>
+          <div style="margin-bottom: 20px">
+            <button class="btn-secondary" id="auto-select-btn">
+              자동 선택 (상위 10개)
+            </button>
+            <button class="btn-secondary" id="clear-selection-btn">
+              선택 초기화
+            </button>
+          </div>
+          <div class="word-selection" id="word-selection"></div>
+        </div>
+
+        <div class="analysis-section">
+          <h3>📊 문장×단어 빈도 행렬</h3>
+          <div class="matrix-table" id="matrix-display"></div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0">
+          <button class="btn-success" id="calc-similarity-btn">
+            🔍 코사인 유사도 계산
+          </button>
+          <button
+            class="btn-primary"
+            id="calc-euclidean-btn"
+            style="margin-left: 10px"
+          >
+            📏 유클리드 거리 계산
+          </button>
+        </div>
+
+        <div class="analysis-section hidden" id="similarity-section">
+          <h3 id="similarity-title">🎯 가장 비슷한 문장 찾기</h3>
+          <div class="similarity-results" id="similarity-results"></div>
+        </div>
+
+        <div class="analysis-section">
+          <h3>📊 유사도 분석표</h3>
+          <p style="color: #666; margin-bottom: 15px">
+            각 문장끼리 얼마나 비슷한지 표로 나타냅니다. 파란색이 진할수록
+            유사도가 높습니다.
+          </p>
+          <div class="heatmap-container">
+            <canvas id="heatmap-canvas"></canvas>
+          </div>
+        </div>
+
+        <div class="analysis-section">
+          <h3>📐 문장 비교 그래프</h3>
+          <p style="color: #666; margin-bottom: 15px">
+            선택한 단어를 기준으로 각 문장이 얼마나 그 단어를 포함하는지
+            막대그래프로 보여줍니다.
+          </p>
+          <div id="vector-chart-container">
+            <canvas id="vector-chart" width="800" height="400"></canvas>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px">
+          <button class="btn-primary" id="download-btn">
+            💾 결과 스크린샷 다운로드
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <!-- 형태소 설명 모달 -->
+    <div id="morpheme-guide-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>📖 형태소 품사 태그 설명</h2>
+          <button class="modal-close" onclick="closeMorphemeGuide()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p style="color: #666; margin-bottom: 20px;">
+            형태소 분석 결과에서 볼 수 있는 품사 태그의 의미를 설명합니다.
+          </p>
+
+          <div class="pos-category">
+            <h3>📌 명사 (Noun)</h3>
+            <table class="pos-table">
+              <tr>
+                <th style="width: 80px;">태그</th>
+                <th>설명</th>
+                <th style="width: 200px;">예시</th>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">NNG</span></td>
+                <td>일반 명사</td>
+                <td class="pos-example">학교, 사람, 컴퓨터</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">NNP</span></td>
+                <td>고유 명사</td>
+                <td class="pos-example">서울, 한국, 철수</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">NNB</span></td>
+                <td>의존 명사</td>
+                <td class="pos-example">것, 수, 때</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">NR</span></td>
+                <td>수사</td>
+                <td class="pos-example">하나, 둘, 첫째</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">NP</span></td>
+                <td>대명사</td>
+                <td class="pos-example">나, 너, 이것</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="pos-category">
+            <h3>🔤 동사/형용사 (Verb/Adjective)</h3>
+            <table class="pos-table">
+              <tr>
+                <th style="width: 80px;">태그</th>
+                <th>설명</th>
+                <th style="width: 200px;">예시</th>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">VV</span></td>
+                <td>동사</td>
+                <td class="pos-example">먹다, 가다, 보다</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">VA</span></td>
+                <td>형용사</td>
+                <td class="pos-example">예쁘다, 크다, 좋다</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">VX</span></td>
+                <td>보조 용언</td>
+                <td class="pos-example">보다, 주다, 싶다</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="pos-category">
+            <h3>📎 조사 (Particle)</h3>
+            <table class="pos-table">
+              <tr>
+                <th style="width: 80px;">태그</th>
+                <th>설명</th>
+                <th style="width: 200px;">예시</th>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">JKS</span></td>
+                <td>주격 조사</td>
+                <td class="pos-example">이, 가, 께서</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">JKO</span></td>
+                <td>목적격 조사</td>
+                <td class="pos-example">을, 를</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">JKB</span></td>
+                <td>부사격 조사</td>
+                <td class="pos-example">에, 에서, 으로</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">JX</span></td>
+                <td>보조사</td>
+                <td class="pos-example">은, 는, 도, 만</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">JC</span></td>
+                <td>접속 조사</td>
+                <td class="pos-example">와, 과, 하고</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="pos-category">
+            <h3>🔗 어미 (Ending)</h3>
+            <table class="pos-table">
+              <tr>
+                <th style="width: 80px;">태그</th>
+                <th>설명</th>
+                <th style="width: 200px;">예시</th>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">EF</span></td>
+                <td>종결 어미</td>
+                <td class="pos-example">다, 요, 니</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">EC</span></td>
+                <td>연결 어미</td>
+                <td class="pos-example">고, 며, 면서</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">ETN</span></td>
+                <td>명사형 어미</td>
+                <td class="pos-example">기, 음, ㅁ</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">ETM</span></td>
+                <td>관형형 어미</td>
+                <td class="pos-example">는, ㄴ, ㄹ</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="pos-category">
+            <h3>✨ 기타 (Others)</h3>
+            <table class="pos-table">
+              <tr>
+                <th style="width: 80px;">태그</th>
+                <th>설명</th>
+                <th style="width: 200px;">예시</th>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">MAG</span></td>
+                <td>일반 부사</td>
+                <td class="pos-example">매우, 아주, 잘</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">MM</span></td>
+                <td>관형사</td>
+                <td class="pos-example">새, 헌, 모든</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">SN</span></td>
+                <td>숫자</td>
+                <td class="pos-example">1, 2, 100</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">SL</span></td>
+                <td>외국어</td>
+                <td class="pos-example">AI, computer</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">SF</span></td>
+                <td>특수문자/구두점</td>
+                <td class="pos-example">., !, ?, ~</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">XPN</span></td>
+                <td>접두사</td>
+                <td class="pos-example">신-, 재-, 초-</td>
+              </tr>
+              <tr>
+                <td><span class="pos-tag">XSN</span></td>
+                <td>명사 파생 접미사</td>
+                <td class="pos-example">-적, -성, -화</td>
+              </tr>
+            </table>
+          </div>
+
+          <div style="margin-top: 20px; padding: 15px; background: #f0e6f6; border-radius: 8px; border-left: 4px solid #9b59b6;">
+            <strong>💡 TIP:</strong> 형태소 분석에서는 주로 <span class="pos-tag">NNG</span>, <span class="pos-tag">NNP</span> 등의 명사 태그를 가진 단어들이 텍스트 분석에 사용됩니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        set,
+        onValue,
+        push,
+        update,
+        onChildAdded,
+        onChildChanged,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAoStrEge38qPjgKsvJcapxNBrG6EQO73U",
+        authDomain: "text-mining-e8d40.firebaseapp.com",
+        databaseURL:
+          "https://text-mining-e8d40-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        projectId: "text-mining-e8d40",
+        storageBucket: "text-mining-e8d40.firebasestorage.app",
+        messagingSenderId: "812157440406",
+        appId: "1:812157440406:web:16ffed03a0ae63579f0db7",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const database = getDatabase(app);
+
+      window.firebaseDB = database;
+      window.firebaseRef = ref;
+      window.firebaseSet = set;
+      window.firebaseUpdate = update;
+      window.firebaseOnValue = onValue;
+      window.firebaseOnChildAdded = onChildAdded;
+      window.firebaseOnChildChanged = onChildChanged;
+      window.firebasePush = push;
+
+      // Firebase 로드 완료 이벤트 발생
+      window.firebaseReady = true;
+      window.dispatchEvent(new Event("firebaseReady"));
+      console.log("✅ Firebase 초기화 완료");
+    </script>
+
+    <script>
+      // ==========================================
+      // 전역 변수 선언 (중복 제거)
+      // ==========================================
+      let currentRole = null;
+      let currentRoom = null;
+      let currentNickname = null;
+      let allSentences = [];
+      let currentMorphemes = []; // 현재 형태소 분석 결과
+      let markedMorphemes = []; // 합치기 위해 선택된 형태소들 {sentenceIndex, morphemeIndex}
+
+      // 한국어 조사 목록 (강화판)
+      const PARTICLES = [
+        // 격조사 (주격, 목적격, 서술격 등)
+        "은",
+        "는",
+        "이",
+        "가",
+        "을",
+        "를",
+        "의",
+        "에",
+        "에서",
+        "으로",
+        "로",
+        "에게",
+        "한테",
+        "께",
+        "에게서",
+        "한테서",
+        "께서",
+        "에서부터",
+        "로부터",
+        "으로부터",
+        "께서",
+        "에게서",
+        "한테서",
+        "로부터",
+        "부터",
+        // 보조사
+        "도",
+        "만",
+        "까지",
+        "마저",
+        "조차",
+        "밖에",
+        "뿐",
+        "이나",
+        "나",
+        "라도",
+        "이라도",
+        "커녕",
+        "은커녕",
+        "든지",
+        "이든지",
+        "야",
+        "이야",
+        "라야",
+        "이라야",
+        // 접속조사
+        "와",
+        "과",
+        "하고",
+        "이랑",
+        "랑",
+        // 비교/양태 조사
+        "보다",
+        "처럼",
+        "같이",
+        "만큼",
+        "치럼",
+        "대로",
+        "따라",
+      ];
+
+      // 한국어 어미 목록
+      const ENDINGS = [
+        // 종결어미
+        "다",
+        "니",
+        "요",
+        "죠",
+        "지요",
+        "네",
+        "구나",
+        "구먼",
+        "노라",
+        "세",
+        "ㅂ니다",
+        "습니다",
+        "어요",
+        "아요",
+        "여요",
+        // 과거형
+        "었다",
+        "았다",
+        "였다",
+        "었어요",
+        "았어요",
+        "였어요",
+        "었습니다",
+        "았습니다",
+        // 미래/추측
+        "겠다",
+        "겠어요",
+        "겠습니다",
+        "리라",
+        "으리라",
+        // 현재형
+        "는다",
+        "ㄴ다",
+        "는가",
+        "나",
+        "느냐",
+        "으냐",
+        // 연결어미
+        "고",
+        "며",
+        "면서",
+        "어서",
+        "아서",
+        "여서",
+        "면",
+        "으면",
+        "지만",
+        "는데",
+        "은데",
+        "니까",
+        "으니까",
+        "어도",
+        "아도",
+        "여도",
+        "거나",
+        "든지",
+        // 관형형어미
+        "는",
+        "ㄴ",
+        "은",
+        "던",
+        "을",
+        "ㄹ",
+        // 명사형어미
+        "기",
+        "음",
+        "ㅁ",
+        // 추가 종결어미
+        "ㄴ가",
+        "나요",
+        "군요",
+        "는군요",
+        "네요",
+        "는걸",
+        "ㄴ걸",
+        "은걸",
+        "ㄹ걸",
+        "을걸",
+        // 추가 연결어미
+        "으며",
+        "면서도",
+        "지",
+        "게",
+        "도록",
+        "록",
+        "자",
+        "자마자",
+        "ㄹ수록",
+        "을수록",
+        "느라",
+        "느라고",
+        "다가",
+        "다가는",
+        "려고",
+        "으려고",
+        "려면",
+        "으려면",
+        // 추가 과거형
+        "었네",
+        "았네",
+        "였네",
+        "었군",
+        "았군",
+        "였군",
+        "었지",
+        "았지",
+        "였지",
+        // 추가 미래형
+        "겠네",
+        "겠군",
+        "겠지",
+        "ㄹ것이다",
+        "을것이다",
+        // 추가 관형형
+        "ㄹ",
+        "을",
+        "던",
+        "였던",
+        "았던",
+        "었던",
+      ];
+
+      // 복합명사 사전 (분리하지 않을 단어들)
+      const COMPOUND_NOUNS = new Set([
+        // 기술/AI/과학
+        "인공지능",
+        "딥러닝",
+        "머신러닝",
+        "자연어처리",
+        "컴퓨터비전",
+        "데이터과학",
+        "빅데이터",
+        "블록체인",
+        "사물인터넷",
+        "클라우드",
+        "가상현실",
+        "증강현실",
+        "로봇공학",
+        "양자컴퓨팅",
+        "나노기술",
+        "생명공학",
+        "우주과학",
+        "신재생에너지",
+
+        // 교육/학습
+        "수학문제",
+        "영어단어",
+        "과학실험",
+        "역사공부",
+        "국어시험",
+        "수능시험",
+        "중간고사",
+        "기말고사",
+        "모의고사",
+        "학습지",
+        "교과서",
+        "참고서",
+
+        // IT/디지털
+        "스마트폰",
+        "노트북",
+        "태블릿",
+        "데스크톱",
+        "웹사이트",
+        "애플리케이션",
+        "소셜미디어",
+        "유튜브",
+        "인스타그램",
+        "페이스북",
+        "카카오톡",
+        "네이버",
+
+        // 경제/사회
+        "경제성장",
+        "국내총생산",
+        "소비자물가",
+        "실업률",
+        "금리인상",
+        "환율변동",
+        "주식시장",
+        "부동산시장",
+        "기후변화",
+        "지구온난화",
+        "탄소중립",
+        "신재생",
+
+        // 정치/외교
+        "국회의원",
+        "대통령",
+        "국무총리",
+        "외교부",
+        "통일부",
+        "국방부",
+        "남북관계",
+        "한미동맹",
+        "국제사회",
+        "유엔안보리",
+        "북핵문제",
+
+        // 일상/생활
+        "삼겹살",
+        "김치찌개",
+        "된장찌개",
+        "떡볶이",
+        "치킨",
+        "피자",
+        "편의점",
+        "대형마트",
+        "백화점",
+        "영화관",
+        "놀이공원",
+        "동물원",
+
+        // 의료/건강
+        "건강보험",
+        "의료보험",
+        "국민건강",
+        "전염병",
+        "코로나바이러스",
+        "백신접종",
+        "병원진료",
+        "응급실",
+        "건강검진",
+        "정신건강",
+        "고혈압",
+        "당뇨병",
+
+        // 텍스트마이닝/분석 관련
+        "텍스트마이닝",
+        "데이터분석",
+        "형태소분석",
+        "감성분석",
+        "워드클라우드",
+        "빈도분석",
+        "통계분석",
+        "자연어",
+        "품사태깅",
+        "개체명인식",
+        "키워드추출",
+        "문서분류",
+        "토픽모델링",
+        "코사인유사도",
+        "벡터화",
+
+        // 추가 IT 용어
+        "프로그래밍",
+        "알고리즘",
+        "데이터베이스",
+        "서버관리",
+        "클라우드컴퓨팅",
+        "사이버보안",
+        "정보보안",
+        "네트워크",
+        "운영체제",
+        "소프트웨어",
+        "하드웨어",
+        "프론트엔드",
+        "백엔드",
+        "풀스택",
+        "데브옵스",
+        "애자일",
+
+        // 추가 일상 용어
+        "대학생",
+        "고등학생",
+        "중학생",
+        "초등학생",
+        "직장인",
+        "자영업자",
+        "프리랜서",
+        "아르바이트",
+        "정규직",
+        "비정규직",
+        "재택근무",
+        "화상회의",
+        "온라인수업",
+        "원격수업",
+
+        // 복합 동사/형용사 명사화
+        "할수있다",
+        "할수없다",
+        "하고싶다",
+        "좋아하다",
+        "싫어하다",
+        "관심있다",
+        "중요하다",
+        "필요하다",
+        "가능하다",
+        "불가능하다",
+      ]);
+
+      // 분리하면 안 되는 패턴 (형용사, 동사 등)
+      const DONT_SPLIT = new Set([
+        // 형용사 (높은, 낮은...)
+        "높은",
+        "낮은",
+        "같은",
+        "다른",
+        "작은",
+        "큰",
+        "좋은",
+        "나쁜",
+        "많은",
+        "적은",
+        "빠른",
+        "느린",
+        "새로운",
+        "오래된",
+        "어린",
+        "젊은",
+        "아름다운",
+        "못생긴",
+        "예쁜",
+        "귀여운",
+        "무서운",
+        "슬픈",
+        "기쁜",
+
+        // 동사 (하는, 되는...)
+        "하는",
+        "되는",
+        "가는",
+        "오는",
+        "보는",
+        "듣는",
+        "먹는",
+        "마시는",
+        "읽는",
+        "쓰는",
+        "말하는",
+        "걷는",
+        "뛰는",
+        "자는",
+        "일어나는",
+
+        // 부사
+        "매우",
+        "아주",
+        "정말",
+        "진짜",
+        "너무",
+        "조금",
+        "많이",
+        "빨리",
+        "천천히",
+        "갑자기",
+        "항상",
+        "가끔",
+        "자주",
+        "절대",
+        "결코",
+        "전혀",
+        "거의",
+        "이미",
+        "벌써",
+        "아직",
+        "곧",
+        "다시",
+        "또",
+        "함께",
+        "같이",
+        "혼자",
+        "모두",
+        "다",
+
+        // 추가 형용사
+        "강한",
+        "약한",
+        "긴",
+        "짧은",
+        "넓은",
+        "좁은",
+        "깊은",
+        "얕은",
+        "무거운",
+        "가벼운",
+        "밝은",
+        "어두운",
+        "뜨거운",
+        "차가운",
+        "따뜻한",
+        "시원한",
+        "맛있는",
+        "맛없는",
+        "달콤한",
+        "쓴",
+        "매운",
+        "신",
+        "건강한",
+        "아픈",
+
+        // 추가 동사 (관형형)
+        "만드는",
+        "사용하는",
+        "배우는",
+        "가르치는",
+        "연구하는",
+        "개발하는",
+        "분석하는",
+        "생각하는",
+        "느끼는",
+        "알고있는",
+        "모르는",
+        "원하는",
+        "바라는",
+        "기대하는",
+        "믿는",
+        "의심하는",
+
+        // 지시어/대명사
+        "이것",
+        "그것",
+        "저것",
+        "여기",
+        "거기",
+        "저기",
+        "이곳",
+        "그곳",
+        "저곳",
+        "어디",
+        "언제",
+        "누구",
+        "무엇",
+        "어떻게",
+        "왜",
+        "어느",
+        "어떤",
+        "이런",
+        "그런",
+        "저런",
+      ]);
+
+      // 10,000개 명사 사전 (동적 로드)
+      let NOUN_DICTIONARY = new Set();
+      let dictionaryLoaded = false;
+
+      let selectedSentences = []; // 분석에 사용할 선택된 문장들
+      // wordFrequency는 window.wordFrequency 사용
+      let selectedWords = [];
+      let currentWordCloudInstance = null;
+      let wordCloudSettings = {
+        shape: "circle",
+        font: "Do Hyeon",
+        gridSize: 8, // 더 큰 gridSize로 배치 안정화
+        rotateRatio: 0,
+      };
+
+      // ==========================================
+      // 명사 사전 로드 (확장판)
+      // ==========================================
+      async function loadNounDictionary() {
+        if (dictionaryLoaded) return;
+
+        console.log("📚 명사 사전 로드 중...");
+
+        // 1. 먼저 확장 명사 사전(명사사전.js)을 NOUN_DICTIONARY에 추가
+        if (typeof EXTENDED_NOUN_DICTIONARY !== 'undefined') {
+          NOUN_DICTIONARY = new Set(EXTENDED_NOUN_DICTIONARY);
+          console.log(`✅ 확장 명사사전 로드: ${NOUN_DICTIONARY.size.toLocaleString()}개 단어`);
+        }
+
+        // 2. nouns-10k.json 파일이 있으면 추가로 병합
+        try {
+          const response = await fetch("nouns-10k.json");
+
+          if (response.ok) {
+            const data = await response.json();
+            const originalSize = NOUN_DICTIONARY.size;
+
+            // 기존 사전과 병합
+            data.words.forEach(word => NOUN_DICTIONARY.add(word));
+
+            const addedCount = NOUN_DICTIONARY.size - originalSize;
+            console.log(`✅ nouns-10k.json 병합 완료: ${addedCount.toLocaleString()}개 단어 추가`);
+          }
+        } catch (error) {
+          console.log("ℹ️ nouns-10k.json 파일 없음 (확장 사전만 사용)");
+        }
+
+        dictionaryLoaded = true;
+        console.log(`🎯 최종 명사 사전 크기: ${NOUN_DICTIONARY.size.toLocaleString()}개 단어`);
+      }
+
+      // 페이지 로드 시 명사 사전 로드
+      loadNounDictionary();
+
+      // ==========================================
+      // 홈으로 이동 함수
+      // ==========================================
+      function goHome() {
+        if (
+          confirm(
+            "홈으로 이동하시겠습니까?\n현재 진행 상황이 사라질 수 있습니다.",
+          )
+        ) {
+          // URL 파라미터 제거하고 새로고침
+          window.location.href = window.location.pathname;
+        }
+      }
+
+      // ==========================================
+      // 한글 불용어 리스트 (강화됨)
+      // ==========================================
+      const koreanStopwords = new Set([
+        "은",
+        "는",
+        "이",
+        "가",
+        "을",
+        "를",
+        "의",
+        "도",
+        "만",
+        "까지",
+        "부터",
+        "마저",
+        "조차",
+        "에",
+        "에서",
+        "에게",
+        "께",
+        "한테",
+        "보고",
+        "와",
+        "과",
+        "하고",
+        "랑",
+        "이랑",
+        "으로",
+        "로",
+        "처럼",
+        "같이",
+        "마냥",
+        "보다",
+        "만큼",
+        "밖에",
+        "뿐",
+        "뿐만",
+        "다",
+        "요",
+        "어요",
+        "아요",
+        "해요",
+        "네요",
+        "군요",
+        "구나",
+        "구먼",
+        "습니다",
+        "ㅂ니다",
+        "었습니다",
+        "았습니다",
+        "였습니다",
+        "어서",
+        "아서",
+        "여서",
+        "해서",
+        "고",
+        "지만",
+        "는데",
+        "ㄴ데",
+        "그",
+        "저",
+        "이것",
+        "그것",
+        "저것",
+        "여기",
+        "거기",
+        "저기",
+        "이거",
+        "그거",
+        "저거",
+        "무엇",
+        "누구",
+        "언제",
+        "어디",
+        "어떻게",
+        "왜",
+        "개",
+        "명",
+        "분",
+        "초",
+        "시간",
+        "일",
+        "주",
+        "달",
+        "년",
+        "번",
+        "회",
+        "차",
+        "층",
+        "칸",
+        "권",
+        "장",
+        "쪽",
+        "그리고",
+        "그러나",
+        "하지만",
+        "그래서",
+        "따라서",
+        "즉",
+        "또한",
+        "것",
+        "거",
+        "수",
+        "등",
+        "때",
+        "중",
+        "점",
+        "자",
+        "님",
+        "씨",
+        "하다",
+        "있다",
+        "없다",
+        "되다",
+        "이다",
+        "아니다",
+        "계시다",
+        "주다",
+        "드리다",
+      ]);
+
+      // ==========================================
+      // 고급 컬러 팔레트 (더 진하고 뚜렷한 색상)
+      // ==========================================
+      const advancedColors = [
+        "#1e3a5f",
+        "#2d5a87",
+        "#3d7ab0",
+        "#c9a227",
+        "#d4b84a",
+        "#5a8f7b",
+        "#4a7c6b",
+        "#3a695b",
+        "#8b5a5a",
+        "#a06a6a",
+        "#4a6fa5",
+        "#5c82b8",
+        "#6e95cb",
+        "#b8860b",
+        "#daa520",
+        "#2f4f4f",
+        "#4682b4",
+        "#5f9ea0",
+        "#708090",
+        "#778899",
+      ];
+
+      // ==========================================
+      // 한국어 형태소 분석 함수 (khaiii 기반)
+      // ==========================================
+
+      // 한국어 조사 리스트
+      const koreanParticles = [
+        // 주격 조사
+        "이",
+        "가",
+        "께서",
+        // 목적격 조사
+        "을",
+        "를",
+        // 관형격 조사
+        "의",
+        // 부사격 조사
+        "에",
+        "에서",
+        "에게",
+        "한테",
+        "께",
+        "으로",
+        "로",
+        "와",
+        "과",
+        "하고",
+        "랑",
+        "이랑",
+        "보다",
+        "처럼",
+        "같이",
+        "만큼",
+        "까지",
+        "부터",
+        "마저",
+        "조차",
+        "밖에",
+        // 보조사
+        "은",
+        "는",
+        "도",
+        "만",
+        "뿐",
+        "라도",
+        "마는",
+        // 접속 조사
+        "이며",
+        "며",
+        "이고",
+        // 호격 조사
+        "이여",
+      ];
+
+      // 조사로 오인되기 쉬운 글자로 끝나는 고유명사/단어 보호 리스트
+      const protectedWords = new Set([
+        // 국가명
+        "러시아",
+        "우크라이나",
+        "중국",
+        "일본",
+        "미국",
+        "영국",
+        "프랑스",
+        "독일",
+        "이탈리아",
+        "스페인",
+        "캐나다",
+        "호주",
+        "인도",
+        "브라질",
+        "멕시코",
+        "아르헨티나",
+        "터키",
+        "이란",
+        "이라크",
+        "시리아",
+        "이스라엘",
+        "사우디아라비아",
+        "베트남",
+        "태국",
+        "인도네시아",
+        "말레이시아",
+        "필리핀",
+        "싱가포르",
+        "대만",
+        "홍콩",
+        "몽골",
+        "카자흐스탄",
+        "우즈베키스탄",
+        "파키스탄",
+        "아프가니스탄",
+        "이집트",
+        "남아프리카",
+        "나이지리아",
+        "케냐",
+        "에티오피아",
+        "폴란드",
+        "우크라이",
+        "헝가리",
+        "체코",
+        "슬로바키아",
+        "루마니아",
+        "불가리아",
+        "그리스",
+        "노르웨이",
+        "스웨덴",
+        "핀란드",
+        "덴마크",
+        "네덜란드",
+        "벨기에",
+        "스위스",
+        "오스트리아",
+        "포르투갈",
+        "아일랜드",
+        "뉴질랜드",
+        "콜롬비아",
+        "칠레",
+        "페루",
+        "베네수엘라",
+        "쿠바",
+        // 도시명
+        "모스크바",
+        "키이우",
+        "베이징",
+        "상하이",
+        "도쿄",
+        "오사카",
+        "서울",
+        "부산",
+        "워싱턴",
+        "뉴욕",
+        "런던",
+        "파리",
+        "베를린",
+        "로마",
+        "마드리드",
+        "시드니",
+        "멜버른",
+        // 인명 (일반적인 외래어 이름)
+        "젤렌스키",
+        "푸틴",
+        "트럼프",
+        "바이든",
+        "시진핑",
+        "기시다",
+        "마크롱",
+        "숄츠",
+        "오바마",
+        "클린턴",
+        "부시",
+        "레이건",
+        "케네디",
+        "링컨",
+        "워싱턴",
+        "나폴레옹",
+        // 기타 고유명사
+        "아시아",
+        "유럽",
+        "아프리카",
+        "아메리카",
+        "오세아니아",
+        "남극",
+        "북극",
+        "나토",
+        "유엔",
+        "아세안",
+        "오페라",
+        "피아노",
+        "기타",
+        "드라마",
+        "시네마",
+        // 조사로 오인되기 쉬운 일반 단어
+        "회사",
+        "학교",
+        "병원",
+        "정부",
+        "국회",
+        "법원",
+        "경찰",
+        "군대",
+        "언론",
+        "미디어",
+        "역사",
+        "문화",
+        "경제",
+        "정치",
+        "사회",
+        "과학",
+        "기술",
+        "예술",
+        "음악",
+        "영화",
+        "소설",
+        "시",
+        "수학",
+        "물리",
+        "화학",
+        "생물",
+        "지리",
+        "철학",
+        "심리",
+        "교육",
+      ]);
+
+      // 조사를 길이 순으로 정렬 (긴 것부터 먼저 매칭)
+      const sortedParticles = [...koreanParticles].sort(
+        (a, b) => b.length - a.length,
+      );
+
+      // 형태소 분석 함수
+      function analyzeMorpheme(word) {
+        if (word.length < 2) return { word: word, skip: true };
+        if (koreanStopwords.has(word)) return { word: word, skip: true };
+
+        // 외래어/영어는 그대로 반환
+        if (/^[a-zA-Z]+$/.test(word)) {
+          return { word: word.toLowerCase(), skip: false };
+        }
+
+        // 숫자만 있으면 스킵
+        if (/^\d+$/.test(word)) {
+          return { word: word, skip: true };
+        }
+
+        // 보호 단어 리스트에 있으면 그대로 반환
+        if (protectedWords.has(word)) {
+          return { word: word, skip: false };
+        }
+
+        // 사전에 있는 명사면 그대로 반환
+        if (
+          typeof KoreanMorphDict !== "undefined" &&
+          KoreanMorphDict.nouns.has(word)
+        ) {
+          return { word: word, skip: false };
+        }
+
+        let stem = word;
+        let foundStem = false;
+
+        // 1차: KoreanMorphDict의 particles로 시도
+        if (typeof KoreanMorphDict !== "undefined") {
+          for (const particle of KoreanMorphDict.particles) {
+            if (stem.endsWith(particle) && stem.length > particle.length + 1) {
+              const candidate = stem.slice(0, -particle.length);
+              if (candidate.length >= 2) {
+                // 후보 어근이 보호 단어면 반환
+                if (protectedWords.has(candidate)) {
+                  return { word: candidate, skip: false };
+                }
+                if (KoreanMorphDict.nouns.has(candidate)) {
+                  return { word: candidate, skip: false };
+                }
+                // 2글자 이상 조사면 어근 채택
+                if (particle.length >= 2) {
+                  stem = candidate;
+                  foundStem = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // 2차: 확장된 조사 리스트로 어근 추출 시도
+        if (!foundStem) {
+          for (const particle of sortedParticles) {
+            if (stem.endsWith(particle) && stem.length > particle.length + 1) {
+              const candidate = stem.slice(0, -particle.length);
+              if (candidate.length >= 2) {
+                // 후보 어근이 보호 단어면 반환
+                if (protectedWords.has(candidate)) {
+                  return { word: candidate, skip: false };
+                }
+                // 사전에 있으면 확실히 반환
+                if (
+                  typeof KoreanMorphDict !== "undefined" &&
+                  KoreanMorphDict.nouns.has(candidate)
+                ) {
+                  return { word: candidate, skip: false };
+                }
+                // 2글자 이상 조사면 어근 채택 (1글자 조사는 위험)
+                if (particle.length >= 2) {
+                  stem = candidate;
+                  foundStem = true;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // 어근이 불용어면 스킵
+        if (koreanStopwords.has(stem)) return { word: stem, skip: true };
+
+        // 어근을 찾았으면 어근 반환, 아니면 원본 반환
+        if (foundStem && stem.length >= 2) {
+          return { word: stem, skip: false };
+        }
+
+        // 원본 단어 반환 (2글자 이상)
+        if (word.length >= 2) return { word: word, skip: false };
+        return { word: word, skip: true };
+      }
+
+      // 메인 토큰화 함수
+      function tokenizeKorean(text) {
+        text = text.replace(/[^\wㄱ-ㅎㅏ-ㅣ가-힣\s]/g, " ");
+        const words = text.split(/\s+/).filter((w) => w.length > 0);
+        const result = [];
+
+        for (const word of words) {
+          const analyzed = analyzeMorpheme(word);
+          if (!analyzed.skip) result.push(analyzed.word);
+        }
+
+        return result;
+      }
+
+      // ==========================================
+      // Firebase 연동: 역할 선택 및 방 관리
+      // ==========================================
+      function selectRole(role) {
+        currentRole = role;
+        document
+          .getElementById("role-selection-screen")
+          .classList.add("hidden");
+
+        if (role === "teacher") {
+          // Firebase가 준비될 때까지 대기
+          if (window.firebaseReady) {
+            createRoom();
+          } else {
+            window.addEventListener("firebaseReady", () => createRoom(), {
+              once: true,
+            });
+          }
+          document.getElementById("teacher-view").classList.remove("hidden");
+        } else if (role === "student") {
+          document.getElementById("student-view").classList.remove("hidden");
+        } else if (role === "demo") {
+          document.getElementById("demo-view").classList.remove("hidden");
+        }
+      }
+
+      function createRoom() {
+        if (!window.firebaseReady) {
+          console.error("Firebase가 아직 준비되지 않았습니다.");
+          return;
+        }
+
+        const roomCode = generateRoomCode();
+        currentRoom = roomCode;
+        document.getElementById("room-code-text").textContent = roomCode;
+
+        const qrContainer = document.getElementById("qrcode");
+        qrContainer.innerHTML = "";
+        new QRCode(qrContainer, {
+          text: window.location.href.split("?")[0] + "?room=" + roomCode,
+          width: 200,
+          height: 200,
+        });
+
+        const roomRef = window.firebaseRef(
+          window.firebaseDB,
+          `rooms/${roomCode}`,
+        );
+        window.firebaseSet(roomRef, {
+          createdAt: Date.now(),
+          status: "open",
+          topicImage: "",
+          students: {},
+        });
+
+        monitorStudents(roomCode);
+        setupImageUpload(roomCode);
+      }
+
+      // 이미지 업로드 설정
+      function setupImageUpload(roomCode) {
+        const imageInput = document.getElementById("topic-image-input");
+        const removeBtn = document.getElementById("remove-image-btn");
+        const uploadBox = document.getElementById("image-upload-box");
+        const placeholder = document.getElementById("image-upload-placeholder");
+        const preview = document.getElementById("topic-image-preview");
+
+        // 박스 클릭 시 파일 선택
+        uploadBox.addEventListener("click", () => {
+          imageInput.click();
+        });
+
+        imageInput.addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          // 파일 크기 체크 (5MB 제한)
+          if (file.size > 5 * 1024 * 1024) {
+            alert("이미지 크기는 5MB 이하여야 합니다.");
+            return;
+          }
+
+          // 이미지를 Base64로 변환
+          const reader = new FileReader();
+          reader.onload = async (event) => {
+            const base64Image = event.target.result;
+
+            // 이미지 리사이징 (최대 800px)
+            const resizedImage = await resizeImage(base64Image, 800);
+
+            // Firebase에 저장
+            const roomRef = window.firebaseRef(
+              window.firebaseDB,
+              `rooms/${roomCode}/topicImage`,
+            );
+            await window.firebaseSet(roomRef, resizedImage);
+
+            // 미리보기 표시 (박스 안에)
+            placeholder.style.display = "none";
+            preview.src = resizedImage;
+            preview.style.display = "block";
+            removeBtn.style.display = "inline-block";
+          };
+          reader.readAsDataURL(file);
+        });
+
+        removeBtn.addEventListener("click", async (e) => {
+          e.stopPropagation(); // 박스 클릭 이벤트 방지
+          const roomRef = window.firebaseRef(
+            window.firebaseDB,
+            `rooms/${roomCode}/topicImage`,
+          );
+          await window.firebaseSet(roomRef, "");
+          placeholder.style.display = "block";
+          preview.style.display = "none";
+          preview.src = "";
+          removeBtn.style.display = "none";
+          imageInput.value = "";
+        });
+      }
+
+      // 이미지 리사이징
+      function resizeImage(base64, maxSize) {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxSize || height > maxSize) {
+              if (width > height) {
+                height = (height / width) * maxSize;
+                width = maxSize;
+              } else {
+                width = (width / height) * maxSize;
+                height = maxSize;
+              }
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL("image/jpeg", 0.8));
+          };
+          img.src = base64;
+        });
+      }
+
+      // 이미지 미리보기 표시
+
+      function generateRoomCode() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        let code = "";
+        for (let i = 0; i < 6; i++) {
+          code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+      }
+
+      function copyRoomCode() {
+        navigator.clipboard.writeText(currentRoom);
+        alert("방 코드가 복사되었습니다: " + currentRoom);
+      }
+
+      function copyRoomURL() {
+        const url = window.location.href.split("?")[0] + "?room=" + currentRoom;
+        navigator.clipboard.writeText(url);
+        alert("링크가 복사되었습니다!");
+      }
+
+      function monitorStudents(roomCode) {
+        const studentsRef = window.firebaseRef(
+          window.firebaseDB,
+          `rooms/${roomCode}/students`,
+        );
+
+        window.firebaseOnChildAdded(studentsRef, (snapshot) => {
+          const studentData = snapshot.val();
+          addStudentCard(snapshot.key, studentData);
+          updateParticipationStatus();
+        });
+
+        window.firebaseOnChildChanged(studentsRef, (snapshot) => {
+          const studentData = snapshot.val();
+          updateStudentCard(snapshot.key, studentData);
+          updateParticipationStatus();
+        });
+      }
+
+      function addStudentCard(studentId, data) {
+        const grid = document.getElementById("students-grid");
+        const card = document.createElement("div");
+        card.className = "student-card";
+        card.id = `student-${studentId}`;
+
+        const sentence1 =
+          data.sentences && data.sentences[0] ? data.sentences[0] : "";
+        const isCompleted = sentence1 !== "";
+
+        if (isCompleted) card.classList.add("completed");
+
+        card.innerHTML = `
+                <h4>${data.nickname || "익명"} ${isCompleted ? "✅" : "⏳"}</h4>
+                <div><strong>문장:</strong> ${sentence1 || "(작성 중...)"}</div>
+            `;
+
+        grid.appendChild(card);
+      }
+
+      function updateStudentCard(studentId, data) {
+        const card = document.getElementById(`student-${studentId}`);
+        if (!card) return;
+
+        const sentence1 =
+          data.sentences && data.sentences[0] ? data.sentences[0] : "";
+        const isCompleted = sentence1 !== "";
+
+        if (isCompleted) card.classList.add("completed");
+
+        card.innerHTML = `
+                <h4>${data.nickname || "익명"} ${isCompleted ? "✅" : "⏳"}</h4>
+                <div><strong>문장:</strong> ${sentence1 || "(작성 중...)"}</div>
+            `;
+      }
+
+      function updateParticipationStatus() {
+        const cards = document.querySelectorAll(".student-card");
+        const total = cards.length;
+        const completed = document.querySelectorAll(
+          ".student-card.completed",
+        ).length;
+
+        // 통계 카드 업데이트
+        const participantCountEl = document.getElementById("participant-count");
+        const completedCountEl = document.getElementById("completed-count");
+        if (participantCountEl) participantCountEl.textContent = total;
+        if (completedCountEl) completedCountEl.textContent = completed;
+
+        const progressBar = document.getElementById("progress-bar");
+        const percentage = total > 0 ? (completed / total) * 100 : 0;
+        progressBar.style.width = percentage + "%";
+        progressBar.textContent = `${completed}/${total}명 완료`;
+
+        const statusText = document.getElementById("participation-text");
+        statusText.textContent = `총 ${total}명 참여 중 (완료: ${completed}명)`;
+
+        document.getElementById("start-analysis-btn").disabled = completed < 1;
+      }
+
+      function closeInput() {
+        if (!confirm("입력을 마감하시겠습니까?")) return;
+
+        if (!window.firebaseReady) {
+          alert("잠시 후 다시 시도해주세요. (연결 중...)");
+          return;
+        }
+
+        const roomRef = window.firebaseRef(
+          window.firebaseDB,
+          `rooms/${currentRoom}`,
+        );
+        window.firebaseUpdate(roomRef, { status: "closed" });
+        alert("입력이 마감되었습니다.");
+      }
+
+      async function startAnalysis() {
+        collectAllSentences(async () => {
+          if (allSentences.length === 0) {
+            alert("분석할 문장이 없습니다.");
+            return;
+          }
+
+          console.log("=== 형태소 분석 시작 ===");
+
+          // 각 문장별로 형태소 분석
+          currentMorphemes = [];
+          for (let i = 0; i < allSentences.length; i++) {
+            const morphemes = await analyzeMorphemes(allSentences[i]);
+            currentMorphemes.push(morphemes);
+          }
+
+          console.log("✅ 형태소 분석 완료");
+
+          // 형태소 분리 탭으로 이동
+          document.getElementById("tab-btn-morpheme").disabled = false;
+          switchTab("morpheme");
+
+          // 형태소 결과 렌더링
+          renderAllMorphemes();
+        });
+      }
+
+      function goBackToCollection() {
+        switchTab("collection");
+      }
+
+      function goBackToMorpheme() {
+        switchTab("morpheme");
+      }
+
+      function goBackToAnalysis() {
+        switchTab("analysis");
+      }
+
+      // ==========================================
+      // 형태소 설명 모달 제어
+      // ==========================================
+      function showMorphemeGuide() {
+        const modal = document.getElementById("morpheme-guide-modal");
+        modal.style.display = "block";
+
+        // 모달 외부 클릭 시 닫기
+        modal.onclick = function(event) {
+          if (event.target === modal) {
+            closeMorphemeGuide();
+          }
+        };
+      }
+
+      function closeMorphemeGuide() {
+        const modal = document.getElementById("morpheme-guide-modal");
+        modal.style.display = "none";
+      }
+
+      // ESC 키로 모달 닫기
+      document.addEventListener("keydown", function(event) {
+        if (event.key === "Escape") {
+          closeMorphemeGuide();
+        }
+      });
+
+      function proceedToAnalysis() {
+        // 선택된 형태소로 워드클라우드 생성
+        document.getElementById("tab-btn-analysis").disabled = false;
+        switchTab("analysis");
+
+        setTimeout(() => {
+          const selectedWords = [];
+          currentMorphemes.forEach((morphemes) => {
+            morphemes.forEach((m) => {
+              if (m.selected) {
+                selectedWords.push(m.lex);
+              }
+            });
+          });
+
+          window.wordFrequency = {};
+          selectedWords.forEach((word) => {
+            window.wordFrequency[word] = (window.wordFrequency[word] || 0) + 1;
+          });
+
+          const sortedWords = Object.entries(window.wordFrequency)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 150);
+
+          // 빈도 테이블 생성
+          createFrequencyTable(sortedWords.slice(0, 20)); // 상위 20개만 표시
+
+          // 워드클라우드 생성
+          createWordCloud(sortedWords);
+
+          console.log("✅ 텍스트 분석 완료");
+        }, 300);
+      }
+
+      function collectAllSentences(callback) {
+        allSentences = [];
+        if (!currentRoom) {
+          if (callback) callback();
+          return;
+        }
+
+        if (!window.firebaseReady) {
+          console.error("Firebase가 아직 준비되지 않았습니다.");
+          if (callback) callback();
+          return;
+        }
+
+        const studentsRef = window.firebaseRef(
+          window.firebaseDB,
+          `rooms/${currentRoom}/students`,
+        );
+        window.firebaseOnValue(
+          studentsRef,
+          (snapshot) => {
+            allSentences = [];
+
+            if (snapshot.exists()) {
+              snapshot.forEach((child) => {
+                const studentData = child.val();
+                if (
+                  studentData.sentences &&
+                  Array.isArray(studentData.sentences)
+                ) {
+                  studentData.sentences.forEach((sentence) => {
+                    if (sentence && sentence.trim()) {
+                      allSentences.push(sentence.trim());
+                    }
+                  });
+                }
+              });
+            }
+
+            if (callback) callback();
+          },
+          { onlyOnce: true },
+        );
+      }
+
+      function joinRoom() {
+        console.log("=== joinRoom 시작 ===");
+        if (!window.firebaseReady) {
+          alert("잠시 후 다시 시도해주세요. (연결 중...)");
+          return;
+        }
+
+        let code = document
+          .getElementById("room-code-input")
+          .value.toUpperCase()
+          .trim();
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlRoom = urlParams.get("room");
+        if (urlRoom) code = urlRoom.toUpperCase();
+
+        if (!code) {
+          alert("방 코드를 입력해주세요.");
+          return;
+        }
+
+        console.log("방 코드:", code);
+        currentRoom = code;
+
+        const roomRef = window.firebaseRef(window.firebaseDB, `rooms/${code}`);
+        window.firebaseOnValue(
+          roomRef,
+          (snapshot) => {
+            console.log("Firebase snapshot 받음, exists:", snapshot.exists());
+            if (snapshot.exists()) {
+              const roomData = snapshot.val();
+              console.log("roomData:", roomData);
+              console.log("topicImage 있음?", !!roomData.topicImage);
+
+              if (roomData.status === "closed") {
+                alert("이 방은 입력이 마감되었습니다.");
+                return;
+              }
+
+              document.getElementById("room-join").classList.add("hidden");
+              document
+                .getElementById("student-input")
+                .classList.remove("hidden");
+              console.log("✅ student-input 화면 표시됨");
+
+              // 주제 이미지가 있으면 표시
+              if (roomData.topicImage) {
+                console.log("이미지 데이터 있음, showStudentTopicImage 호출");
+                showStudentTopicImage(roomData.topicImage);
+              } else {
+                console.warn("⚠️ topicImage가 없습니다");
+              }
+
+              // 이미지 변경 실시간 감지
+              const imageRef = window.firebaseRef(
+                window.firebaseDB,
+                `rooms/${code}/topicImage`,
+              );
+              window.firebaseOnValue(imageRef, (imgSnapshot) => {
+                const imageData = imgSnapshot.val();
+                console.log("이미지 리스너: imageData 있음?", !!imageData);
+                if (imageData) {
+                  showStudentTopicImage(imageData);
+                } else {
+                  hideStudentTopicImage();
+                }
+              });
+            } else {
+              alert("존재하지 않는 방 코드입니다.");
+            }
+          },
+          { onlyOnce: true },
+        );
+      }
+
+      // 학생 화면에 주제 이미지 표시
+      function showStudentTopicImage(imageData) {
+        console.log(
+          "showStudentTopicImage 호출됨, imageData 길이:",
+          imageData ? imageData.length : 0,
+        );
+        const container = document.getElementById("student-topic-image");
+        const img = document.getElementById("student-image-display");
+
+        if (!container || !img) {
+          console.error("이미지 요소를 찾을 수 없습니다!");
+          return;
+        }
+
+        img.src = imageData;
+        container.style.display = "block";
+        console.log("✅ 학생 이미지 표시 완료");
+      }
+
+      // 학생 화면에서 주제 이미지 숨김
+      function hideStudentTopicImage() {
+        document.getElementById("student-topic-image").style.display = "none";
+      }
+
+      function goBackToNickname() {
+        // 문장 입력 숨기고 닉네임 섹션 다시 보이기
+        document.getElementById("sentence-input").classList.add("hidden");
+        document.getElementById("nickname-section").classList.remove("hidden");
+
+        // 입력 필드 초기화
+        document.getElementById("sentence1").value = "";
+        document.getElementById("sentence1").disabled = false;
+      }
+
+      function setNickname() {
+        const nickname = document.getElementById("nickname-input").value.trim();
+        if (!nickname) {
+          alert("닉네임을 입력해주세요.");
+          return;
+        }
+
+        if (!window.firebaseReady) {
+          alert("잠시 후 다시 시도해주세요. (연결 중...)");
+          return;
+        }
+
+        currentNickname = nickname;
+        document.getElementById("student-nickname").textContent = nickname;
+
+        const studentRef = window.firebasePush(
+          window.firebaseRef(
+            window.firebaseDB,
+            `rooms/${currentRoom}/students`,
+          ),
+        );
+        window.firebaseSet(studentRef, {
+          nickname: nickname,
+          sentences: [""], // 1개만
+          timestamp: Date.now(),
+        });
+
+        // 닉네임 섹션 숨기고 문장 입력 섹션 보이기
+        document.getElementById("nickname-section").classList.add("hidden");
+        document.getElementById("sentence-input").classList.remove("hidden");
+        console.log("✅ 문장 입력 화면으로 전환");
+      }
+
+      function submitSentences() {
+        const s1 = document.getElementById("sentence1").value.trim();
+
+        if (!s1) {
+          alert("문장을 작성해주세요.");
+          return;
+        }
+
+        if (!window.firebaseReady) {
+          alert("잠시 후 다시 시도해주세요. (연결 중...)");
+          return;
+        }
+
+        const studentsRef = window.firebaseRef(
+          window.firebaseDB,
+          `rooms/${currentRoom}/students`,
+        );
+        window.firebaseOnValue(
+          studentsRef,
+          (snapshot) => {
+            snapshot.forEach((child) => {
+              if (child.val().nickname === currentNickname) {
+                const studentRef = window.firebaseRef(
+                  window.firebaseDB,
+                  `rooms/${currentRoom}/students/${child.key}`,
+                );
+                window.firebaseUpdate(studentRef, { sentences: [s1] });
+              }
+            });
+          },
+          { onlyOnce: true },
+        );
+
+        document.getElementById("sentence1").disabled = true;
+        document.querySelector("#sentence-input button").style.display = "none";
+        document.getElementById("submission-status").classList.remove("hidden");
+      }
+
+      function viewAnalysisAsStudent() {
+        collectAllSentences(() => {
+          if (allSentences.length < 1) {
+            alert("아직 문장이 수집되지 않았습니다.");
+            return;
+          }
+
+          document.getElementById("tab-btn-analysis").disabled = false;
+          document.getElementById("tab-btn-vector").disabled = false;
+          switchTab("analysis");
+
+          setTimeout(() => analyzeText(), 300);
+        });
+      }
+
+      async function startDemoAnalysis() {
+        const textarea = document.getElementById("demo-sentences");
+        const text = textarea.value.trim();
+
+        if (!text) {
+          alert("분석할 문장을 입력해주세요.");
+          return;
+        }
+
+        const sentences = text
+          .split("\n")
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0);
+
+        if (sentences.length < 1) {
+          alert("최소 1개 이상의 문장을 입력해주세요.");
+          return;
+        }
+
+        allSentences = sentences;
+
+        console.log("=== 체험 모드: 형태소 분석 시작 ===");
+
+        // 각 문장별로 형태소 분석
+        currentMorphemes = [];
+        for (let i = 0; i < allSentences.length; i++) {
+          const morphemes = await analyzeMorphemes(allSentences[i]);
+          currentMorphemes.push(morphemes);
+        }
+
+        console.log("✅ 형태소 분석 완료");
+
+        // 형태소 분리 탭으로 이동
+        document.getElementById("tab-btn-morpheme").disabled = false;
+        document.getElementById("tab-btn-analysis").disabled = false;
+        document.getElementById("tab-btn-vector").disabled = false;
+        switchTab("morpheme");
+
+        // 형태소 결과 렌더링
+        renderAllMorphemes();
+      }
+
+      // ==========================================
+      // 형태소 분석 (강화된 로컬 분석)
+      // ==========================================
+      async function analyzeMorphemes(text) {
+        console.log('🔬 형태소 분석 시작 (로컬 강화 분석)');
+
+        // 명사 사전이 아직 로드 중이면 대기
+        if (!dictionaryLoaded) {
+          await loadNounDictionary();
+        }
+
+        const rawTokens = text.split(/\s+/).filter((t) => t.length > 0);
+        const morphemes = [];
+
+        rawTokens.forEach((token) => {
+          // 0-0. 숫자 패턴 (순수 숫자, 숫자+단위)
+          if (/^\d+$/.test(token)) {
+            morphemes.push({ lex: token, tag: "SN", selected: false }); // 숫자
+            return;
+          }
+          if (/^\d+[가-힣]+$/.test(token)) {
+            const match = token.match(/^(\d+)([가-힣]+)$/);
+            if (match) {
+              morphemes.push({ lex: match[1], tag: "SN", selected: false });
+              morphemes.push({ lex: match[2], tag: "NNB", selected: true });
+              return;
+            }
+          }
+
+          // 0-1. 영어 단어
+          if (/^[a-zA-Z]+$/.test(token)) {
+            morphemes.push({ lex: token, tag: "SL", selected: true }); // 외국어
+            return;
+          }
+
+          // 0-2. 특수문자 포함
+          if (/[!@#$%^&*()_+=\[\]{};:'",.<>?/\\|`~-]/.test(token)) {
+            morphemes.push({ lex: token, tag: "SF", selected: false }); // 특수문자
+            return;
+          }
+
+          // 0. 10,000개 명사 사전에 있으면 분리하지 않음 (최우선!)
+          if (NOUN_DICTIONARY.has(token)) {
+            morphemes.push({ lex: token, tag: "NNG", selected: true });
+            return;
+          }
+
+          // 0-1. 복합명사 사전에 있으면 분리하지 않음
+          if (COMPOUND_NOUNS.has(token)) {
+            morphemes.push({ lex: token, tag: "NNG", selected: true });
+            return;
+          }
+
+          // 0-2. 분리 금지 패턴 (형용사, 동사 등)
+          if (DONT_SPLIT.has(token)) {
+            morphemes.push({ lex: token, tag: "NNG", selected: true });
+            return;
+          }
+
+          let processed = false;
+
+          // 1. 조사 분리 시도 (긴 것부터 우선 처리)
+          const sortedParticles = [...PARTICLES].sort(
+            (a, b) => b.length - a.length,
+          );
+          for (const particle of sortedParticles) {
+            if (token.endsWith(particle) && token.length > particle.length) {
+              const stem = token.slice(0, -particle.length);
+
+              // ✨ 명사 사전 검증: 어간이 사전에 있으면 분리!
+              const stemInDict =
+                NOUN_DICTIONARY.has(stem) || COMPOUND_NOUNS.has(stem);
+
+              if (!stemInDict) {
+                // 사전에 없으면 어간 길이 검증 (2글자 이하면 분리 안 함)
+                if (stem.length <= 2) continue;
+              }
+
+              // Hangul.js로 받침 검증
+              if (typeof Hangul !== "undefined") {
+                const lastChar = stem[stem.length - 1];
+                const hasCoda = Hangul.disassemble(lastChar).length === 3;
+
+                // 이/가 검증
+                if (
+                  (particle === "이" && !hasCoda) ||
+                  (particle === "가" && hasCoda)
+                ) {
+                  continue; // 잘못된 조합
+                }
+
+                // 을/를 검증
+                if (
+                  (particle === "을" && !hasCoda) ||
+                  (particle === "를" && hasCoda)
+                ) {
+                  continue; // 잘못된 조합
+                }
+
+                // 은/는 검증
+                if (
+                  (particle === "은" && !hasCoda) ||
+                  (particle === "는" && hasCoda)
+                ) {
+                  continue; // 잘못된 조합
+                }
+              }
+
+              morphemes.push({ lex: stem, tag: "NNG", selected: true });
+              morphemes.push({ lex: particle, tag: "JX", selected: false });
+              processed = true;
+              break;
+            }
+          }
+
+          if (processed) return;
+
+          // 2. 어미 분리 시도 (긴 것부터 우선 처리)
+          const sortedEndings = [...ENDINGS].sort(
+            (a, b) => b.length - a.length,
+          );
+          for (const ending of sortedEndings) {
+            if (token.endsWith(ending) && token.length > ending.length) {
+              const stem = token.slice(0, -ending.length);
+
+              // 어간이 너무 짧으면 분리하지 않음
+              if (stem.length <= 2) continue;
+
+              morphemes.push({ lex: stem, tag: "VV", selected: true });
+              morphemes.push({ lex: ending, tag: "EF", selected: false });
+              processed = true;
+              break;
+            }
+          }
+
+          if (!processed) {
+            // 3. 분리되지 않은 단어는 그대로 (명사로 처리)
+            morphemes.push({ lex: token, tag: "NNG", selected: true });
+          }
+        });
+
+        return morphemes;
+      }
+
+      function renderMorphemes(morphemes, sentenceIndex) {
+        const container = document.getElementById("morphemeMainContainer");
+        if (!container) return;
+
+        const morphemeCard = document.createElement("div");
+        morphemeCard.className = "morpheme-card";
+        morphemeCard.innerHTML = `
+                <div class="morpheme-header">문장 ${sentenceIndex + 1}: "${allSentences[sentenceIndex]}"</div>
+                <div class="morpheme-list"></div>
+            `;
+
+        const list = morphemeCard.querySelector(".morpheme-list");
+
+        morphemes.forEach((m, idx) => {
+          const item = document.createElement("div");
+          item.className = `morpheme-item ${m.selected ? "selected" : "deselected"}`;
+          item.dataset.sentenceIndex = sentenceIndex;
+          item.dataset.morphemeIndex = idx;
+          item.innerHTML = `
+                    <button class="morpheme-split-btn" onclick="splitMorpheme(${sentenceIndex}, ${idx})">✂️</button>
+                    <div class="morpheme-word">${m.lex}</div>
+                    <div class="morpheme-pos">${m.tag}</div>
+                `;
+
+          // 클릭 이벤트: Shift키로 합치기 선택, 일반 클릭은 포함/제외
+          item.addEventListener("click", (e) => {
+            if (e.shiftKey) {
+              toggleMarkMorpheme(sentenceIndex, idx, item);
+            } else {
+              toggleMorphemeSelection(sentenceIndex, idx);
+            }
+          });
+
+          item.addEventListener("dblclick", () =>
+            editMorpheme(sentenceIndex, idx, item),
+          );
+
+          list.appendChild(item);
+        });
+
+        container.appendChild(morphemeCard);
+      }
+
+      function toggleMarkMorpheme(sentenceIndex, morphemeIndex, item) {
+        const key = `${sentenceIndex}-${morphemeIndex}`;
+        const existingIndex = markedMorphemes.findIndex(
+          (m) => `${m.sentenceIndex}-${m.morphemeIndex}` === key,
+        );
+
+        if (existingIndex >= 0) {
+          // 이미 선택됨 -> 선택 해제
+          markedMorphemes.splice(existingIndex, 1);
+          item.classList.remove("marked");
+        } else {
+          // 새로 선택
+          markedMorphemes.push({ sentenceIndex, morphemeIndex, item });
+          item.classList.add("marked");
+        }
+
+        updateMergeButton();
+
+        // ✨ 정확히 2개가 선택되면 자동으로 합치기 실행
+        if (markedMorphemes.length === 2) {
+          setTimeout(() => {
+            mergeMorphemes();
+          }, 100); // 약간의 지연으로 UI 업데이트 후 실행
+        }
+      }
+
+      function updateMergeButton() {
+        const container = document.getElementById("merge-button-container");
+        const countEl = document.getElementById("merge-count");
+
+        if (markedMorphemes.length >= 2) {
+          container.style.display = "block";
+          countEl.textContent = markedMorphemes.length;
+        } else {
+          container.style.display = "none";
+        }
+      }
+
+      function clearMarkedMorphemes() {
+        markedMorphemes.forEach(({ item }) => {
+          item.classList.remove("marked");
+        });
+        markedMorphemes = [];
+        updateMergeButton();
+      }
+
+      function mergeMorphemes() {
+        if (markedMorphemes.length < 2) {
+          alert("합칠 형태소를 2개 이상 선택해주세요.");
+          return;
+        }
+
+        // 같은 문장 내의 형태소만 합칠 수 있음
+        const sentenceIndex = markedMorphemes[0].sentenceIndex;
+        const allSameSentence = markedMorphemes.every(
+          (m) => m.sentenceIndex === sentenceIndex,
+        );
+
+        if (!allSameSentence) {
+          alert("같은 문장 내의 형태소만 합칠 수 있습니다.");
+          return;
+        }
+
+        // 인덱스 순서대로 정렬
+        markedMorphemes.sort((a, b) => a.morphemeIndex - b.morphemeIndex);
+
+        // 연속된 형태소인지 확인
+        let isContinuous = true;
+        for (let i = 1; i < markedMorphemes.length; i++) {
+          if (
+            markedMorphemes[i].morphemeIndex !==
+            markedMorphemes[i - 1].morphemeIndex + 1
+          ) {
+            isContinuous = false;
+            break;
+          }
+        }
+
+        if (!isContinuous) {
+          alert(
+            '연속된 형태소만 합칠 수 있습니다. (예: "인공" + "지능" ⭕, "인공" + "배우" ❌)',
+          );
+          return;
+        }
+
+        // 형태소 합치기
+        const morphemes = currentMorphemes[sentenceIndex];
+        const startIdx = markedMorphemes[0].morphemeIndex;
+        const endIdx =
+          markedMorphemes[markedMorphemes.length - 1].morphemeIndex;
+
+        // 합쳐진 텍스트
+        const mergedText = markedMorphemes
+          .map((m) => morphemes[m.morphemeIndex].lex)
+          .join("");
+
+        // 첫 번째 형태소의 속성 유지
+        const mergedMorpheme = {
+          lex: mergedText,
+          tag: morphemes[startIdx].tag,
+          selected: morphemes[startIdx].selected,
+        };
+
+        // 배열에서 제거하고 합쳐진 것 삽입
+        morphemes.splice(startIdx, endIdx - startIdx + 1, mergedMorpheme);
+
+        // 선택 초기화 및 재렌더링
+        clearMarkedMorphemes();
+        renderAllMorphemes();
+
+        console.log(`✅ 형태소 합치기 완료: "${mergedText}"`);
+      }
+
+      function toggleMorphemeSelection(sentenceIndex, morphemeIndex) {
+        const morpheme = currentMorphemes[sentenceIndex][morphemeIndex];
+        morpheme.selected = !morpheme.selected;
+
+        const item = document.querySelector(
+          `[data-sentence-index="${sentenceIndex}"][data-morpheme-index="${morphemeIndex}"]`,
+        );
+        if (item) {
+          item.classList.toggle("selected");
+          item.classList.toggle("deselected");
+        }
+      }
+
+      function editMorpheme(sentenceIndex, morphemeIndex, element) {
+        const morpheme = currentMorphemes[sentenceIndex][morphemeIndex];
+        element.classList.add("editing");
+
+        const wordDiv = element.querySelector(".morpheme-word");
+        const originalText = wordDiv.textContent;
+
+        wordDiv.innerHTML = `
+                <input type="text" class="morpheme-edit-input" value="${originalText}" />
+                <div class="morpheme-edit-buttons">
+                    <button class="morpheme-edit-btn save">✓</button>
+                    <button class="morpheme-edit-btn cancel">✗</button>
+                </div>
+            `;
+
+        const input = wordDiv.querySelector("input");
+        input.focus();
+        input.select();
+
+        const saveBtn = wordDiv.querySelector(".save");
+        const cancelBtn = wordDiv.querySelector(".cancel");
+
+        const save = () => {
+          const newValue = input.value.trim();
+          if (newValue) {
+            morpheme.lex = newValue;
+            wordDiv.innerHTML = newValue;
+            element.classList.remove("editing");
+          }
+        };
+
+        const cancel = () => {
+          wordDiv.innerHTML = originalText;
+          element.classList.remove("editing");
+        };
+
+        saveBtn.onclick = save;
+        cancelBtn.onclick = cancel;
+        input.onkeydown = (e) => {
+          if (e.key === "Enter") save();
+          if (e.key === "Escape") cancel();
+        };
+      }
+
+      function splitMorpheme(sentenceIndex, morphemeIndex) {
+        const morpheme = currentMorphemes[sentenceIndex][morphemeIndex];
+        const word = morpheme.lex;
+
+        if (word.length < 2) {
+          alert("단어가 너무 짧아 분리할 수 없습니다.");
+          return;
+        }
+
+        const midPoint = Math.floor(word.length / 2);
+        const part1 = word.substring(0, midPoint);
+        const part2 = word.substring(midPoint);
+
+        const newMorphemes = [
+          { lex: part1, tag: morpheme.tag, selected: morpheme.selected },
+          { lex: part2, tag: morpheme.tag, selected: morpheme.selected },
+        ];
+
+        currentMorphemes[sentenceIndex].splice(
+          morphemeIndex,
+          1,
+          ...newMorphemes,
+        );
+        renderAllMorphemes();
+      }
+
+      function renderAllMorphemes() {
+        const container = document.getElementById("morphemeMainContainer");
+        if (!container) return;
+        container.innerHTML = "";
+
+        currentMorphemes.forEach((morphemes, idx) => {
+          renderMorphemes(morphemes, idx);
+        });
+      }
+
+      function recalculateWithModifiedMorphemes() {
+        const selectedWords = [];
+        currentMorphemes.forEach((morphemes) => {
+          morphemes.forEach((m) => {
+            if (m.selected) {
+              selectedWords.push(m.lex);
+            }
+          });
+        });
+
+        window.wordFrequency = {};
+        selectedWords.forEach((word) => {
+          window.wordFrequency[word] = (window.wordFrequency[word] || 0) + 1;
+        });
+
+        const sortedWords = Object.entries(window.wordFrequency)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 150);
+
+        console.log("✅ 형태소 수정 후 재계산 완료");
+        createWordCloud(sortedWords);
+      }
+
+      // ==========================================
+      // 텍스트 분석 엔진
+      // ==========================================
+      async function analyzeText() {
+        if (allSentences.length === 0) {
+          alert("분석할 문장이 없습니다.");
+          return;
+        }
+
+        console.log("=== 형태소 분석 시작 ===");
+
+        // 각 문장별로 형태소 분석
+        currentMorphemes = [];
+        for (let i = 0; i < allSentences.length; i++) {
+          const morphemes = await analyzeMorphemes(allSentences[i]);
+          currentMorphemes.push(morphemes);
+        }
+
+        // 형태소 결과 표시
+        const morphemeCard = document.getElementById("morphemeResultCard");
+        if (morphemeCard) {
+          morphemeCard.style.display = "block";
+          renderAllMorphemes();
+        }
+
+        console.log("✅ 형태소 분석 완료");
+
+        // 선택된 형태소로 워드클라우드 생성
+        const selectedWords = [];
+        currentMorphemes.forEach((morphemes) => {
+          morphemes.forEach((m) => {
+            if (m.selected) {
+              selectedWords.push(m.lex);
+            }
+          });
+        });
+
+        wordFrequency = {};
+        selectedWords.forEach((word) => {
+          wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+        });
+
+        const sortedWords = Object.entries(wordFrequency)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 150);
+
+        createWordCloud(sortedWords);
+
+        console.log("✅ 텍스트 분석 완료");
+      }
+
+      // ==========================================
+      // 마스크 이미지 설정
+      // 모든 SVG: 검은 배경 + 흰색 도형 (wordcloud2.js가 흰색 영역에 단어 배치)
+      // ==========================================
+
+      // 내장 SVG (검은 배경에 흰색 도형)
+      const maskSVGs = {
+        circle: `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                <rect width="500" height="500" fill="#000000"/>
+                <circle cx="250" cy="250" r="230" fill="#FFFFFF"/>
+            </svg>`,
+
+        diamond: `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                <rect width="500" height="500" fill="#000000"/>
+                <polygon points="250,30 470,250 250,470 30,250" fill="#FFFFFF"/>
+            </svg>`,
+
+        square: `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                <rect width="500" height="500" fill="#000000"/>
+                <rect x="40" y="40" width="420" height="420" fill="#FFFFFF"/>
+            </svg>`,
+
+        heart: `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                <rect width="500" height="500" fill="#000000"/>
+                <path d="M250 435 C250 435 455 280 455 175 C455 85 385 45 320 45 C270 45 250 85 250 85 C250 85 230 45 180 45 C115 45 45 85 45 175 C45 280 250 435 250 435 Z" fill="#FFFFFF"/>
+            </svg>`,
+
+        star: `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+                <rect width="500" height="500" fill="#000000"/>
+                <polygon points="250,25 295,175 455,175 330,275 375,450 250,350 125,450 170,275 45,175 205,175" fill="#FFFFFF"/>
+            </svg>`,
+
+        cloud: `<svg xmlns="http://www.w3.org/2000/svg" width="500" height="400" viewBox="0 0 500 400">
+                <rect width="500" height="400" fill="#000000"/>
+                <ellipse cx="160" cy="240" rx="100" ry="85" fill="#FFFFFF"/>
+                <ellipse cx="340" cy="240" rx="110" ry="90" fill="#FFFFFF"/>
+                <ellipse cx="250" cy="200" rx="90" ry="80" fill="#FFFFFF"/>
+                <ellipse cx="100" cy="270" rx="70" ry="60" fill="#FFFFFF"/>
+                <ellipse cx="400" cy="270" rx="75" ry="65" fill="#FFFFFF"/>
+                <ellipse cx="250" cy="280" rx="180" ry="70" fill="#FFFFFF"/>
+                <ellipse cx="200" cy="160" rx="60" ry="55" fill="#FFFFFF"/>
+                <ellipse cx="300" cy="170" rx="55" ry="50" fill="#FFFFFF"/>
+            </svg>`,
+      };
+
+      // 마스크 캔버스 캐시 (shape 변경시 자동 갱신)
+      let maskCanvasCache = {};
+
+      // 마스크 캔버스 생성 함수 (wordcloud2.js용)
+      // wordcloud2.js는 캔버스의 픽셀을 읽어 배경색과 같은 색의 영역에만 단어 배치
+      // 도형 내부: 흰색(배경색) = 단어 배치 가능
+      // 도형 외부: 검은색 or 다른색 = 단어 배치 불가
+      function createMaskCanvas(shapeName, width, height) {
+        return new Promise((resolve, reject) => {
+          const cacheKey = `${shapeName}_${width}_${height}`;
+
+          // 캐시 확인
+          if (maskCanvasCache[cacheKey]) {
+            resolve(maskCanvasCache[cacheKey]);
+            return;
+          }
+
+          const svg = maskSVGs[shapeName];
+          if (!svg) {
+            resolve(null);
+            return;
+          }
+
+          const img = new Image();
+          const blob = new Blob([svg], { type: "image/svg+xml" });
+          const url = URL.createObjectURL(blob);
+
+          img.onload = function () {
+            URL.revokeObjectURL(url);
+
+            // 마스크용 캔버스 생성
+            const maskCanvas = document.createElement("canvas");
+            maskCanvas.width = width;
+            maskCanvas.height = height;
+            const maskCtx = maskCanvas.getContext("2d");
+
+            // SVG를 캔버스에 그리기
+            maskCtx.drawImage(img, 0, 0, width, height);
+
+            // 픽셀 데이터 처리
+            // wordcloud2.js는 backgroundColor(흰색)과 같은 영역에만 배치
+            // 도형 내부(밝은색): 흰색(255,255,255)으로 = 배치 가능
+            // 도형 외부(어두운색): 검은색(0,0,0)으로 = 배치 불가
+            const imageData = maskCtx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+
+            const threshold = 128;
+
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+
+              const brightness = (r + g + b) / 3;
+
+              if (brightness > threshold) {
+                // 도형 내부 (흰색 영역) - 단어 배치 가능
+                data[i] = 255; // R
+                data[i + 1] = 255; // G
+                data[i + 2] = 255; // B
+                data[i + 3] = 255; // A
+              } else {
+                // 도형 외부 (검은색 영역) - 단어 배치 불가
+                // 검은색으로 설정 (배경색과 다르면 배치 안함)
+                data[i] = 0; // R
+                data[i + 1] = 0; // G
+                data[i + 2] = 0; // B
+                data[i + 3] = 255; // A (불투명)
+              }
+            }
+
+            maskCtx.putImageData(imageData, 0, 0);
+
+            maskCanvasCache[cacheKey] = maskCanvas;
+            resolve(maskCanvas);
+          };
+
+          img.onerror = function () {
+            URL.revokeObjectURL(url);
+            console.warn(`마스크 이미지 로드 실패: ${shapeName}`);
+            resolve(null);
+          };
+
+          img.src = url;
+        });
+      }
+
+      // ==========================================
+      // WordCloud 생성 (로딩 표시 + 순차적 폰트 부스트)
+      // ==========================================
+      async function createWordCloud(wordList) {
+        window.currentWordList = wordList;
+
+        const container = document.getElementById("wordcloud-container");
+        const canvas = document.getElementById("wordcloud-canvas");
+        if (!canvas || !container) return;
+
+        if (wordList.length === 0) {
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.font = "20px Noto Sans KR";
+          ctx.fillStyle = "#999";
+          ctx.textAlign = "center";
+          ctx.fillText(
+            "분석할 단어가 없습니다.",
+            canvas.width / 2,
+            canvas.height / 2,
+          );
+          return;
+        }
+
+        // 기존 WordCloud 중단
+        try {
+          WordCloud.stop();
+        } catch (e) {}
+
+        // Canvas 크기 설정
+        const canvasWidth = Math.max(container.clientWidth || 800, 800);
+        const canvasHeight = 600;
+
+        // 🕐 로딩 오버레이 표시 (진하게!)
+        let loadingOverlay = document.getElementById("wordcloud-loading");
+        if (!loadingOverlay) {
+          loadingOverlay = document.createElement("div");
+          loadingOverlay.id = "wordcloud-loading";
+          loadingOverlay.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: #e0f2fe;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 100;
+                    border-radius: 12px;
+                    border: 2px solid #7dd3fc;
+                `;
+          container.style.position = "relative";
+          container.appendChild(loadingOverlay);
+        }
+
+        function updateLoading(emoji, title, subtitle) {
+          loadingOverlay.innerHTML = `
+                    <div style="font-size: 64px; margin-bottom: 20px; filter: none;">${emoji}</div>
+                    <div style="font-size: 20px; color: #1a202c; font-weight: 700;">${title}</div>
+                    <div style="font-size: 15px; color: #4a5568; margin-top: 10px; font-weight: 500;">${subtitle}</div>
+                `;
+        }
+
+        updateLoading("⏳", "워드클라우드 생성 중...", "잠시만 기다려주세요");
+        loadingOverlay.style.display = "flex";
+
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        const ctx = canvas.getContext("2d");
+        const maxFreq = wordList[0][1];
+        const currentShape = wordCloudSettings.shape;
+
+        // 마스크 캔버스 생성
+        let maskCanvas = null;
+        try {
+          maskCanvas = await createMaskCanvas(
+            currentShape,
+            canvasWidth,
+            canvasHeight,
+          );
+        } catch (e) {
+          console.warn("마스크 생성 실패:", e);
+        }
+
+        const colorFunction = function () {
+          return advancedColors[
+            Math.floor(Math.random() * advancedColors.length)
+          ];
+        };
+
+        const selectedFont = wordCloudSettings.font;
+        const fontFamily = selectedFont + ", Do Hyeon, Jua, sans-serif";
+
+        // 순차적 부스트 상태
+        let boostRank = 0; // 현재 부스트 적용 순위 (0 = 부스트 없음)
+        let retryCount = 0;
+        const maxRetry = 5; // 3 → 5로 증가 (더 많은 재시도)
+        const boostStep = 15; // 20 → 15로 감소 (점진적 증가)
+        const boostMultiplier = 1.6; // 1.5 → 1.6으로 증가 (더 크게)
+        let totalCheckCount = 0;
+        const maxTotalChecks = 300; // 200 → 300으로 증가
+        const startTime = Date.now(); // 시작 시간 기록
+        const minLoadingTime = 3000; // 5초 → 3초로 단축
+        const minFillPercent = 40; // ✨ 최소 채움률 40%
+
+        // 단어 크기 계산 함수 (부스트 적용)
+        function createWeightFactor(boostUpTo) {
+          return function (size) {
+            const baseSize = Math.min(canvasWidth, canvasHeight) / 8;
+            const normalized = Math.log(size + 1) / Math.log(maxFreq + 1);
+            let calculatedSize = Math.pow(normalized, 0.6) * baseSize + 8;
+
+            // 현재 단어의 순위 찾기
+            const rank = wordList.findIndex((w) => w[1] === size) + 1;
+
+            // boostUpTo 순위 이내면 크기 부스트
+            if (boostUpTo > 0 && rank > 0 && rank <= boostUpTo) {
+              calculatedSize *= boostMultiplier;
+            }
+
+            return calculatedSize;
+          };
+        }
+
+        // 검정색을 흰색으로 변환
+        function removeBlackPixels() {
+          const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+          const data = imageData.data;
+
+          for (let i = 0; i < data.length; i += 4) {
+            if (data[i] < 15 && data[i + 1] < 15 && data[i + 2] < 15) {
+              data[i] = data[i + 1] = data[i + 2] = 255;
+            }
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
+
+        // 채움률 계산
+        function calculateFillPercent() {
+          const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+          const data = imageData.data;
+
+          let shapePixels = 0;
+          let filledPixels = 0;
+
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i],
+              g = data[i + 1],
+              b = data[i + 2];
+
+            // 검정색이 아닌 픽셀 = 도형 내부
+            if (!(r < 15 && g < 15 && b < 15)) {
+              shapePixels++;
+              // 흰색이 아닌 픽셀 = 채워진 영역
+              if (!(r > 240 && g > 240 && b > 240)) {
+                filledPixels++;
+              }
+            }
+          }
+
+          return shapePixels > 0
+            ? Math.round((filledPixels / shapePixels) * 100)
+            : 0;
+        }
+
+        // 워드클라우드 생성 함수
+        function generateCloud() {
+          // 캔버스 초기화
+          if (maskCanvas) {
+            ctx.drawImage(maskCanvas, 0, 0);
+          } else {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+          }
+
+          const options = {
+            list: wordList.slice(0, 120), // 100 → 120개로 증가
+            fontFamily: fontFamily,
+            fontWeight: "700",
+            color: colorFunction,
+            backgroundColor: "#ffffff",
+            gridSize: 3, // 4 → 3으로 감소 (더 촘촘하게)
+            minSize: 8, // 6 → 8로 증가 (가독성)
+            rotateRatio: 0.15, // 0.1 → 0.15로 증가 (더 많은 회전)
+            minRotation: -Math.PI / 12,
+            maxRotation: Math.PI / 12,
+            weightFactor: createWeightFactor(boostRank),
+            drawOutOfBound: false,
+            shrinkToFit: true,
+            shuffle: true,
+            wait: 10, // 0 → 10ms (UI 응답성 확보)
+            abortThreshold: 3000, // 3초 이상 블로킹 시 중단
+            clearCanvas: !maskCanvas,
+            click: function (item) {
+              if (item && item[0]) {
+                alert(item[0] + ": " + item[1] + "회");
+              }
+            },
+          };
+
+          if (!maskCanvas) {
+            options.shape = "circle";
+            options.ellipticity = 0.65;
+          }
+
+          WordCloud(canvas, options);
+        }
+
+        // 완성도 체크 및 부스트 로직
+        function startMonitoring() {
+          let lastFillPercent = 0;
+          let stableCount = 0;
+          let checkCount = 0;
+          const maxChecks = 50; // 150 → 50으로 축소
+
+          const checkInterval = setInterval(() => {
+            checkCount++;
+            totalCheckCount++;
+
+            // 전체 타임아웃 체크 (무한루프 방지)
+            if (totalCheckCount >= maxTotalChecks) {
+              clearInterval(checkInterval);
+              const elapsed = Date.now() - startTime;
+              const remainingTime = Math.max(0, minLoadingTime - elapsed);
+
+              setTimeout(() => {
+                if (maskCanvas) removeBlackPixels();
+                loadingOverlay.style.display = "none";
+                console.log("⚠️ 전체 타임아웃으로 종료");
+              }, remainingTime);
+              return;
+            }
+
+            const fillPercent = calculateFillPercent();
+
+            updateLoading(
+              "⏳",
+              "워드클라우드 생성 중...",
+              `채움률: ${fillPercent}% | 시도: ${retryCount + 1}/${maxRetry + 1}`,
+            );
+
+            // 채움률 변화 체크
+            if (Math.abs(fillPercent - lastFillPercent) < 2) {
+              stableCount++;
+            } else {
+              stableCount = 0;
+            }
+            lastFillPercent = fillPercent;
+
+            // 안정화됨 (3회 연속 변화 없음) 또는 타임아웃
+            const isStable =
+              stableCount >= 3 ||
+              !WordCloud.isActive ||
+              checkCount >= maxChecks;
+
+            if (isStable) {
+              clearInterval(checkInterval);
+
+              // 40% 미만이고 재시도 가능하면 → 폰트 부스트 후 재생성
+              if (fillPercent < minFillPercent && retryCount < maxRetry) {
+                retryCount++;
+                boostRank += boostStep;
+
+                updateLoading(
+                  "🔄",
+                  "더 채우는 중...",
+                  `상위 ${boostRank}개 단어 확대 중 (현재: ${fillPercent}%)`,
+                );
+
+                setTimeout(() => {
+                  try {
+                    WordCloud.stop();
+                  } catch (e) {}
+                  generateCloud();
+                  startMonitoring();
+                }, 100);
+              } else {
+                // 완료! (최소 3초 대기)
+                const elapsed = Date.now() - startTime;
+                const remainingTime = Math.max(0, minLoadingTime - elapsed);
+
+                setTimeout(() => {
+                  if (maskCanvas) removeBlackPixels();
+                  loadingOverlay.style.display = "none";
+
+                  // 40% 미달 시 경고
+                  if (fillPercent < minFillPercent) {
+                    console.warn(
+                      `⚠️ 워드클라우드 채움률 ${fillPercent}% (목표: ${minFillPercent}%)`,
+                    );
+                  } else {
+                    console.log(
+                      `✅ 워드클라우드 완성 (채움률: ${fillPercent}%, 시도: ${retryCount + 1}회, 소요: ${((elapsed + remainingTime) / 1000).toFixed(1)}초)`,
+                    );
+                  }
+                }, remainingTime + 200);
+              }
+            }
+          }, 200); // 100ms → 200ms로 증가
+        }
+
+        // 시작
+        setTimeout(() => {
+          try {
+            generateCloud();
+            startMonitoring();
+          } catch (e) {
+            console.error("WordCloud 생성 오류:", e);
+            updateLoading("❌", "오류 발생", e.message);
+            setTimeout(() => {
+              loadingOverlay.style.display = "none";
+            }, 2000);
+          }
+        }, 50);
+      }
+
+      function selectShape(shape) {
+        wordCloudSettings.shape = shape;
+
+        // shape 버튼만 선택 (font 버튼은 제외)
+        document
+          .querySelectorAll(".shape-option:not(.font-option)")
+          .forEach((btn) => btn.classList.remove("active"));
+        const selectedBtn = document.querySelector(
+          `.shape-option[data-shape="${shape}"]`,
+        );
+        if (selectedBtn) selectedBtn.classList.add("active");
+
+        const currentWords = window.currentWordList;
+        if (currentWords && currentWords.length > 0) {
+          createWordCloud(currentWords);
+        }
+      }
+
+      function selectFont(font) {
+        wordCloudSettings.font = font;
+
+        // font 버튼만 선택
+        document
+          .querySelectorAll(".font-option")
+          .forEach((btn) => btn.classList.remove("active"));
+        const selectedBtn = document.querySelector(
+          `.font-option[data-font="${font}"]`,
+        );
+        if (selectedBtn) selectedBtn.classList.add("active");
+
+        const currentWords = window.currentWordList;
+        if (currentWords && currentWords.length > 0) {
+          createWordCloud(currentWords);
+        }
+      }
+
+      function createFrequencyTable(wordList) {
+        const tbody = document.querySelector("#frequency-table tbody");
+        tbody.innerHTML = "";
+
+        const total = wordList.reduce((sum, [_, freq]) => sum + freq, 0);
+
+        for (let i = 0; i < wordList.length; i += 2) {
+          const tr = document.createElement("tr");
+
+          // 왼쪽 열 (홀수 순위: 1, 3, 5...)
+          const leftItem = wordList[i];
+          const leftPercentage = ((leftItem[1] / total) * 100).toFixed(1);
+
+          let rowHtml = `
+                    <td>${i + 1}</td>
+                    <td><strong>${leftItem[0]}</strong></td>
+                    <td>${leftItem[1]}</td>
+                    <td>${leftPercentage}%</td>
+                `;
+
+          // 오른쪽 열 (짝수 순위: 2, 4, 6...)
+          if (i + 1 < wordList.length) {
+            const rightItem = wordList[i + 1];
+            const rightPercentage = ((rightItem[1] / total) * 100).toFixed(1);
+            rowHtml += `
+                        <td style="border-left: 2px solid #ddd;">${i + 2}</td>
+                        <td><strong>${rightItem[0]}</strong></td>
+                        <td>${rightItem[1]}</td>
+                        <td>${rightPercentage}%</td>
+                    `;
+          } else {
+            rowHtml += `<td style="border-left: 2px solid #ddd;"></td><td></td><td></td><td></td>`;
+          }
+
+          tr.innerHTML = rowHtml;
+          tbody.appendChild(tr);
+        }
+      }
+
+      function createFrequencyChart(wordList) {
+        const canvas = document.getElementById("frequency-chart");
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+
+        if (window.frequencyChart) {
+          window.frequencyChart.destroy();
+        }
+
+        if (wordList.length === 0) return;
+
+        window.frequencyChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: wordList.map(([word]) => word),
+            datasets: [
+              {
+                label: "빈도",
+                data: wordList.map(([_, freq]) => freq),
+                backgroundColor: "rgba(102, 126, 234, 0.6)",
+                borderColor: "rgba(102, 126, 234, 1)",
+                borderWidth: 2,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: {
+                display: true,
+                text: `상위 ${wordList.length}개 단어 빈도`,
+                font: { size: 18 },
+              },
+              legend: { display: false },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 },
+              },
+            },
+          },
+        });
+      }
+
+      // ==========================================
+      // 벡터 계산 함수들
+      // ==========================================
+      function proceedToVector() {
+        // window.wordFrequency가 비어있으면 경고
+        if (
+          !window.wordFrequency ||
+          Object.keys(window.wordFrequency).length === 0
+        ) {
+          alert("먼저 텍스트 분석을 완료해주세요.");
+          return;
+        }
+        createSentenceSelection(); // 문장 선택 UI 생성
+        createWordSelection();
+        document.getElementById("tab-btn-vector").disabled = false;
+        switchTab("vector");
+      }
+
+      // ==========================================
+      // 문장 선택 기능
+      // ==========================================
+      function createSentenceSelection() {
+        const container = document.getElementById("sentence-selection");
+        container.innerHTML = "";
+
+        if (allSentences.length === 0) {
+          container.innerHTML =
+            '<p style="color: #999; text-align: center;">분석할 문장이 없습니다.</p>';
+          return;
+        }
+
+        // 기본값: 전체 선택
+        selectedSentences = [...allSentences];
+
+        allSentences.forEach((sentence, index) => {
+          const item = document.createElement("div");
+          item.className = "sentence-item selected";
+          item.dataset.index = index;
+          item.innerHTML = `
+                    <span class="sentence-number">문장 ${index + 1}</span>
+                    <span class="sentence-text">${sentence}</span>
+                `;
+          item.addEventListener("click", () => toggleSentence(item, index));
+          container.appendChild(item);
+        });
+
+        updateSelectedSentenceCount();
+      }
+
+      function toggleSentence(item, index) {
+        item.classList.toggle("selected");
+
+        if (item.classList.contains("selected")) {
+          if (!selectedSentences.includes(allSentences[index])) {
+            selectedSentences.push(allSentences[index]);
+          }
+        } else {
+          selectedSentences = selectedSentences.filter(
+            (s) => s !== allSentences[index],
+          );
+        }
+
+        updateSelectedSentenceCount();
+      }
+
+      function selectAllSentences() {
+        const items = document.querySelectorAll(".sentence-item");
+        items.forEach((item) => item.classList.add("selected"));
+        selectedSentences = [...allSentences];
+        updateSelectedSentenceCount();
+      }
+
+      function deselectAllSentences() {
+        const items = document.querySelectorAll(".sentence-item");
+        items.forEach((item) => item.classList.remove("selected"));
+        selectedSentences = [];
+        updateSelectedSentenceCount();
+      }
+
+      function updateSelectedSentenceCount() {
+        const countEl = document.getElementById("selected-sentence-count");
+        if (countEl) {
+          countEl.textContent = `${selectedSentences.length}개 선택됨`;
+        }
+      }
+
+      function getSelectedSentencesForAnalysis() {
+        // 선택된 문장이 없으면 전체 사용
+        return selectedSentences.length > 0 ? selectedSentences : allSentences;
+      }
+
+      function createWordSelection() {
+        const container = document.getElementById("word-selection");
+        container.innerHTML = "";
+
+        // wordFrequency 체크
+        if (!wordFrequency || Object.keys(wordFrequency).length === 0) {
+          container.innerHTML =
+            '<p style="color: #999; text-align: center;">분석된 단어가 없습니다. 먼저 텍스트 분석을 진행해주세요.</p>';
+          return;
+        }
+
+        const sortedWords = Object.entries(wordFrequency)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 30);
+
+        if (sortedWords.length === 0) {
+          container.innerHTML =
+            '<p style="color: #999; text-align: center;">분석된 단어가 없습니다.</p>';
+          return;
+        }
+
+        sortedWords.forEach(([word, freq]) => {
+          const label = document.createElement("label");
+          label.className = "word-checkbox";
+          label.innerHTML = `
+                    <input type="checkbox" value="${word}">
+                    <span>${word} (${freq}회)</span>
+                `;
+          container.appendChild(label);
+        });
+
+        console.log("단어 선택 UI 생성 완료:", sortedWords.length, "개 단어");
+      }
+
+      function autoSelectWords() {
+        const checkboxes = document.querySelectorAll(
+          '#word-selection input[type="checkbox"]',
+        );
+        if (checkboxes.length === 0) {
+          alert("단어 목록이 없습니다. 먼저 텍스트 분석을 진행해주세요.");
+          return;
+        }
+        checkboxes.forEach((cb, index) => {
+          cb.checked = index < 10;
+        });
+        console.log("상위 10개 단어 자동 선택 완료");
+      }
+
+      function clearWordSelection() {
+        const checkboxes = document.querySelectorAll(
+          '#word-selection input[type="checkbox"]',
+        );
+        checkboxes.forEach((cb) => (cb.checked = false));
+      }
+
+      function calculateSimilarity() {
+        // 선택된 문장 체크
+        const sentencesToAnalyze = getSelectedSentencesForAnalysis();
+        if (sentencesToAnalyze.length < 2) {
+          alert("최소 2개 이상의 문장을 선택해주세요.");
+          return;
+        }
+
+        const checkboxes = document.querySelectorAll(
+          '#word-selection input[type="checkbox"]:checked',
+        );
+        selectedWords = Array.from(checkboxes).map((cb) => cb.value);
+
+        if (selectedWords.length < 2) {
+          alert("최소 2개 이상의 단어를 선택해주세요.");
+          return;
+        }
+
+        const matrix = createTermMatrix();
+        displayMatrix(matrix);
+
+        const similarities = computeCosineSimilarity(matrix);
+
+        // 제목 변경
+        document.getElementById("similarity-title").textContent =
+          "🎯 가장 비슷한 문장 찾기 (코사인 유사도)";
+
+        displaySimilarityResults(similarities, "cosine");
+        createHeatmap(similarities, "cosine");
+        visualizeVectors(matrix);
+
+        document
+          .getElementById("similarity-section")
+          .classList.remove("hidden");
+      }
+
+      function createTermMatrix() {
+        const matrix = [];
+        const sentencesToAnalyze = getSelectedSentencesForAnalysis();
+
+        for (const sentence of sentencesToAnalyze) {
+          const row = [];
+          const words = tokenizeKorean(sentence);
+
+          selectedWords.forEach((word) => {
+            const count = words.filter((w) => w === word).length;
+            row.push(count);
+          });
+
+          matrix.push(row);
+        }
+
+        return matrix;
+      }
+
+      function displayMatrix(matrix) {
+        const container = document.getElementById("matrix-display");
+
+        let html = "<table><thead><tr><th>문장</th>";
+        selectedWords.forEach((word) => {
+          html += `<th>${word}</th>`;
+        });
+        html += "</tr></thead><tbody>";
+
+        matrix.forEach((row, i) => {
+          html += `<tr><th>문장 ${i + 1}</th>`;
+          row.forEach((val) => {
+            html += `<td>${val}</td>`;
+          });
+          html += "</tr>";
+        });
+
+        html += "</tbody></table>";
+        container.innerHTML = html;
+      }
+
+      function computeCosineSimilarity(matrix) {
+        const n = matrix.length;
+        const similarities = Array(n)
+          .fill(0)
+          .map(() => Array(n).fill(0));
+
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            similarities[i][j] =
+              i === j ? 1.0 : cosineSimilarity(matrix[i], matrix[j]);
+          }
+        }
+
+        return similarities;
+      }
+
+      function cosineSimilarity(vec1, vec2) {
+        let dotProduct = 0,
+          mag1 = 0,
+          mag2 = 0;
+
+        for (let i = 0; i < vec1.length; i++) {
+          dotProduct += vec1[i] * vec2[i];
+          mag1 += vec1[i] * vec1[i];
+          mag2 += vec2[i] * vec2[i];
+        }
+
+        mag1 = Math.sqrt(mag1);
+        mag2 = Math.sqrt(mag2);
+
+        if (mag1 === 0 || mag2 === 0) return 0;
+        return dotProduct / (mag1 * mag2);
+      }
+
+      // 유클리드 거리 계산
+      function euclideanDistance(vec1, vec2) {
+        let sum = 0;
+        for (let i = 0; i < vec1.length; i++) {
+          sum += Math.pow(vec1[i] - vec2[i], 2);
+        }
+        return Math.sqrt(sum);
+      }
+
+      // 유클리드 거리 행렬 계산 (거리 그대로 반환, 0이 가장 유사)
+      function computeEuclideanDistance(matrix) {
+        const n = matrix.length;
+        const distances = Array(n)
+          .fill(0)
+          .map(() => Array(n).fill(0));
+
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            if (i === j) {
+              distances[i][j] = 0; // 자기 자신과의 거리는 0
+            } else {
+              distances[i][j] = euclideanDistance(matrix[i], matrix[j]);
+            }
+          }
+        }
+
+        return distances;
+      }
+
+      // 유클리드 거리 계산 실행
+      function calculateEuclideanSimilarity() {
+        // 선택된 문장 체크
+        const sentencesToAnalyze = getSelectedSentencesForAnalysis();
+        if (sentencesToAnalyze.length < 2) {
+          alert("최소 2개 이상의 문장을 선택해주세요.");
+          return;
+        }
+
+        const checkboxes = document.querySelectorAll(
+          '#word-selection input[type="checkbox"]:checked',
+        );
+        selectedWords = Array.from(checkboxes).map((cb) => cb.value);
+
+        if (selectedWords.length < 2) {
+          alert("최소 2개 이상의 단어를 선택해주세요.");
+          return;
+        }
+
+        const matrix = createTermMatrix();
+        displayMatrix(matrix);
+
+        const distances = computeEuclideanDistance(matrix);
+
+        // 제목 변경
+        document.getElementById("similarity-title").textContent =
+          "🎯 가장 비슷한 문장 찾기 (유클리드 거리)";
+
+        displaySimilarityResults(distances, "euclidean");
+        createHeatmap(distances, "euclidean");
+        visualizeVectors(matrix);
+
+        document
+          .getElementById("similarity-section")
+          .classList.remove("hidden");
+      }
+
+      function displaySimilarityResults(values, similarityType) {
+        const container = document.getElementById("similarity-results");
+        container.innerHTML = "";
+
+        const sentencesToAnalyze = getSelectedSentencesForAnalysis();
+        const isEuclidean = similarityType === "euclidean";
+        const typeLabel = isEuclidean ? "유클리드 거리" : "코사인 유사도";
+
+        sentencesToAnalyze.forEach((sentence, i) => {
+          const scores = values[i]
+            .map((score, j) => ({ index: j, score: score }))
+            .filter((item) => item.index !== i);
+
+          // 유클리드: 오름차순 (작을수록 유사), 코사인: 내림차순 (클수록 유사)
+          if (isEuclidean) {
+            scores.sort((a, b) => a.score - b.score);
+          } else {
+            scores.sort((a, b) => b.score - a.score);
+          }
+
+          const mostSimilar = scores[0];
+
+          // 값 표시 형식
+          const displayValue = isEuclidean
+            ? mostSimilar.score.toFixed(2) // 거리는 소수점 2자리
+            : (mostSimilar.score * 100).toFixed(1) + "%"; // 유사도는 %
+
+          const card = document.createElement("div");
+          card.className = "similarity-card";
+          card.innerHTML = `
+                    <h4>문장 ${i + 1}:</h4>
+                    <p>"${sentence}"</p>
+                    <br>
+                    <p><strong>가장 비슷한 문장:</strong> 문장 ${mostSimilar.index + 1}</p>
+                    <p>"${sentencesToAnalyze[mostSimilar.index]}"</p>
+                    <br>
+                    <p><strong>${typeLabel}:</strong> <span class="similarity-value">${displayValue}</span></p>
+                `;
+          container.appendChild(card);
+        });
+      }
+
+      function createHeatmap(values, similarityType) {
+        const canvas = document.getElementById("heatmap-canvas");
+        const ctx = canvas.getContext("2d");
+
+        const n = values.length;
+        const cellSize = Math.min(600 / n, 50);
+        const labelSize = 60;
+        const isEuclidean = similarityType === "euclidean";
+
+        canvas.width = cellSize * n + labelSize;
+        canvas.height = cellSize * n + labelSize;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 유클리드 거리의 경우 최대값 찾기 (정규화용)
+        let maxVal = 1;
+        if (isEuclidean) {
+          for (let i = 0; i < n; i++) {
+            for (let j = 0; j < n; j++) {
+              if (values[i][j] > maxVal) maxVal = values[i][j];
+            }
+          }
+        }
+
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n; j++) {
+            const value = values[i][j];
+            let intensity;
+
+            if (isEuclidean) {
+              // 유클리드: 거리가 작을수록 진한 파란색 (0=진함, max=연함)
+              const normalized = maxVal > 0 ? value / maxVal : 0;
+              intensity = Math.floor((1 - normalized) * 255);
+            } else {
+              // 코사인: 유사도가 클수록 진한 파란색 (1=진함, 0=연함)
+              intensity = Math.floor(value * 255);
+            }
+
+            ctx.fillStyle = `rgb(${255 - intensity}, ${255 - intensity}, 255)`;
+            ctx.fillRect(
+              j * cellSize + labelSize,
+              i * cellSize + labelSize,
+              cellSize,
+              cellSize,
+            );
+
+            ctx.strokeStyle = "#ddd";
+            ctx.strokeRect(
+              j * cellSize + labelSize,
+              i * cellSize + labelSize,
+              cellSize,
+              cellSize,
+            );
+
+            // cellSize에 맞춰 폰트 크기 자동 조정
+            if (cellSize > 15) {
+              // 30 → 15로 낮춤 (더 작은 셀에도 숫자 표시)
+              // 텍스트 색상 결정
+              ctx.fillStyle = intensity > 127 ? "white" : "black";
+
+              // cellSize에 비례한 폰트 크기 (최소 8px, 최대 14px)
+              const fontSize = Math.max(
+                8,
+                Math.min(14, Math.floor(cellSize * 0.35)),
+              );
+              ctx.font = `${fontSize}px "Roboto Mono", "SF Mono", Consolas, monospace`;
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+
+              // 셀이 작으면 소수점 1자리, 크면 2자리
+              const decimals = cellSize > 35 ? 2 : 1;
+              ctx.fillText(
+                value.toFixed(decimals),
+                j * cellSize + labelSize + cellSize / 2,
+                i * cellSize + labelSize + cellSize / 2,
+              );
+            }
+          }
+        }
+
+        // 왼쪽 인덱스 배경 (연한 회색)
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillRect(0, labelSize, labelSize, cellSize * n);
+
+        // 상단 인덱스 배경 (연한 회색)
+        ctx.fillRect(labelSize, 0, cellSize * n, labelSize);
+
+        // 왼쪽 인덱스 레이블
+        ctx.fillStyle = "#1e3a5f";
+        ctx.font = 'bold 14px "Roboto Mono", "SF Mono", Consolas, sans-serif';
+        ctx.textAlign = "right";
+        for (let i = 0; i < n; i++) {
+          ctx.fillText(
+            `문장 ${i + 1}`,
+            labelSize - 10,
+            i * cellSize + labelSize + cellSize / 2,
+          );
+        }
+
+        // 상단 인덱스 레이블
+        ctx.save();
+        ctx.textAlign = "left";
+        for (let j = 0; j < n; j++) {
+          ctx.save();
+          ctx.translate(
+            j * cellSize + labelSize + cellSize / 2,
+            labelSize - 10,
+          );
+          ctx.rotate(-Math.PI / 4);
+          ctx.fillText(`문장 ${j + 1}`, 0, 0);
+          ctx.restore();
+        }
+        ctx.restore();
+      }
+
+      function visualizeVectors(matrix) {
+        const canvas = document.getElementById("vector-chart");
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+
+        if (window.vectorChart) window.vectorChart.destroy();
+
+        const words = selectedWords.slice(0, 5);
+        if (words.length === 0) return;
+
+        const datasets = words.map((word, idx) => {
+          const colors = [
+            "#1e3a5f",
+            "#c9a227",
+            "#2d5a87",
+            "#5a8f7b",
+            "#8b5a5a",
+          ];
+          const wordIdx = selectedWords.indexOf(word);
+          const frequencies = matrix.map((row) => row[wordIdx] || 0);
+
+          return {
+            label: word,
+            data: frequencies,
+            backgroundColor: colors[idx % colors.length] + "80",
+            borderColor: colors[idx % colors.length],
+            borderWidth: 2,
+          };
+        });
+
+        const labels = allSentences.map((_, idx) => `문장 ${idx + 1}`);
+
+        window.vectorChart = new Chart(ctx, {
+          type: "bar",
+          data: { labels: labels, datasets: datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              title: {
+                display: true,
+                text: "선택한 단어가 각 문장에서 나타난 횟수",
+                font: { size: 18, family: "Noto Sans KR" },
+              },
+              legend: { display: true, position: "top" },
+            },
+            scales: {
+              y: { beginAtZero: true, ticks: { stepSize: 1 } },
+            },
+          },
+        });
+      }
+
+      function downloadResults() {
+        html2canvas(document.querySelector(".container")).then((canvas) => {
+          const link = document.createElement("a");
+          link.download = "text-mining-results.png";
+          link.href = canvas.toDataURL();
+          link.click();
+        });
+      }
+
+      // ==========================================
+      // 탭 전환 함수 (중복 제거)
+      // ==========================================
+      function switchTab(tabName) {
+        // 이전 활성 탭 확인 (스크롤 동작 결정용)
+        const previousActiveTab = document
+          .querySelector(".tab.active")
+          ?.id.replace("tab-btn-", "");
+
+        document
+          .querySelectorAll(".tab")
+          .forEach((t) => t.classList.remove("active"));
+        document.querySelectorAll(".tab-content").forEach((c) => {
+          c.classList.remove("active");
+          c.style.display = "none";
+        });
+
+        const selectedTabBtn = document.getElementById(`tab-btn-${tabName}`);
+        if (selectedTabBtn) selectedTabBtn.classList.add("active");
+
+        const selectedContent = document.getElementById(`tab-${tabName}`);
+        if (selectedContent) {
+          selectedContent.classList.add("active");
+          selectedContent.style.display = "block";
+        }
+
+        // 탭 네비게이션으로 스크롤
+        const tabNavigation = document.getElementById("tab-navigation");
+        if (tabNavigation) {
+          // 텍스트 분석 탭에서 형태소 분리 탭으로 이동할 때만 하단 버튼으로 스크롤
+          if (tabName === "morpheme" && previousActiveTab === "analysis") {
+            // 먼저 탭 위치로 스크롤
+            const tabTop =
+              tabNavigation.getBoundingClientRect().top +
+              window.pageYOffset -
+              100;
+            window.scrollTo({ top: tabTop, behavior: "smooth" });
+
+            // 충분한 지연 후 하단 버튼으로 스크롤
+            setTimeout(() => {
+              const bottomButtons = document.getElementById(
+                "morpheme-bottom-buttons",
+              );
+              if (bottomButtons) {
+                // 하단 버튼이 화면에 보이도록 스크롤
+                bottomButtons.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center", // 화면 중앙에 위치
+                });
+
+                // 하단 버튼들 강조 (펄스 효과)
+                setTimeout(() => {
+                  const buttons = bottomButtons.querySelectorAll("button");
+                  buttons.forEach((btn) => {
+                    btn.style.animation = "none";
+                    setTimeout(() => {
+                      btn.style.animation = "pulse 0.6s ease-in-out 3";
+                    }, 10);
+                  });
+                }, 200);
+              }
+            }, 600); // 300ms → 600ms로 증가
+          } else {
+            // 다른 경우는 탭 버튼 위치로 스크롤
+            const tabTop =
+              tabNavigation.getBoundingClientRect().top +
+              window.pageYOffset -
+              100;
+            window.scrollTo({ top: tabTop, behavior: "smooth" });
+          }
+
+          // 선택된 탭 버튼 강조 (펄스 효과)
+          // 단, 텍스트 분석 탭에서 형태소 분리 탭으로 이동하는 경우는 제외 (하단 버튼만 강조)
+          if (selectedTabBtn && !(tabName === "morpheme" && previousActiveTab === "analysis")) {
+            selectedTabBtn.style.animation = "none";
+            setTimeout(() => {
+              selectedTabBtn.style.animation = "pulse 0.5s ease-in-out 2";
+            }, 10);
+          }
+        }
+      }
+
+      // ==========================================
+      // 브라우저 리사이즈 이벤트 처리
+      // ==========================================
+      let resizeTimeout;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          const currentWords = window.currentWordList;
+          if (
+            currentWords &&
+            currentWords.length > 0 &&
+            document.getElementById("tab-analysis").classList.contains("active")
+          ) {
+            createWordCloud(currentWords);
+          }
+        }, 500);
+      });
+
+      // ==========================================
+      // 웹 폰트 로딩 대기
+      // ==========================================
+      if (document.fonts) {
+        document.fonts.ready.then(() => {
+          console.log("✅ 웹 폰트 로딩 완료");
+        });
+      }
+
+      // ==========================================
+      // 이벤트 리스너 등록 (중복 제거, onclick 대신 addEventListener 사용)
+      // ==========================================
+      function initializeApp() {
+        // 역할 선택
+        document.querySelectorAll(".role-card").forEach((card) => {
+          card.addEventListener("click", () => selectRole(card.dataset.role));
+        });
+
+        // 탭 전환
+        document
+          .getElementById("tab-btn-collection")
+          ?.addEventListener("click", () => switchTab("collection"));
+        document
+          .getElementById("tab-btn-analysis")
+          ?.addEventListener("click", () => switchTab("analysis"));
+        document
+          .getElementById("tab-btn-vector")
+          ?.addEventListener("click", () => switchTab("vector"));
+
+        // 선생님 기능
+        document
+          .getElementById("copy-room-code-btn")
+          ?.addEventListener("click", copyRoomCode);
+        document
+          .getElementById("copy-room-url-btn")
+          ?.addEventListener("click", copyRoomURL);
+        document
+          .getElementById("close-input-btn")
+          ?.addEventListener("click", closeInput);
+        document
+          .getElementById("start-analysis-btn")
+          ?.addEventListener("click", startAnalysis);
+
+        // 학생 기능
+        document
+          .getElementById("join-room-btn")
+          ?.addEventListener("click", joinRoom);
+        document
+          .getElementById("set-nickname-btn")
+          ?.addEventListener("click", setNickname);
+        document
+          .getElementById("submit-sentences-btn")
+          ?.addEventListener("click", submitSentences);
+        document
+          .getElementById("view-analysis-student-btn")
+          ?.addEventListener("click", viewAnalysisAsStudent);
+
+        // 체험 모드
+        document
+          .getElementById("start-demo-btn")
+          ?.addEventListener("click", startDemoAnalysis);
+
+        // 분석 탭 - shape 선택
+        document
+          .querySelectorAll(".shape-option:not(.font-option)")
+          .forEach((btn) => {
+            btn.addEventListener("click", () => selectShape(btn.dataset.shape));
+          });
+
+        // 분석 탭 - font 선택
+        document.querySelectorAll(".font-option").forEach((btn) => {
+          btn.addEventListener("click", () => selectFont(btn.dataset.font));
+        });
+
+        document
+          .getElementById("stopwords-toggle")
+          ?.addEventListener("change", analyzeText);
+        document
+          .getElementById("proceed-vector-btn")
+          ?.addEventListener("click", proceedToVector);
+
+        // 벡터 탭
+        document
+          .getElementById("select-all-sentences-btn")
+          ?.addEventListener("click", selectAllSentences);
+        document
+          .getElementById("deselect-all-sentences-btn")
+          ?.addEventListener("click", deselectAllSentences);
+        document
+          .getElementById("auto-select-btn")
+          ?.addEventListener("click", autoSelectWords);
+        document
+          .getElementById("clear-selection-btn")
+          ?.addEventListener("click", clearWordSelection);
+        document
+          .getElementById("calc-similarity-btn")
+          ?.addEventListener("click", calculateSimilarity);
+        document
+          .getElementById("calc-euclidean-btn")
+          ?.addEventListener("click", calculateEuclideanSimilarity);
+        document
+          .getElementById("download-btn")
+          ?.addEventListener("click", downloadResults);
+      }
+
+      // URL 파라미터 자동 방 입장 (Firebase 준비 후 실행)
+      function handleUrlParams() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomCode = urlParams.get("room");
+        if (roomCode) {
+          selectRole("student");
+          document.getElementById("room-code-input").value =
+            roomCode.toUpperCase();
+          setTimeout(() => joinRoom(), 100);
+        }
+      }
+
+      // DOM 로드 완료 시 이벤트 리스너 등록
+      document.addEventListener("DOMContentLoaded", () => {
+        initializeApp();
+
+        // Firebase가 이미 준비되었으면 바로 실행, 아니면 대기
+        if (window.firebaseReady) {
+          handleUrlParams();
+        } else {
+          window.addEventListener("firebaseReady", handleUrlParams);
+        }
+      });
+    </script>
+  </body>
+</html>

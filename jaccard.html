@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 형태소 감성 분석 (Gemini)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        
+        .morpheme-positive {
+            background: linear-gradient(120deg, #fef08a 0%, #fef08a 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 80%;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+            color: #059669;
+        }
+        
+        .morpheme-negative {
+            background: linear-gradient(120deg, #fecaca 0%, #fecaca 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 80%;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+            color: #dc2626;
+        }
+        
+        .morpheme-neutral {
+            background: linear-gradient(120deg, #e0e7ff 0%, #e0e7ff 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 80%;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+            color: #6366f1;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tooltip-trigger:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 min-h-screen transition-colors duration-300">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-800 dark:text-white">AI 형태소 감성 분석</h1>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Gemini API + 자카드 유사도</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <!-- Info Button -->
+                    <div class="relative tooltip-trigger">
+                        <button class="w-10 h-10 bg-white dark:bg-slate-700 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center border border-slate-200 dark:border-slate-600">
+                            <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </button>
+                        <div class="tooltip absolute right-0 mt-2 w-80 bg-white dark:bg-slate-700 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-600 p-4 z-10">
+                            <h3 class="font-semibold text-slate-800 dark:text-white mb-2">🤖 Gemini AI 분석</h3>
+                            <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-3">
+                                Google Gemini가 한국어 텍스트를 형태소 단위로 분해하고 각 형태소의 감성을 분석합니다.
+                            </p>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">
+                                • 형태소 분석: 품사 태깅<br>
+                                • 감성 분석: 긍정/중립/부정<br>
+                                • 자카드 유사도 계산
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Dark Mode Toggle -->
+                    <button id="darkModeToggle" class="w-10 h-10 bg-white dark:bg-slate-700 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center border border-slate-200 dark:border-slate-600">
+                        <svg class="w-5 h-5 text-slate-600 dark:text-yellow-400 hidden dark:block" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path>
+                        </svg>
+                        <svg class="w-5 h-5 text-slate-600 dark:hidden" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Worker URL 설정 -->
+        <div class="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <div class="flex-1">
+                    <label class="block text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                        Cloudflare Worker URL 
+                        <span class="text-xs font-normal text-blue-600 dark:text-blue-400">(tjdgus1121.github.io 전용)</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="workerUrl" 
+                        placeholder="https://your-worker.workers.dev"
+                        class="w-full px-4 py-2 border-2 border-blue-300 dark:border-blue-700 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 outline-none bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                    >
+                    <p class="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                        💡 배포 가이드 참고: CORS가 이 도메인(tjdgus1121.github.io)에서만 작동하도록 설정되어 있습니다.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Left Column -->
+            <div class="space-y-6">
+                <!-- Input Card -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-800 dark:text-white">텍스트 입력</h2>
+                    </div>
+                    <textarea 
+                        id="inputText" 
+                        class="w-full h-40 p-4 border-2 border-slate-200 dark:border-slate-600 rounded-xl focus:border-violet-500 focus:ring-2 focus:ring-violet-200 dark:focus:ring-violet-800 outline-none resize-none text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 transition-all"
+                        placeholder="분석하고 싶은 문장을 입력하세요. 예: 오늘 시험에 합격해서 정말 기쁘고 행복하지만, 몸은 조금 피곤해요."
+                    ></textarea>
+                    <button 
+                        id="analyzeBtn"
+                        class="mt-4 w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 active:scale-95"
+                    >
+                        <span class="flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                            AI 형태소 분석하기
+                        </span>
+                    </button>
+                </div>
+
+                <!-- Morpheme Analysis Display -->
+                <div id="morphemeSection" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 hidden">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-800 dark:text-white">형태소 감성 분석</h2>
+                    </div>
+                    <div id="morphemeDisplay" class="space-y-2"></div>
+                    <div class="flex gap-4 mt-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="morpheme-positive">긍정</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="morpheme-neutral">중립</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="morpheme-negative">부정</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="space-y-6">
+                <!-- Venn Diagram -->
+                <div id="vennSection" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 hidden">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-800 dark:text-white">벤다이어그램</h2>
+                    </div>
+                    <svg id="vennDiagram" class="w-full h-64" viewBox="0 0 400 200"></svg>
+                    <div class="mt-4 grid grid-cols-3 gap-2 text-xs">
+                        <div class="text-center p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                            <div class="font-semibold text-emerald-700 dark:text-emerald-300">긍정</div>
+                            <div id="positiveCount" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">0</div>
+                        </div>
+                        <div class="text-center p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg">
+                            <div class="font-semibold text-indigo-700 dark:text-indigo-300">중립</div>
+                            <div id="neutralCount" class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">0</div>
+                        </div>
+                        <div class="text-center p-2 bg-rose-50 dark:bg-rose-900/20 rounded-lg">
+                            <div class="font-semibold text-rose-700 dark:text-rose-300">부정</div>
+                            <div id="negativeCount" class="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Card -->
+                <div id="resultsSection" class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 hidden">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 bg-violet-100 dark:bg-violet-900/30 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-slate-800 dark:text-white">분석 결과</h2>
+                    </div>
+                    
+                    <!-- Sentiment Result -->
+                    <div id="finalSentiment" class="p-4 rounded-xl text-center font-semibold text-lg mb-4"></div>
+
+                    <!-- Formula Display -->
+                    <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-xl">
+                        <h3 class="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3 text-center">📐 자카드 유사도</h3>
+                        <div id="formulaDisplay" class="text-center text-slate-700 dark:text-slate-300 text-sm"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const inputText = document.getElementById('inputText');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const workerUrlInput = document.getElementById('workerUrl');
+        const morphemeSection = document.getElementById('morphemeSection');
+        const morphemeDisplay = document.getElementById('morphemeDisplay');
+        const vennSection = document.getElementById('vennSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+
+        // Load saved Worker URL
+        const savedWorkerUrl = localStorage.getItem('workerUrl');
+        if (savedWorkerUrl) {
+            workerUrlInput.value = savedWorkerUrl;
+        }
+
+        // Save Worker URL
+        workerUrlInput.addEventListener('change', () => {
+            localStorage.setItem('workerUrl', workerUrlInput.value.trim());
+        });
+
+        // Main analysis function
+        async function analyzeSentiment() {
+            const text = inputText.value.trim();
+            const workerUrl = workerUrlInput.value.trim();
+            
+            if (!text) {
+                alert('텍스트를 입력해주세요!');
+                return;
+            }
+
+            if (!workerUrl) {
+                alert('Cloudflare Worker URL을 입력해주세요!');
+                workerUrlInput.focus();
+                return;
+            }
+
+            // Disable button and show loading
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>AI 분석 중...</span>';
+
+            try {
+                // Call Cloudflare Worker
+                const response = await fetch(workerUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'API 호출 실패');
+                }
+
+                const result = await response.json();
+                
+                // Display results
+                displayMorphemes(result.morphemes);
+                displayVennDiagram(result.sentiment_scores);
+                displayResults(result);
+                
+                // Show sections
+                morphemeSection.classList.remove('hidden');
+                vennSection.classList.remove('hidden');
+                resultsSection.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('분석 오류:', error);
+                alert(`분석 중 오류가 발생했습니다: ${error.message}`);
+            } finally {
+                // Re-enable button
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = '<span class="flex items-center justify-center gap-2"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>AI 형태소 분석하기</span>';
+            }
+        }
+
+        // Display morphemes
+        function displayMorphemes(morphemes) {
+            let html = '<div class="flex flex-wrap gap-2 items-center">';
+            
+            morphemes.forEach(m => {
+                const sentimentClass = `morpheme-${m.sentiment}`;
+                html += `<span class="${sentimentClass}" title="${m.pos}">${m.word}</span>`;
+            });
+            
+            html += '</div>';
+            morphemeDisplay.innerHTML = html;
+        }
+
+        // Display Venn Diagram
+        function displayVennDiagram(scores) {
+            const svg = document.getElementById('vennDiagram');
+            const isDark = document.documentElement.classList.contains('dark');
+            
+            svg.innerHTML = `
+                <!-- Left Circle (Positive) -->
+                <circle cx="120" cy="100" r="65" fill="#10b981" opacity="0.3" stroke="#10b981" stroke-width="2"/>
+                <text x="80" y="100" font-size="13" fill="${isDark ? '#e2e8f0' : '#1e293b'}" font-weight="600" text-anchor="middle">긍정</text>
+                <text x="80" y="120" font-size="11" fill="${isDark ? '#cbd5e1' : '#475569'}" text-anchor="middle">${scores.positive}개</text>
+                
+                <!-- Right Circle (Negative) -->
+                <circle cx="280" cy="100" r="65" fill="#ef4444" opacity="0.3" stroke="#ef4444" stroke-width="2"/>
+                <text x="320" y="100" font-size="13" fill="${isDark ? '#e2e8f0' : '#1e293b'}" font-weight="600" text-anchor="middle">부정</text>
+                <text x="320" y="120" font-size="11" fill="${isDark ? '#cbd5e1' : '#475569'}" text-anchor="middle">${scores.negative}개</text>
+                
+                <!-- Center (Neutral) -->
+                <text x="200" y="95" font-size="13" fill="${isDark ? '#e2e8f0' : '#1e293b'}" font-weight="700" text-anchor="middle">중립</text>
+                <text x="200" y="115" font-size="18" fill="#6366f1" font-weight="800" text-anchor="middle">${scores.neutral}개</text>
+                
+                <!-- Total -->
+                <text x="200" y="180" font-size="11" fill="${isDark ? '#94a3b8' : '#64748b'}" text-anchor="middle">전체: ${scores.positive + scores.neutral + scores.negative}개</text>
+            `;
+            
+            // Update counts
+            document.getElementById('positiveCount').textContent = scores.positive;
+            document.getElementById('neutralCount').textContent = scores.neutral;
+            document.getElementById('negativeCount').textContent = scores.negative;
+        }
+
+        // Display results
+        function displayResults(result) {
+            const finalSentiment = document.getElementById('finalSentiment');
+            const overall = result.overall_sentiment;
+            
+            if (overall === 'positive') {
+                finalSentiment.className = 'p-4 rounded-xl text-center font-semibold text-lg mb-4 bg-gradient-to-r from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30 text-emerald-700 dark:text-emerald-300';
+                finalSentiment.textContent = '😊 긍정적인 감성이 더 강합니다!';
+            } else if (overall === 'negative') {
+                finalSentiment.className = 'p-4 rounded-xl text-center font-semibold text-lg mb-4 bg-gradient-to-r from-rose-100 to-rose-200 dark:from-rose-900/30 dark:to-rose-800/30 text-rose-700 dark:text-rose-300';
+                finalSentiment.textContent = '😢 부정적인 감성이 더 강합니다!';
+            } else {
+                finalSentiment.className = 'p-4 rounded-xl text-center font-semibold text-lg mb-4 bg-gradient-to-r from-indigo-100 to-indigo-200 dark:from-indigo-900/30 dark:to-indigo-800/30 text-indigo-700 dark:text-indigo-300';
+                finalSentiment.textContent = '😐 중립적인 문장입니다!';
+            }
+            
+            // Jaccard Similarity
+            const pos = result.sentiment_scores.positive;
+            const neg = result.sentiment_scores.negative;
+            const union = pos + neg;
+            const intersection = 0; // 긍정과 부정은 겹치지 않음
+            const jaccard = union > 0 ? (intersection / union * 100) : 0;
+            
+            document.getElementById('formulaDisplay').innerHTML = `
+                <div class="space-y-2">
+                    <div>J(긍정, 부정) = |교집합| / |합집합|</div>
+                    <div>= ${intersection} / ${union} = <strong class="text-violet-600 dark:text-violet-400">${jaccard.toFixed(1)}%</strong></div>
+                </div>
+            `;
+        }
+
+        // Dark mode toggle
+        darkModeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        });
+
+        // Load dark mode preference
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Event listeners
+        analyzeBtn.addEventListener('click', analyzeSentiment);
+        inputText.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                analyzeSentiment();
+            }
+        });
+    </script>
+</body>
+</html>

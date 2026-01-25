@@ -2264,6 +2264,19 @@
                 });
                 html += '</tr>';
             });
+
+            // 총합계 행 추가
+            html += '<tr style="background: #FEF3C7; font-weight: 700;"><td style="background: #FCD34D; color: #92400E;">총합계</td>';
+            words.forEach(word => {
+                let sum = 0;
+                tfMatrix.forEach(row => {
+                    sum += row[word];
+                });
+                const cls = selectedWord === word ? 'selected-word' : '';
+                html += `<td class="${cls}" style="color: #92400E;">${sum}</td>`;
+            });
+            html += '</tr>';
+
             html += '</tbody>';
             table.innerHTML = html;
         }

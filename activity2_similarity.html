@@ -830,8 +830,12 @@
       }
 
       @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
 
       .modal-content {
@@ -1026,7 +1030,15 @@
           <div class="room-code-display">
             <h3>🔑 방 코드</h3>
             <div class="room-code" id="room-code-text">------</div>
-            <div id="room-expiry-info" style="margin: 10px 0; color: #e74c3c; font-weight: 600; font-size: 1em;">
+            <div
+              id="room-expiry-info"
+              style="
+                margin: 10px 0;
+                color: #e74c3c;
+                font-weight: 600;
+                font-size: 1em;
+              "
+            >
               ⏰ 남은 시간: <span id="room-time-remaining">--</span>
             </div>
             <div id="qrcode"></div>
@@ -1263,7 +1275,7 @@
                 📝 문장 작성 (<span id="student-nickname"></span>)
               </h3>
 
-              <div class="tutorial" style="margin-bottom: 20px;">
+              <div class="tutorial" style="margin-bottom: 20px">
                 <h4>📝 문장 작성 가이드</h4>
                 <div class="tutorial-step">
                   위 이미지를 보고 떠오르는 문장을 작성해주세요
@@ -1433,9 +1445,17 @@
             (주황색으로 표시) <br /><strong>• 더블클릭:</strong> 형태소의 내용을
             직접 수정합니다 <br /><strong>• ✂️ 버튼:</strong> 단어를 두 개로
             분리합니다 <br /><br />
-            <span style="color: #3498db; font-weight: 700;">✅ 파란색 = 분석에 포함</span> /
-            <span style="color: #95a5a6; font-weight: 700;">⬜ 회색 = 제외됨</span> /
-            <span style="color: #f39c12; font-weight: 700;">🟨 주황색 = 합치기 위해 선택됨</span>
+            <span style="color: #3498db; font-weight: 700"
+              >✅ 파란색 = 분석에 포함</span
+            >
+            /
+            <span style="color: #95a5a6; font-weight: 700"
+              >⬜ 회색 = 제외됨</span
+            >
+            /
+            <span style="color: #f39c12; font-weight: 700"
+              >🟨 주황색 = 합치기 위해 선택됨</span
+            >
           </div>
 
           <div id="morphemeMainContainer"></div>
@@ -1732,10 +1752,12 @@
       <div class="modal-content">
         <div class="modal-header">
           <h2>📖 형태소 품사 태그 설명</h2>
-          <button class="modal-close" onclick="closeMorphemeGuide()">&times;</button>
+          <button class="modal-close" onclick="closeMorphemeGuide()">
+            &times;
+          </button>
         </div>
         <div class="modal-body">
-          <p style="color: #666; margin-bottom: 20px;">
+          <p style="color: #666; margin-bottom: 20px">
             형태소 분석 결과에서 볼 수 있는 품사 태그의 의미를 설명합니다.
           </p>
 
@@ -1743,9 +1765,9 @@
             <h3>📌 명사 (Noun)</h3>
             <table class="pos-table">
               <tr>
-                <th style="width: 80px;">태그</th>
+                <th style="width: 80px">태그</th>
                 <th>설명</th>
-                <th style="width: 200px;">예시</th>
+                <th style="width: 200px">예시</th>
               </tr>
               <tr>
                 <td><span class="pos-tag">NNG</span></td>
@@ -1779,9 +1801,9 @@
             <h3>🔤 동사/형용사 (Verb/Adjective)</h3>
             <table class="pos-table">
               <tr>
-                <th style="width: 80px;">태그</th>
+                <th style="width: 80px">태그</th>
                 <th>설명</th>
-                <th style="width: 200px;">예시</th>
+                <th style="width: 200px">예시</th>
               </tr>
               <tr>
                 <td><span class="pos-tag">VV</span></td>
@@ -1805,9 +1827,9 @@
             <h3>📎 조사 (Particle)</h3>
             <table class="pos-table">
               <tr>
-                <th style="width: 80px;">태그</th>
+                <th style="width: 80px">태그</th>
                 <th>설명</th>
-                <th style="width: 200px;">예시</th>
+                <th style="width: 200px">예시</th>
               </tr>
               <tr>
                 <td><span class="pos-tag">JKS</span></td>
@@ -1841,9 +1863,9 @@
             <h3>🔗 어미 (Ending)</h3>
             <table class="pos-table">
               <tr>
-                <th style="width: 80px;">태그</th>
+                <th style="width: 80px">태그</th>
                 <th>설명</th>
-                <th style="width: 200px;">예시</th>
+                <th style="width: 200px">예시</th>
               </tr>
               <tr>
                 <td><span class="pos-tag">EF</span></td>
@@ -1872,9 +1894,9 @@
             <h3>✨ 기타 (Others)</h3>
             <table class="pos-table">
               <tr>
-                <th style="width: 80px;">태그</th>
+                <th style="width: 80px">태그</th>
                 <th>설명</th>
-                <th style="width: 200px;">예시</th>
+                <th style="width: 200px">예시</th>
               </tr>
               <tr>
                 <td><span class="pos-tag">MAG</span></td>
@@ -1914,17 +1936,42 @@
             </table>
           </div>
 
-          <div style="margin-top: 20px; padding: 15px; background: #f0e6f6; border-radius: 8px; border-left: 4px solid #9b59b6;">
-            <strong>💡 TIP:</strong> 형태소 분석에서는 주로 <span class="pos-tag">NNG</span>, <span class="pos-tag">NNP</span> 등의 명사 태그를 가진 단어들이 텍스트 분석에 사용됩니다.
+          <div
+            style="
+              margin-top: 20px;
+              padding: 15px;
+              background: #f0e6f6;
+              border-radius: 8px;
+              border-left: 4px solid #9b59b6;
+            "
+          >
+            <strong>💡 TIP:</strong> 형태소 분석에서는 주로
+            <span class="pos-tag">NNG</span>,
+            <span class="pos-tag">NNP</span> 등의 명사 태그를 가진 단어들이
+            텍스트 분석에 사용됩니다.
           </div>
 
-          <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #f39c12;">
-            <strong>🔍 헷갈리기 쉬운 구분:</strong><br><br>
-            <strong>• 수사(NR) vs 관형사(MM)</strong><br>
-            - <span class="pos-tag">NR</span> 수사: <strong>단독으로</strong> 쓰이는 수 (하나, 둘, 셋, 첫째, 둘째...)<br>
-            &nbsp;&nbsp;&nbsp;예: "하나<strong>만</strong> 주세요", "첫째<strong>는</strong> 학생이다"<br>
-            - <span class="pos-tag">MM</span> 관형사: 뒤의 <strong>명사를 꾸며주는</strong> 수 (한, 두, 세...)<br>
-            &nbsp;&nbsp;&nbsp;예: "<strong>한</strong> 명", "<strong>두</strong> 개", "<strong>세</strong> 마리"
+          <div
+            style="
+              margin-top: 15px;
+              padding: 15px;
+              background: #fff3cd;
+              border-radius: 8px;
+              border-left: 4px solid #f39c12;
+            "
+          >
+            <strong>🔍 헷갈리기 쉬운 구분:</strong><br /><br />
+            <strong>• 수사(NR) vs 관형사(MM)</strong><br />
+            - <span class="pos-tag">NR</span> 수사:
+            <strong>단독으로</strong> 쓰이는 수 (하나, 둘, 셋, 첫째, 둘째...)<br />
+            &nbsp;&nbsp;&nbsp;예: "하나<strong>만</strong> 주세요", "첫째<strong
+              >는</strong
+            >
+            학생이다"<br />
+            - <span class="pos-tag">MM</span> 관형사: 뒤의
+            <strong>명사를 꾸며주는</strong> 수 (한, 두, 세...)<br />
+            &nbsp;&nbsp;&nbsp;예: "<strong>한</strong> 명", "<strong>두</strong>
+            개", "<strong>세</strong> 마리"
           </div>
         </div>
       </div>
@@ -1944,14 +1991,14 @@
       } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
       const firebaseConfig = {
-        apiKey: "AIzaSyAoStrEge38qPjgKsvJcapxNBrG6EQO73U",
-        authDomain: "text-mining-e8d40.firebaseapp.com",
+        apiKey: "AIzaSyAxTrULE0XqTOoAAsx2gNbKqUd0Cp5doaI",
+        authDomain: "tf-idf-800b1.firebaseapp.com",
         databaseURL:
-          "https://text-mining-e8d40-default-rtdb.asia-southeast1.firebasedatabase.app/",
-        projectId: "text-mining-e8d40",
-        storageBucket: "text-mining-e8d40.firebasestorage.app",
-        messagingSenderId: "812157440406",
-        appId: "1:812157440406:web:16ffed03a0ae63579f0db7",
+          "https://tf-idf-800b1-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "tf-idf-800b1",
+        storageBucket: "tf-idf-800b1.firebasestorage.app",
+        messagingSenderId: "838191913536",
+        appId: "1:838191913536:web:93eafce39d2dc8d5ce5da5",
       };
 
       const app = initializeApp(firebaseConfig);
@@ -2506,9 +2553,11 @@
         console.log("📚 명사 사전 로드 중...");
 
         // 1. 먼저 확장 명사 사전(명사사전.js)을 NOUN_DICTIONARY에 추가
-        if (typeof EXTENDED_NOUN_DICTIONARY !== 'undefined') {
+        if (typeof EXTENDED_NOUN_DICTIONARY !== "undefined") {
           NOUN_DICTIONARY = new Set(EXTENDED_NOUN_DICTIONARY);
-          console.log(`✅ 확장 명사사전 로드: ${NOUN_DICTIONARY.size.toLocaleString()}개 단어`);
+          console.log(
+            `✅ 확장 명사사전 로드: ${NOUN_DICTIONARY.size.toLocaleString()}개 단어`,
+          );
         }
 
         // 2. nouns-10k.json 파일이 있으면 추가로 병합
@@ -2520,17 +2569,21 @@
             const originalSize = NOUN_DICTIONARY.size;
 
             // 기존 사전과 병합
-            data.words.forEach(word => NOUN_DICTIONARY.add(word));
+            data.words.forEach((word) => NOUN_DICTIONARY.add(word));
 
             const addedCount = NOUN_DICTIONARY.size - originalSize;
-            console.log(`✅ nouns-10k.json 병합 완료: ${addedCount.toLocaleString()}개 단어 추가`);
+            console.log(
+              `✅ nouns-10k.json 병합 완료: ${addedCount.toLocaleString()}개 단어 추가`,
+            );
           }
         } catch (error) {
           console.log("ℹ️ nouns-10k.json 파일 없음 (확장 사전만 사용)");
         }
 
         dictionaryLoaded = true;
-        console.log(`🎯 최종 명사 사전 크기: ${NOUN_DICTIONARY.size.toLocaleString()}개 단어`);
+        console.log(
+          `🎯 최종 명사 사전 크기: ${NOUN_DICTIONARY.size.toLocaleString()}개 단어`,
+        );
       }
 
       // 페이지 로드 시 명사 사전 로드
@@ -3069,7 +3122,7 @@
         });
 
         const now = Date.now();
-        const expiresAt = now + (2 * 60 * 60 * 1000); // 2시간 후
+        const expiresAt = now + 2 * 60 * 60 * 1000; // 2시간 후
 
         const roomRef = window.firebaseRef(
           window.firebaseDB,
@@ -3081,7 +3134,7 @@
           expiresAt: expiresAt,
           status: "open",
           topicImage: "",
-          students: {}
+          students: {},
         };
 
         console.log("📝 방 데이터:", roomData);
@@ -3218,7 +3271,9 @@
           return;
         }
 
-        console.log(`⏰ 방 ${roomCode}는 ${Math.floor(timeUntilExpiry / 1000 / 60)}분 후 자동 삭제됩니다.`);
+        console.log(
+          `⏰ 방 ${roomCode}는 ${Math.floor(timeUntilExpiry / 1000 / 60)}분 후 자동 삭제됩니다.`,
+        );
 
         // 2시간 후 자동 삭제
         setTimeout(() => {
@@ -3233,7 +3288,7 @@
           window.firebaseDB,
           `rooms/${roomCode}`,
         );
-        window.firebaseSet(roomRef, null);  // 방 삭제
+        window.firebaseSet(roomRef, null); // 방 삭제
         console.log(`🗑️ 방 ${roomCode}가 삭제되었습니다. (2시간 경과)`);
       }
 
@@ -3447,7 +3502,7 @@
         modal.style.display = "block";
 
         // 모달 외부 클릭 시 닫기
-        modal.onclick = function(event) {
+        modal.onclick = function (event) {
           if (event.target === modal) {
             closeMorphemeGuide();
           }
@@ -3460,7 +3515,7 @@
       }
 
       // ESC 키로 모달 닫기
-      document.addEventListener("keydown", function(event) {
+      document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
           closeMorphemeGuide();
         }
@@ -3580,7 +3635,7 @@
               // 만료된 방 체크
               if (isRoomExpired(roomData)) {
                 alert("이 방은 만료되었습니다. (2시간 경과)");
-                deleteRoom(code);  // 만료된 방 삭제
+                deleteRoom(code); // 만료된 방 삭제
                 return;
               }
 
@@ -3633,7 +3688,9 @@
         );
 
         // 문장 입력 섹션 이미지 업데이트 (닉네임 섹션은 표시하지 않음)
-        const sentenceContainer = document.getElementById("sentence-topic-image");
+        const sentenceContainer = document.getElementById(
+          "sentence-topic-image",
+        );
         const sentenceImg = document.getElementById("sentence-image-display");
 
         if (sentenceContainer && sentenceImg) {
@@ -3645,7 +3702,9 @@
 
       // 학생 화면에서 주제 이미지 숨김
       function hideStudentTopicImage() {
-        const sentenceContainer = document.getElementById("sentence-topic-image");
+        const sentenceContainer = document.getElementById(
+          "sentence-topic-image",
+        );
 
         if (sentenceContainer) {
           sentenceContainer.style.display = "none";
@@ -3794,7 +3853,7 @@
       // 형태소 분석 (강화된 로컬 분석)
       // ==========================================
       async function analyzeMorphemes(text) {
-        console.log('🔬 형태소 분석 시작 (로컬 강화 분석)');
+        console.log("🔬 형태소 분석 시작 (로컬 강화 분석)");
 
         // 명사 사전이 아직 로드 중이면 대기
         if (!dictionaryLoaded) {
@@ -5445,7 +5504,10 @@
 
           // 선택된 탭 버튼 강조 (펄스 효과)
           // 단, 텍스트 분석 탭에서 형태소 분리 탭으로 이동하는 경우는 제외 (하단 버튼만 강조)
-          if (selectedTabBtn && !(tabName === "morpheme" && previousActiveTab === "analysis")) {
+          if (
+            selectedTabBtn &&
+            !(tabName === "morpheme" && previousActiveTab === "analysis")
+          ) {
             selectedTabBtn.style.animation = "none";
             setTimeout(() => {
               selectedTabBtn.style.animation = "pulse 0.5s ease-in-out 2";

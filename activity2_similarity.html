@@ -664,156 +664,237 @@
           flex: 1 1 50%;
         }
       }
-      /* 형태소 분석 스타일 */
-      .morpheme-card {
-        background: var(--bg);
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 12px;
+      /* 형태소 분석 스타일 (아치형 토큰) */
+      .morpheme-sentence {
+        margin-bottom: 14px;
+        padding-bottom: 14px;
+        border-bottom: 1px dashed #ddd;
       }
-
-      .morpheme-header {
+      .morpheme-sentence:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+      }
+      .morpheme-sentence-label {
         font-weight: 700;
         color: #1e3a5f;
-        margin-bottom: 10px;
-        font-size: 0.95rem;
+        font-size: 0.88rem;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        flex-wrap: wrap;
       }
-
-      .morpheme-list {
+      .morpheme-sentence-orig {
+        font-weight: 400;
+        font-size: 0.82rem;
+        color: #7f8c8d;
+        font-style: italic;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 600px;
+      }
+      .morpheme-tokens {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 12px 20px;
+        align-items: flex-end;
+        padding: 8px 0;
       }
-
-      .morpheme-item {
+      .morph-token-wrapper {
+        position: relative;
         display: inline-flex;
         flex-direction: column;
         align-items: center;
-        padding: 6px 10px;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        user-select: none;
-        position: relative;
-        font-family: "Noto Sans KR", sans-serif;
+        padding-bottom: 2px;
       }
-
-      .morpheme-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      .morpheme-item.selected {
-        background: #3498db;
-        border-color: #2471a3;
-        color: white;
-      }
-
-      .morpheme-item.deselected {
-        background: #95a5a6;
-        border-color: #7f8c8d;
-        color: white;
-        opacity: 0.85;
-      }
-
-      .morpheme-item.marked {
-        background: #f39c12;
-        border: 2px solid #d68910;
-        box-shadow: 0 0 12px rgba(243, 156, 18, 0.5);
-        color: white;
-      }
-
-      .morpheme-item.editing {
-        background: #fff9e6;
-        border-color: #f39c12;
-      }
-
-      .morpheme-edit-input {
-        width: 60px;
-        padding: 2px 4px;
-        border: 1px solid #1e3a5f;
-        border-radius: 4px;
-        font-size: 0.85rem;
-        text-align: center;
-        font-family: inherit;
-      }
-
-      .morpheme-edit-buttons {
-        display: flex;
-        gap: 4px;
-        margin-top: 4px;
-      }
-
-      .morpheme-edit-btn {
-        padding: 2px 6px;
-        font-size: 0.7rem;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-
-      .morpheme-edit-btn.save {
-        background: #27ae60;
-        color: white;
-      }
-
-      .morpheme-edit-btn.cancel {
-        background: #e74c3c;
-        color: white;
-      }
-
-      .morpheme-split-btn {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        width: 20px;
-        height: 20px;
-        background: #1e3a5f;
-        color: white;
-        border: none;
-        border-radius: 50%;
-        font-size: 0.7rem;
-        cursor: pointer;
-        display: none;
+      .morph-token {
+        display: inline-flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
+        cursor: pointer;
+        -webkit-user-select: none;
+        user-select: none;
+        transition: transform 0.15s ease;
       }
-
-      .morpheme-item:hover .morpheme-split-btn {
-        display: flex;
+      .morph-token:hover { transform: translateY(-3px); filter: brightness(0.96); }
+      .morph-tag-badge {
+        font-size: 0.62rem;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 4px;
+        white-space: nowrap;
+        letter-spacing: 0.02em;
+        line-height: 1.5;
+        text-align: center;
+        min-width: 28px;
       }
-
-      .morpheme-split-btn:hover {
-        background: #0d1f38;
-        transform: scale(1.1);
+      .morph-arc {
+        width: 70%;
+        min-width: 18px;
+        height: 14px;
+        border: 2px solid;
+        border-bottom: none;
+        border-radius: 50% 50% 0 0;
+        margin-top: 1px;
       }
-
-      .morpheme-word {
+      .morph-word {
+        font-size: 0.92rem;
         font-weight: 700;
         color: #2c3e50;
-        font-family: "Noto Sans KR", sans-serif;
+        white-space: nowrap;
+        line-height: 1.4;
+        padding: 0 2px;
       }
-
-      .morpheme-pos {
+      /* 상태별 스타일 */
+      .morph-token.excluded .morph-tag-badge { background: #F1F5F9 !important; color: #CBD5E1 !important; }
+      .morph-token.excluded .morph-arc { border-color: #CBD5E1 !important; }
+      .morph-token.excluded .morph-word { color: #CBD5E1; }
+      .morph-token.selected .morph-word { color: #1D4ED8; }
+      .morph-token.shift-selecting .morph-word { color: #5B21B6; }
+      .morph-token.shift-selecting .morph-arc {
+        border-color: #7C3AED !important;
+        animation: pulse-arc 0.9s ease-in-out infinite;
+      }
+      .morph-token.shift-selecting .morph-tag-badge {
+        outline: 2px solid #7C3AED;
+        outline-offset: 1px;
+      }
+      @keyframes pulse-arc {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.35; }
+      }
+      /* 호버 편집 힌트 */
+      .morph-token { cursor: pointer; }
+      .morph-token:hover .morph-word {
+        text-decoration: underline dashed #94A3B8;
+        text-underline-offset: 3px;
+      }
+      .morph-token .morph-word::after {
+        content: ' ✏';
+        font-size: 0.6rem;
+        opacity: 0;
+        transition: opacity 0.15s;
+        color: #94A3B8;
+      }
+      .morph-token:hover .morph-word::after { opacity: 1; }
+      /* 분리 버튼 */
+      .morph-split-btn {
+        font-size: 1rem;
+        background: none;
+        border: 1px solid #ddd;
+        color: #999;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+        opacity: 0;
+        transition: opacity 0.15s, background 0.15s, color 0.15s;
+        line-height: 1.4;
+        margin-top: 4px;
+      }
+      .morph-token-wrapper:hover .morph-split-btn { opacity: 1; }
+      .morph-split-btn:hover { color: #e74c3c; background: #fef2f2; border-color: #f9a8a8; }
+      /* 사용법 배너 */
+      .morph-usage-hint {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+        align-items: center;
         font-size: 0.75rem;
-        color: #7f8c8d;
-        margin-top: 2px;
-        font-family: "Noto Sans KR", sans-serif;
+        color: #64748B;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 7px 14px;
+        margin-bottom: 14px;
+      }
+      .morph-usage-hint .hint-item { display: flex; align-items: center; gap: 5px; }
+      .morph-usage-hint kbd {
+        display: inline-block;
+        background: #E2E8F0;
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 0.7rem;
+        font-family: inherit;
+        font-weight: 600;
+        color: #334155;
+        border-bottom: 2px solid #CBD5E1;
+      }
+      .inline-edit-box {
+        position: absolute;
+        z-index: 1000;
+        animation: morphFadeIn 0.15s ease;
+      }
+      @keyframes morphFadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to   { opacity: 1; transform: translateY(0); }
       }
 
-      /* selected/deselected/marked 상태에서 텍스트 색상 */
-      .morpheme-item.selected .morpheme-word,
-      .morpheme-item.selected .morpheme-pos,
-      .morpheme-item.deselected .morpheme-word,
-      .morpheme-item.deselected .morpheme-pos,
-      .morpheme-item.marked .morpheme-word,
-      .morpheme-item.marked .morpheme-pos {
-        color: white;
+      /* 형태소 분석 진행 모달 */
+      #morphAnalysisModal {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15, 23, 42, 0.6);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 3000;
+        -webkit-backdrop-filter: blur(6px);
+        backdrop-filter: blur(6px);
+      }
+      #morphAnalysisModal.show { display: flex; }
+      .ma-box {
+        background: white;
+        border-radius: 24px;
+        padding: 40px 44px;
+        min-width: 360px;
+        max-width: 460px;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.3);
+        text-align: center;
+        animation: maSlideUp 0.3s ease;
+      }
+      @keyframes maSlideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .ma-spinner {
+        width: 52px; height: 52px;
+        border: 5px solid #E2E8F0;
+        border-top-color: #1e3a5f;
+        border-radius: 50%;
+        animation: maSpin 0.75s linear infinite;
+        margin: 0 auto 20px;
+      }
+      @keyframes maSpin { to { transform: rotate(360deg); } }
+      .ma-title {
+        font-size: 1.2rem; font-weight: 800;
+        color: #1e3a5f; margin-bottom: 4px;
+      }
+      .ma-sub { font-size: 0.88rem; color: #7f8c8d; margin-bottom: 24px; }
+      .ma-pct {
+        font-size: 2.4rem; font-weight: 900;
+        color: #1e3a5f; line-height: 1; margin-bottom: 12px;
+      }
+      .ma-track {
+        background: #E2E8F0; border-radius: 99px;
+        height: 12px; overflow: hidden; margin-bottom: 8px;
+      }
+      .ma-fill {
+        height: 100%; border-radius: 99px;
+        background: linear-gradient(90deg, #1e3a5f, #4a6fa5);
+        transition: width 0.4s cubic-bezier(0.4,0,0.2,1); width: 0%;
+      }
+      .ma-label {
+        display: flex; justify-content: space-between;
+        font-size: 0.82rem; color: #7f8c8d; margin-bottom: 14px;
+      }
+      .ma-sent {
+        background: #F8FAFC; border: 1px solid #E2E8F0;
+        border-radius: 10px; padding: 10px 14px;
+        font-size: 0.82rem; color: #7f8c8d;
+        text-align: left; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis;
       }
 
       /* 모달 스타일 */
@@ -1406,6 +1487,9 @@
 
       <!-- 형태소 분리 탭 -->
       <div id="tab-morpheme" class="tab-content">
+        <div style="text-align:right; margin-bottom:6px;">
+          <span id="kiwi-status-badge" style="font-size:0.85em; color:#999;">🔄 Kiwi 모델 로딩 중...</span>
+        </div>
         <div class="tutorial">
           <h4>🔍 형태소 분리 단계</h4>
           <div class="tutorial-step">1. 각 문장이 단어로 자동 분리됩니다</div>
@@ -1430,32 +1514,19 @@
           <h3>🔍 형태소 분석 결과</h3>
           <div
             style="
-              background: rgba(93, 173, 226, 0.1);
-              padding: 15px;
+              background: #F8FAFC;
+              padding: 12px 16px;
               border-radius: 8px;
-              margin-bottom: 20px;
-              font-size: 1em;
+              margin-bottom: 16px;
+              font-size: 0.9em;
               color: #555;
-              border-left: 4px solid #5dade2;
+              border-left: 4px solid #3B82F6;
             "
           >
-            💡 <strong>사용 방법:</strong> <br /><br />
-            <strong>• 클릭:</strong> 형태소를 분석에 포함하거나 제외합니다
-            <br /><strong>• Shift+클릭:</strong> 여러 형태소를 선택하여 합칩니다
-            (주황색으로 표시) <br /><strong>• 더블클릭:</strong> 형태소의 내용을
-            직접 수정합니다 <br /><strong>• ✂️ 버튼:</strong> 단어를 두 개로
-            분리합니다 <br /><br />
-            <span style="color: #3498db; font-weight: 700"
-              >✅ 파란색 = 분석에 포함</span
-            >
-            /
-            <span style="color: #95a5a6; font-weight: 700"
-              >⬜ 회색 = 제외됨</span
-            >
-            /
-            <span style="color: #f39c12; font-weight: 700"
-              >🟨 주황색 = 합치기 위해 선택됨</span
-            >
+            💡 분석 결과 색상 의미:<br />
+            <span style="color:#1D4ED8;font-weight:700">● 파란 글자</span> = 분석에 포함 &nbsp;/&nbsp;
+            <span style="color:#CBD5E1;font-weight:700">● 회색 글자</span> = 제외됨 &nbsp;/&nbsp;
+            <span style="color:#5B21B6;font-weight:700">● 보라색 글자</span> = 합치기 선택 중
           </div>
 
           <div id="morphemeMainContainer"></div>
@@ -1746,6 +1817,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+
+    <!-- 형태소 분석 진행 모달 -->
+    <div id="morphAnalysisModal">
+      <div class="ma-box">
+        <div class="ma-spinner"></div>
+        <div class="ma-title">🔤 형태소 분석 중...</div>
+        <div class="ma-sub" id="maSub">잠시 기다려 주세요</div>
+        <div class="ma-pct" id="maPct">0%</div>
+        <div class="ma-track"><div class="ma-fill" id="maFill"></div></div>
+        <div class="ma-label">
+          <span id="maStep">준비 중...</span>
+          <span id="maFrac">0 / 0</span>
+        </div>
+        <div class="ma-sent" id="maSent">—</div>
+      </div>
+    </div>
 
     <!-- 형태소 설명 모달 -->
     <div id="morpheme-guide-modal" class="modal">
@@ -2960,6 +3048,32 @@
         (a, b) => b.length - a.length,
       );
 
+      // [Stage 3] 동사/형용사 어간 제외 목록 (조사 분리 오인 방지)
+      // ㅎ받침 어간(빨갛 등)은 코드로 자동 탐지하므로 여기선 ㅂ불규칙 등 목록화
+      const VERB_ADJ_STEMS_EXCL = new Set([
+        // ㅂ불규칙 형용사 어간
+        "어렵", "쉽", "무섭", "가볍", "아름답", "반갑", "고맙", "귀엽",
+        "즐겁", "춥", "덥", "뜨겁", "차갑",
+        // 확실한 동사 어간 (2글자 이상)
+        "모르",
+      ]);
+
+      // 의존명사(NNB) 목록 - 단독/분리 시 selected:false 처리
+      // 이 목록에 있는 단어는 내용어로서 의미가 없어 워드클라우드에서 제외
+      const NNB_STOPWORDS = new Set([
+        // 핵심 의존명사
+        "수", "등", "것", "데", "위", "때", "바",
+        "채", "척", "체", "뿐", "따름", "셈", "터", "줄", "듯", "탓",
+        // 수량/정도 의존명사
+        "여", "분", "배",
+        // 시간/위치 관계 의존명사
+        "중", "내", "외", "간", "후", "전",
+        // 방식/모양 의존명사
+        "양", "식", "법", "격",
+        // 기타 자주 쓰이는 의존명사
+        "점", "나름", "나위", "지경",
+      ]);
+
       // 형태소 분석 함수
       function analyzeMorpheme(word) {
         if (word.length < 2) return { word: word, skip: true };
@@ -3054,6 +3168,16 @@
         // 원본 단어 반환 (2글자 이상)
         if (word.length >= 2) return { word: word, skip: false };
         return { word: word, skip: true };
+      }
+
+      // 문장 정제 함수 — 형태소 분석 전 특수문자 제거
+      // 블랙리스트 방식(나열) 대신 화이트리스트 방식 사용:
+      // 한글·영문·숫자·공백만 남기고 나머지는 공백으로 치환
+      function cleanSentence(text) {
+        return (text || "")
+          .replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9\s]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
       }
 
       // 메인 토큰화 함수
@@ -3464,12 +3588,7 @@
 
           console.log("=== 형태소 분석 시작 ===");
 
-          // 각 문장별로 형태소 분석
-          currentMorphemes = [];
-          for (let i = 0; i < allSentences.length; i++) {
-            const morphemes = await analyzeMorphemes(allSentences[i]);
-            currentMorphemes.push(morphemes);
-          }
+          currentMorphemes = await _runMorphemeAnalysis(allSentences);
 
           console.log("✅ 형태소 분석 완료");
 
@@ -3522,37 +3641,42 @@
       });
 
       function proceedToAnalysis() {
-        // 선택된 형태소로 워드클라우드 생성
         document.getElementById("tab-btn-analysis").disabled = false;
         switchTab("analysis");
+        setTimeout(() => buildWordFrequency(), 300);
+      }
 
-        setTimeout(() => {
-          const selectedWords = [];
-          currentMorphemes.forEach((morphemes) => {
-            morphemes.forEach((m) => {
-              if (m.selected) {
-                selectedWords.push(m.lex);
-              }
-            });
+      // 공통 워드 빈도 빌드 함수
+      // stopwords-toggle ON → NNG/NNP/SL(내용어)만, OFF → selected 전체 포함
+      function buildWordFrequency() {
+        if (!currentMorphemes || currentMorphemes.length === 0) return;
+
+        const useFilter =
+          document.getElementById("stopwords-toggle")?.checked ?? true;
+        const CONTENT_TAGS = ["NNG", "NNP", "SL"];
+
+        const words = [];
+        currentMorphemes.forEach((morphemes) => {
+          morphemes.forEach((m) => {
+            if (!m.selected) return;
+            if (useFilter && !CONTENT_TAGS.includes(m.tag)) return;
+            words.push(m.lex);
           });
+        });
 
-          window.wordFrequency = {};
-          selectedWords.forEach((word) => {
-            window.wordFrequency[word] = (window.wordFrequency[word] || 0) + 1;
-          });
+        wordFrequency = {};
+        window.wordFrequency = wordFrequency; // 두 참조 동기화
+        words.forEach((w) => {
+          wordFrequency[w] = (wordFrequency[w] || 0) + 1;
+        });
 
-          const sortedWords = Object.entries(window.wordFrequency)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 150);
+        const sortedWords = Object.entries(wordFrequency)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 150);
 
-          // 빈도 테이블 생성
-          createFrequencyTable(sortedWords.slice(0, 20)); // 상위 20개만 표시
-
-          // 워드클라우드 생성
-          createWordCloud(sortedWords);
-
-          console.log("✅ 텍스트 분석 완료");
-        }, 300);
+        createFrequencyTable(sortedWords.slice(0, 20));
+        createWordCloud(sortedWords);
+        console.log("✅ 워드 빈도 빌드 완료 (불용어 필터:", useFilter, ")");
       }
 
       function collectAllSentences(callback) {
@@ -3585,9 +3709,8 @@
                   Array.isArray(studentData.sentences)
                 ) {
                   studentData.sentences.forEach((sentence) => {
-                    if (sentence && sentence.trim()) {
-                      allSentences.push(sentence.trim());
-                    }
+                    const cleaned = cleanSentence(sentence || "");
+                    if (cleaned) allSentences.push(cleaned);
                   });
                 }
               });
@@ -3755,7 +3878,9 @@
       }
 
       function submitSentences() {
-        const s1 = document.getElementById("sentence1").value.trim();
+        const s1 = cleanSentence(
+          document.getElementById("sentence1").value,
+        );
 
         if (!s1) {
           alert("문장을 작성해주세요.");
@@ -3818,7 +3943,7 @@
 
         const sentences = text
           .split("\n")
-          .map((s) => s.trim())
+          .map((s) => cleanSentence(s))
           .filter((s) => s.length > 0);
 
         if (sentences.length < 1) {
@@ -3830,12 +3955,7 @@
 
         console.log("=== 체험 모드: 형태소 분석 시작 ===");
 
-        // 각 문장별로 형태소 분석
-        currentMorphemes = [];
-        for (let i = 0; i < allSentences.length; i++) {
-          const morphemes = await analyzeMorphemes(allSentences[i]);
-          currentMorphemes.push(morphemes);
-        }
+        currentMorphemes = await _runMorphemeAnalysis(allSentences);
 
         console.log("✅ 형태소 분석 완료");
 
@@ -3850,9 +3970,9 @@
       }
 
       // ==========================================
-      // 형태소 분석 (강화된 로컬 분석)
+      // 형태소 분석 (강화된 로컬 분석) — Kiwi Worker 실패 시 fallback
       // ==========================================
-      async function analyzeMorphemes(text) {
+      async function _localAnalyzeMorphemes(text) {
         console.log("🔬 형태소 분석 시작 (로컬 강화 분석)");
 
         // 명사 사전이 아직 로드 중이면 대기
@@ -3873,7 +3993,8 @@
             const match = token.match(/^(\d+)([가-힣]+)$/);
             if (match) {
               morphemes.push({ lex: match[1], tag: "SN", selected: false });
-              morphemes.push({ lex: match[2], tag: "NNB", selected: true });
+              // 단위/의존명사는 selected:false (워드클라우드에서 의미 없음)
+              morphemes.push({ lex: match[2], tag: "NNB", selected: false });
               return;
             }
           }
@@ -3887,6 +4008,12 @@
           // 0-2. 특수문자 포함
           if (/[!@#$%^&*()_+=\[\]{};:'",.<>?/\\|`~-]/.test(token)) {
             morphemes.push({ lex: token, tag: "SF", selected: false }); // 특수문자
+            return;
+          }
+
+          // 0-3. 단독 의존명사 - NNB로 처리, selected:false
+          if (NNB_STOPWORDS.has(token)) {
+            morphemes.push({ lex: token, tag: "NNB", selected: false });
             return;
           }
 
@@ -3911,53 +4038,112 @@
           let processed = false;
 
           // 1. 조사 분리 시도 (긴 것부터 우선 처리)
-          const sortedParticles = [...PARTICLES].sort(
+          const sortedParticlesLocal = [...PARTICLES].sort(
             (a, b) => b.length - a.length,
           );
-          for (const particle of sortedParticles) {
+          for (const particle of sortedParticlesLocal) {
             if (token.endsWith(particle) && token.length > particle.length) {
               const stem = token.slice(0, -particle.length);
 
-              // ✨ 명사 사전 검증: 어간이 사전에 있으면 분리!
+              // 명사 사전 검증 (보호 단어 포함)
               const stemInDict =
-                NOUN_DICTIONARY.has(stem) || COMPOUND_NOUNS.has(stem);
+                NOUN_DICTIONARY.has(stem) ||
+                COMPOUND_NOUNS.has(stem) ||
+                protectedWords.has(stem);
 
               if (!stemInDict) {
-                // 사전에 없으면 어간 길이 검증 (2글자 이하면 분리 안 함)
-                if (stem.length <= 2) continue;
+                // 사전에 없으면 어간 길이 검증 (1글자 이하면 분리 안 함)
+                if (stem.length <= 1) continue;
               }
 
-              // Hangul.js로 받침 검증
+              // [Stage 3] 동사/형용사 어간 제외 목록 확인
+              if (VERB_ADJ_STEMS_EXCL.has(stem)) continue;
+
+              // Hangul.js로 음운론 검증
               if (typeof Hangul !== "undefined") {
                 const lastChar = stem[stem.length - 1];
-                const hasCoda = Hangul.disassemble(lastChar).length === 3;
+                const decomp = Hangul.disassemble(lastChar);
+                const hasCoda = decomp.length === 3;
 
-                // 이/가 검증
+                // [Stage 3] ㅎ받침 = ㅎ불규칙 형용사 어간 → 분리 안 함
+                // 예: 빨갛+아서, 이렇+게 → "빨갛", "이렇" 앞에 조사가 오는 경우
+                if (hasCoda && decomp[2] === "ㅎ") continue;
+
+                // 이/가: 받침O→이, 받침X→가
                 if (
                   (particle === "이" && !hasCoda) ||
                   (particle === "가" && hasCoda)
-                ) {
-                  continue; // 잘못된 조합
-                }
+                ) continue;
 
-                // 을/를 검증
+                // 을/를: 받침O→을, 받침X→를
                 if (
                   (particle === "을" && !hasCoda) ||
                   (particle === "를" && hasCoda)
-                ) {
-                  continue; // 잘못된 조합
-                }
+                ) continue;
 
-                // 은/는 검증
+                // 은/는: 받침O→은, 받침X→는
                 if (
                   (particle === "은" && !hasCoda) ||
                   (particle === "는" && hasCoda)
-                ) {
-                  continue; // 잘못된 조합
+                ) continue;
+
+                // [Stage 1 확장] 와/과: 받침X→와, 받침O→과
+                if (
+                  (particle === "와" && hasCoda) ||
+                  (particle === "과" && !hasCoda)
+                ) continue;
+
+                // [Stage 1 확장] 으로/로: 받침O(ㄹ제외)→으로, 받침X or ㄹ받침→로
+                if (particle === "으로") {
+                  if (!hasCoda || decomp[2] === "ㄹ") continue;
                 }
+                if (particle === "로") {
+                  if (hasCoda && decomp[2] !== "ㄹ") continue;
+                }
+
+                // [Stage 1 확장] 이랑/랑: 받침O→이랑, 받침X→랑
+                if (
+                  (particle === "이랑" && !hasCoda) ||
+                  (particle === "랑" && hasCoda)
+                ) continue;
+
+                // [Stage 1 확장] 이나/나: 받침O→이나, 받침X→나
+                if (
+                  (particle === "이나" && !hasCoda) ||
+                  (particle === "나" && hasCoda)
+                ) continue;
+
+                // [Stage 1 확장] 이야/야: 받침O→이야, 받침X→야
+                if (
+                  (particle === "이야" && !hasCoda) ||
+                  (particle === "야" && hasCoda)
+                ) continue;
+
+                // [Stage 1 확장] 이라도/라도: 받침O→이라도, 받침X→라도
+                if (
+                  (particle === "이라도" && !hasCoda) ||
+                  (particle === "라도" && hasCoda)
+                ) continue;
+
+                // [Stage 1 확장] 이라야/라야: 받침O→이라야, 받침X→라야
+                if (
+                  (particle === "이라야" && !hasCoda) ||
+                  (particle === "라야" && hasCoda)
+                ) continue;
+
+                // [Stage 1 확장] 이든지/든지: 받침O→이든지, 받침X→든지
+                if (
+                  (particle === "이든지" && !hasCoda) ||
+                  (particle === "든지" && hasCoda)
+                ) continue;
               }
 
-              morphemes.push({ lex: stem, tag: "NNG", selected: true });
+              // stem이 의존명사면 NNB+selected:false
+              if (NNB_STOPWORDS.has(stem)) {
+                morphemes.push({ lex: stem, tag: "NNB", selected: false });
+              } else {
+                morphemes.push({ lex: stem, tag: "NNG", selected: true });
+              }
               morphemes.push({ lex: particle, tag: "JX", selected: false });
               processed = true;
               break;
@@ -3977,7 +4163,8 @@
               // 어간이 너무 짧으면 분리하지 않음
               if (stem.length <= 2) continue;
 
-              morphemes.push({ lex: stem, tag: "VV", selected: true });
+              // 동사 어간은 내용어로 의미 없음 → selected:false
+              morphemes.push({ lex: stem, tag: "VV", selected: false });
               morphemes.push({ lex: ending, tag: "EF", selected: false });
               processed = true;
               break;
@@ -3993,72 +4180,177 @@
         return morphemes;
       }
 
+      // ── 품사 태그 색상 매핑 ──────────────────────────────────────────────
+      const TAG_COLORS = {
+        NNG:  { bg:'#D1FAE5', text:'#065F46', arc:'#10B981' },
+        NNP:  { bg:'#DBEAFE', text:'#1E40AF', arc:'#3B82F6' },
+        NNB:  { bg:'#E0F2FE', text:'#0369A1', arc:'#0EA5E9' },
+        NR:   { bg:'#FEF3C7', text:'#92400E', arc:'#F59E0B' },
+        NP:   { bg:'#F0F9FF', text:'#0C4A6E', arc:'#38BDF8' },
+        VV:   { bg:'#FCE7F3', text:'#9D174D', arc:'#EC4899' },
+        VA:   { bg:'#FDE8F5', text:'#831843', arc:'#F472B6' },
+        VX:   { bg:'#FDF2F8', text:'#701A75', arc:'#D946EF' },
+        VCP:  { bg:'#FFF0FE', text:'#581C87', arc:'#C026D3' },
+        VCN:  { bg:'#FDF4FF', text:'#4A044E', arc:'#A21CAF' },
+        JKS:  { bg:'#E0F2FE', text:'#075985', arc:'#0EA5E9' },
+        JKC:  { bg:'#E0F2FE', text:'#075985', arc:'#0EA5E9' },
+        JKG:  { bg:'#CFFAFE', text:'#164E63', arc:'#06B6D4' },
+        JKO:  { bg:'#CFFAFE', text:'#164E63', arc:'#06B6D4' },
+        JKB:  { bg:'#CFFAFE', text:'#164E63', arc:'#06B6D4' },
+        JKV:  { bg:'#CFFAFE', text:'#164E63', arc:'#06B6D4' },
+        JKQ:  { bg:'#CFFAFE', text:'#164E63', arc:'#06B6D4' },
+        JX:   { bg:'#E0F2FE', text:'#075985', arc:'#0EA5E9' },
+        JC:   { bg:'#E0F2FE', text:'#075985', arc:'#0EA5E9' },
+        EP:   { bg:'#FEE2E2', text:'#991B1B', arc:'#EF4444' },
+        EF:   { bg:'#FCE7F3', text:'#9D174D', arc:'#F9A8D4' },
+        EC:   { bg:'#FDF2F8', text:'#831843', arc:'#FBCFE8' },
+        ETN:  { bg:'#FEF9C3', text:'#713F12', arc:'#FDE047' },
+        ETM:  { bg:'#EEF2FF', text:'#3730A3', arc:'#818CF8' },
+        MM:   { bg:'#F0FDF4', text:'#14532D', arc:'#22C55E' },
+        MAG:  { bg:'#FEFCE8', text:'#713F12', arc:'#EAB308' },
+        MAJ:  { bg:'#FFF7ED', text:'#7C2D12', arc:'#F97316' },
+        XPN:  { bg:'#F5F3FF', text:'#4C1D95', arc:'#7C3AED' },
+        XSN:  { bg:'#EDE9FE', text:'#4C1D95', arc:'#8B5CF6' },
+        XSV:  { bg:'#DDD6FE', text:'#4C1D95', arc:'#7C3AED' },
+        XSA:  { bg:'#C4B5FD', text:'#2E1065', arc:'#6D28D9' },
+        XR:   { bg:'#F5F3FF', text:'#4C1D95', arc:'#7C3AED' },
+        IC:   { bg:'#FFF7ED', text:'#9A3412', arc:'#FB923C' },
+        SF:   { bg:'#F8FAFC', text:'#64748B', arc:'#94A3B8' },
+        SP:   { bg:'#F8FAFC', text:'#64748B', arc:'#94A3B8' },
+        SS:   { bg:'#F8FAFC', text:'#64748B', arc:'#94A3B8' },
+        SE:   { bg:'#F8FAFC', text:'#64748B', arc:'#94A3B8' },
+        SW:   { bg:'#F1F5F9', text:'#64748B', arc:'#94A3B8' },
+        SN:   { bg:'#EFF6FF', text:'#1E3A8A', arc:'#60A5FA' },
+        SL:   { bg:'#F0FDFA', text:'#134E4A', arc:'#14B8A6' },
+        SH:   { bg:'#FFF1F2', text:'#881337', arc:'#FB7185' },
+        UN:   { bg:'#F9FAFB', text:'#6B7280', arc:'#9CA3AF' },
+      };
+      function getTagColor(tag) {
+        return TAG_COLORS[tag] || { bg:'#F1F5F9', text:'#475569', arc:'#94A3B8' };
+      }
+
       function renderMorphemes(morphemes, sentenceIndex) {
         const container = document.getElementById("morphemeMainContainer");
         if (!container) return;
 
-        const morphemeCard = document.createElement("div");
-        morphemeCard.className = "morpheme-card";
-        morphemeCard.innerHTML = `
-                <div class="morpheme-header">문장 ${sentenceIndex + 1}: "${allSentences[sentenceIndex]}"</div>
-                <div class="morpheme-list"></div>
-            `;
-
-        const list = morphemeCard.querySelector(".morpheme-list");
-
-        morphemes.forEach((m, idx) => {
-          const item = document.createElement("div");
-          item.className = `morpheme-item ${m.selected ? "selected" : "deselected"}`;
-          item.dataset.sentenceIndex = sentenceIndex;
-          item.dataset.morphemeIndex = idx;
-          item.innerHTML = `
-                    <button class="morpheme-split-btn" onclick="splitMorpheme(${sentenceIndex}, ${idx})">✂️</button>
-                    <div class="morpheme-word">${m.lex}</div>
-                    <div class="morpheme-pos">${m.tag}</div>
-                `;
-
-          // 클릭 이벤트: Shift키로 합치기 선택, 일반 클릭은 포함/제외
-          item.addEventListener("click", (e) => {
-            if (e.shiftKey) {
-              toggleMarkMorpheme(sentenceIndex, idx, item);
-            } else {
-              toggleMorphemeSelection(sentenceIndex, idx);
-            }
-          });
-
-          item.addEventListener("dblclick", () =>
-            editMorpheme(sentenceIndex, idx, item),
-          );
-
-          list.appendChild(item);
-        });
-
-        container.appendChild(morphemeCard);
+        const div = document.createElement("div");
+        div.className = "morpheme-sentence";
+        div.innerHTML = `
+          <div class="morpheme-sentence-label">
+            문장 ${sentenceIndex + 1}
+            <span class="morpheme-sentence-orig">${(allSentences[sentenceIndex] || '').replace(/</g, '&lt;')}</span>
+          </div>
+          <div class="morpheme-tokens">
+            ${morphemes.map((m, idx) => {
+              const isMarked = markedMorphemes.some(
+                x => x.sentenceIndex === sentenceIndex && x.morphemeIndex === idx
+              );
+              const cssClass = isMarked ? 'shift-selecting' : (m.selected ? 'selected' : 'excluded');
+              const col = getTagColor(m.tag);
+              return `
+                <div class="morph-token-wrapper">
+                  <div class="morph-token ${cssClass}"
+                       onclick="handleMorphClick(event,${sentenceIndex},${idx})"
+                       ondblclick="handleMorphDblClick(event,${sentenceIndex},${idx},this)">
+                    <div class="morph-tag-badge" style="background:${col.bg};color:${col.text};">${m.tag}</div>
+                    <div class="morph-arc" style="border-color:${col.arc};"></div>
+                    <div class="morph-word">${m.lex}</div>
+                  </div>
+                  <button class="morph-split-btn"
+                          onclick="event.stopPropagation();splitMorpheme(${sentenceIndex},${idx})"
+                          title="단어 분리">✂</button>
+                </div>`;
+            }).join('')}
+          </div>
+        `;
+        container.appendChild(div);
       }
 
-      function toggleMarkMorpheme(sentenceIndex, morphemeIndex, item) {
+      // ── 클릭 핸들러 (onclick 어트리뷰트용) ────────────────────────────
+      function handleMorphClick(event, sentenceIndex, morphemeIndex) {
+        if (event.shiftKey) {
+          event.stopPropagation();
+          toggleMarkMorpheme(sentenceIndex, morphemeIndex);
+        } else {
+          toggleMorphemeSelection(sentenceIndex, morphemeIndex);
+        }
+      }
+
+      function handleMorphDblClick(event, sentenceIndex, morphemeIndex, tokenEl) {
+        event.stopPropagation();
+        // 기존 편집창 제거
+        const existing = document.querySelector('.inline-edit-box');
+        if (existing) existing.remove();
+
+        const morpheme = currentMorphemes[sentenceIndex][morphemeIndex];
+        const wrapper = tokenEl.closest('.morph-token-wrapper');
+        const editBox = document.createElement('div');
+        editBox.className = 'inline-edit-box';
+        editBox.innerHTML = `
+          <div style="background:white;border:2px solid #3B82F6;border-radius:10px;
+                      padding:12px;box-shadow:0 6px 20px rgba(0,0,0,0.16);min-width:180px;">
+            <div style="font-size:0.78rem;color:#94A3B8;margin-bottom:6px;font-weight:600;">단어 수정</div>
+            <input id="_morphEditInput" type="text" value="${morpheme.lex}"
+                   style="width:100%;padding:7px 10px;border:1px solid #CBD5E1;
+                          border-radius:6px;font-size:0.95rem;margin-bottom:8px;
+                          box-sizing:border-box;font-family:inherit;">
+            <div style="display:flex;gap:6px;">
+              <button id="_morphEditSave"
+                      style="flex:1;background:#3B82F6;color:white;border:none;
+                             padding:6px 10px;border-radius:5px;cursor:pointer;
+                             font-size:0.82rem;font-weight:600;">확인</button>
+              <button id="_morphEditCancel"
+                      style="flex:1;background:#F1F5F9;color:#475569;border:none;
+                             padding:6px 10px;border-radius:5px;cursor:pointer;
+                             font-size:0.82rem;">취소</button>
+            </div>
+          </div>`;
+        editBox.style.cssText = 'position:absolute;top:100%;left:0;margin-top:4px;z-index:1000;';
+        wrapper.appendChild(editBox);
+
+        const input = editBox.querySelector('#_morphEditInput');
+        input.focus(); input.select();
+
+        const save = () => {
+          const val = input.value.trim();
+          if (val) morpheme.lex = val;
+          editBox.remove();
+          renderAllMorphemes();
+        };
+        const cancel = () => editBox.remove();
+
+        editBox.querySelector('#_morphEditSave').onclick = save;
+        editBox.querySelector('#_morphEditCancel').onclick = cancel;
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') save();
+          if (e.key === 'Escape') cancel();
+        });
+      }
+
+      // 외부 클릭 시 편집창 닫기
+      document.addEventListener('click', () => {
+        const box = document.querySelector('.inline-edit-box');
+        if (box) box.remove();
+      });
+
+      function toggleMarkMorpheme(sentenceIndex, morphemeIndex) {
         const key = `${sentenceIndex}-${morphemeIndex}`;
         const existingIndex = markedMorphemes.findIndex(
           (m) => `${m.sentenceIndex}-${m.morphemeIndex}` === key,
         );
 
         if (existingIndex >= 0) {
-          // 이미 선택됨 -> 선택 해제
           markedMorphemes.splice(existingIndex, 1);
-          item.classList.remove("marked");
         } else {
-          // 새로 선택
-          markedMorphemes.push({ sentenceIndex, morphemeIndex, item });
-          item.classList.add("marked");
+          markedMorphemes.push({ sentenceIndex, morphemeIndex });
         }
 
         updateMergeButton();
+        renderAllMorphemes();
 
         // ✨ 정확히 2개가 선택되면 자동으로 합치기 실행
         if (markedMorphemes.length === 2) {
-          setTimeout(() => {
-            mergeMorphemes();
-          }, 100); // 약간의 지연으로 UI 업데이트 후 실행
+          setTimeout(() => mergeMorphemes(), 150);
         }
       }
 
@@ -4075,11 +4367,9 @@
       }
 
       function clearMarkedMorphemes() {
-        markedMorphemes.forEach(({ item }) => {
-          item.classList.remove("marked");
-        });
         markedMorphemes = [];
         updateMergeButton();
+        renderAllMorphemes();
       }
 
       function mergeMorphemes() {
@@ -4142,68 +4432,15 @@
         // 배열에서 제거하고 합쳐진 것 삽입
         morphemes.splice(startIdx, endIdx - startIdx + 1, mergedMorpheme);
 
-        // 선택 초기화 및 재렌더링
+        // 선택 초기화 (renderAllMorphemes는 clearMarkedMorphemes 내에서 호출됨)
         clearMarkedMorphemes();
-        renderAllMorphemes();
-
         console.log(`✅ 형태소 합치기 완료: "${mergedText}"`);
       }
 
       function toggleMorphemeSelection(sentenceIndex, morphemeIndex) {
         const morpheme = currentMorphemes[sentenceIndex][morphemeIndex];
         morpheme.selected = !morpheme.selected;
-
-        const item = document.querySelector(
-          `[data-sentence-index="${sentenceIndex}"][data-morpheme-index="${morphemeIndex}"]`,
-        );
-        if (item) {
-          item.classList.toggle("selected");
-          item.classList.toggle("deselected");
-        }
-      }
-
-      function editMorpheme(sentenceIndex, morphemeIndex, element) {
-        const morpheme = currentMorphemes[sentenceIndex][morphemeIndex];
-        element.classList.add("editing");
-
-        const wordDiv = element.querySelector(".morpheme-word");
-        const originalText = wordDiv.textContent;
-
-        wordDiv.innerHTML = `
-                <input type="text" class="morpheme-edit-input" value="${originalText}" />
-                <div class="morpheme-edit-buttons">
-                    <button class="morpheme-edit-btn save">✓</button>
-                    <button class="morpheme-edit-btn cancel">✗</button>
-                </div>
-            `;
-
-        const input = wordDiv.querySelector("input");
-        input.focus();
-        input.select();
-
-        const saveBtn = wordDiv.querySelector(".save");
-        const cancelBtn = wordDiv.querySelector(".cancel");
-
-        const save = () => {
-          const newValue = input.value.trim();
-          if (newValue) {
-            morpheme.lex = newValue;
-            wordDiv.innerHTML = newValue;
-            element.classList.remove("editing");
-          }
-        };
-
-        const cancel = () => {
-          wordDiv.innerHTML = originalText;
-          element.classList.remove("editing");
-        };
-
-        saveBtn.onclick = save;
-        cancelBtn.onclick = cancel;
-        input.onkeydown = (e) => {
-          if (e.key === "Enter") save();
-          if (e.key === "Escape") cancel();
-        };
+        renderAllMorphemes();
       }
 
       function splitMorpheme(sentenceIndex, morphemeIndex) {
@@ -4235,7 +4472,17 @@
       function renderAllMorphemes() {
         const container = document.getElementById("morphemeMainContainer");
         if (!container) return;
-        container.innerHTML = "";
+
+        container.innerHTML = `
+          <div class="morph-usage-hint">
+            <span class="hint-item">✏ <strong>클릭</strong> → 포함/제외 토글</span>
+            <span class="hint-item" style="color:#94A3B8">|</span>
+            <span class="hint-item"><kbd>Shift</kbd>+클릭 → 합치기 선택 (2개 선택 시 자동 합침)</span>
+            <span class="hint-item" style="color:#94A3B8">|</span>
+            <span class="hint-item"><strong>더블클릭</strong> → 직접 수정</span>
+            <span class="hint-item" style="color:#94A3B8">|</span>
+            <span class="hint-item">✂ → 단어 분리</span>
+          </div>`;
 
         currentMorphemes.forEach((morphemes, idx) => {
           renderMorphemes(morphemes, idx);
@@ -4274,46 +4521,23 @@
           return;
         }
 
-        console.log("=== 형태소 분석 시작 ===");
-
-        // 각 문장별로 형태소 분석
-        currentMorphemes = [];
-        for (let i = 0; i < allSentences.length; i++) {
-          const morphemes = await analyzeMorphemes(allSentences[i]);
-          currentMorphemes.push(morphemes);
+        // currentMorphemes가 없을 때만 재분석
+        // (형태소 탭에서 수정한 내용 보존 + 불필요한 재계산 방지)
+        if (currentMorphemes.length === 0) {
+          console.log("=== 형태소 분석 시작 ===");
+          for (let i = 0; i < allSentences.length; i++) {
+            const morphemes = await analyzeMorphemes(allSentences[i]);
+            currentMorphemes.push(morphemes);
+          }
+          const morphemeCard = document.getElementById("morphemeResultCard");
+          if (morphemeCard) {
+            morphemeCard.style.display = "block";
+            renderAllMorphemes();
+          }
+          console.log("✅ 형태소 분석 완료");
         }
 
-        // 형태소 결과 표시
-        const morphemeCard = document.getElementById("morphemeResultCard");
-        if (morphemeCard) {
-          morphemeCard.style.display = "block";
-          renderAllMorphemes();
-        }
-
-        console.log("✅ 형태소 분석 완료");
-
-        // 선택된 형태소로 워드클라우드 생성
-        const selectedWords = [];
-        currentMorphemes.forEach((morphemes) => {
-          morphemes.forEach((m) => {
-            if (m.selected) {
-              selectedWords.push(m.lex);
-            }
-          });
-        });
-
-        wordFrequency = {};
-        selectedWords.forEach((word) => {
-          wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-        });
-
-        const sortedWords = Object.entries(wordFrequency)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 150);
-
-        createWordCloud(sortedWords);
-
-        console.log("✅ 텍스트 분석 완료");
+        buildWordFrequency();
       }
 
       // ==========================================
@@ -5076,7 +5300,27 @@
 
         for (const sentence of sentencesToAnalyze) {
           const row = [];
-          const words = tokenizeKorean(sentence);
+
+          // 형태소 탭에서 이미 분석된 결과가 있으면 POS 기반 내용어만 추출
+          // (사용자가 형태소 탭에서 수정/제외한 내용도 반영됨)
+          const sentIdx = allSentences.indexOf(sentence);
+          let words;
+          if (
+            currentMorphemes.length > 0 &&
+            sentIdx !== -1 &&
+            currentMorphemes[sentIdx]
+          ) {
+            // NNG(일반명사), NNP(고유명사), SL(외래어)만 내용어로 채택
+            words = currentMorphemes[sentIdx]
+              .filter(
+                (m) =>
+                  m.selected && ["NNG", "NNP", "SL"].includes(m.tag),
+              )
+              .map((m) => m.lex);
+          } else {
+            // 형태소 분석 전 fallback
+            words = tokenizeKorean(sentence);
+          }
 
           selectedWords.forEach((word) => {
             const count = words.filter((w) => w === word).length;
@@ -5558,7 +5802,11 @@
           ?.addEventListener("click", () => switchTab("collection"));
         document
           .getElementById("tab-btn-analysis")
-          ?.addEventListener("click", () => switchTab("analysis"));
+          ?.addEventListener("click", () => {
+            switchTab("analysis");
+            // 형태소가 있으면 탭 전환 시 자동 갱신 (형태소 탭 수정 반영)
+            if (currentMorphemes.length > 0) setTimeout(() => buildWordFrequency(), 100);
+          });
         document
           .getElementById("tab-btn-vector")
           ?.addEventListener("click", () => switchTab("vector"));
@@ -5610,7 +5858,7 @@
 
         document
           .getElementById("stopwords-toggle")
-          ?.addEventListener("change", analyzeText);
+          ?.addEventListener("change", buildWordFrequency);
         document
           .getElementById("proceed-vector-btn")
           ?.addEventListener("click", proceedToVector);
@@ -5651,9 +5899,128 @@
         }
       }
 
+      // ==========================================
+      // Kiwi Web Worker (TF.js 형태소 분석)
+      // morpheme_worker.js + tfjs_model/model.json 필요
+      // ==========================================
+      let morphemeWorker = null;
+      let workerKiwiReady = false;
+
+      function initKiwiWorker() {
+        try {
+          morphemeWorker = new Worker('morpheme_worker.js');
+        } catch (e) {
+          console.warn('⚠️ Kiwi Worker 생성 실패 (로컬 분석 사용):', e.message ?? e);
+          return;
+        }
+
+        morphemeWorker.onmessage = function (e) {
+          const msg = e.data;
+          if (msg.type === 'ready') {
+            workerKiwiReady = true;
+            console.log(`✅ Kiwi Worker 준비 완료 — char:${msg.charCount} tag:${msg.tagCount}`);
+            const badge = document.getElementById('kiwi-status-badge');
+            if (badge) { badge.textContent = '🧠 Kiwi 준비 완료'; badge.style.color = '#28a745'; }
+          } else if (msg.type === 'error') {
+            console.warn('⚠️ Kiwi Worker 오류 (로컬 분석 사용):', msg.message);
+            workerKiwiReady = false;
+          }
+        };
+
+        morphemeWorker.onerror = function (e) {
+          console.warn('⚠️ Kiwi Worker 오류 (로컬 분석 사용):', e.message ?? e);
+          workerKiwiReady = false;
+        };
+
+        morphemeWorker.postMessage({ type: 'init' });
+      }
+
+      // Worker 출력({morphs:[{lex,tag}]}) → {lex, tag, selected}[] 변환
+      function postProcessRaw(rawResult) {
+        const CONTENT_TAGS = new Set(['NNG', 'NNP', 'SL', 'XR']);
+        const morphemes = [];
+        rawResult.forEach(word => {
+          word.morphs.forEach(morph => {
+            morphemes.push({
+              lex: morph.lex,
+              tag: morph.tag,
+              selected: CONTENT_TAGS.has(morph.tag) && morph.lex.length >= 2
+            });
+          });
+        });
+        return morphemes;
+      }
+
+      // ── 분석 진행 모달 제어 ────────────────────────────────────────────
+      function showMorphAnalysisModal(total) {
+        document.getElementById('maPct').textContent  = '0%';
+        document.getElementById('maFill').style.width = '0%';
+        document.getElementById('maStep').textContent = '준비 중...';
+        document.getElementById('maFrac').textContent = `0 / ${total}`;
+        document.getElementById('maSent').textContent = '—';
+        document.getElementById('maSub').textContent  = `총 ${total}문장`;
+        document.getElementById('morphAnalysisModal').classList.add('show');
+      }
+      function updateMorphAnalysisModal(current, total, sentPreview) {
+        const pct = Math.round(current / total * 100);
+        document.getElementById('maPct').textContent  = pct + '%';
+        document.getElementById('maFill').style.width = pct + '%';
+        document.getElementById('maStep').textContent = `문장 ${current} 분석 완료`;
+        document.getElementById('maFrac').textContent = `${current} / ${total}`;
+        const preview = sentPreview.length > 35 ? sentPreview.slice(0, 35) + '…' : sentPreview;
+        document.getElementById('maSent').textContent = `"${preview}"`;
+      }
+      function hideMorphAnalysisModal() {
+        document.getElementById('morphAnalysisModal').classList.remove('show');
+      }
+
+      // Worker 기반 전체 문장 분석 (실패 시 로컬 fallback)
+      async function _runMorphemeAnalysis(sentences) {
+        showMorphAnalysisModal(sentences.length);
+        try {
+          if (morphemeWorker && workerKiwiReady) {
+            console.log('🧠 Kiwi Worker로 형태소 분석');
+            try {
+              const allRaw = await new Promise((resolve, reject) => {
+                const handler = (e) => {
+                  const msg = e.data;
+                  if (msg.type === 'progress') {
+                    updateMorphAnalysisModal(msg.index, msg.total, msg.text);
+                  } else if (msg.type === 'done') {
+                    morphemeWorker.removeEventListener('message', handler);
+                    resolve(msg.allRaw);
+                  } else if (msg.type === 'error') {
+                    morphemeWorker.removeEventListener('message', handler);
+                    reject(new Error(msg.message));
+                  }
+                };
+                morphemeWorker.addEventListener('message', handler);
+                morphemeWorker.postMessage({ type: 'analyze', data: { sentences } });
+              });
+              return allRaw.map(raw => postProcessRaw(raw));
+            } catch (e) {
+              console.warn('⚠️ Worker 분석 실패, 로컬 fallback:', e.message);
+            }
+          }
+
+          // 로컬 분석 fallback
+          console.log('🔬 로컬 형태소 분석 (fallback)');
+          const result = [];
+          for (let i = 0; i < sentences.length; i++) {
+            updateMorphAnalysisModal(i + 1, sentences.length, sentences[i]);
+            await new Promise(r => setTimeout(r, 0)); // UI 업데이트 허용
+            result.push(await _localAnalyzeMorphemes(sentences[i]));
+          }
+          return result;
+        } finally {
+          hideMorphAnalysisModal();
+        }
+      }
+
       // DOM 로드 완료 시 이벤트 리스너 등록
       document.addEventListener("DOMContentLoaded", () => {
         initializeApp();
+        initKiwiWorker();
 
         // Firebase가 이미 준비되었으면 바로 실행, 아니면 대기
         if (window.firebaseReady) {

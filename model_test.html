@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>모델 진단</title>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+<style>
+  body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+  .ok  { color: #4ec9b0; }
+  .err { color: #f48771; }
+  .info{ color: #9cdcfe; }
+  pre  { background: #2d2d2d; padding: 12px; border-radius: 6px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h2>🔍 TF.js 모델 진단</h2>
+<pre id="out">진단 중...</pre>
+
+<script>
+const el = document.getElementById('out');
+const log = (cls, ...args) => {
+    el.innerHTML += `<span class="${cls}">${args.join(' ')}</span>\n`;
+    console.log(...args);
+};
+
+async function run() {
+    el.innerHTML = '';
+
+    // 1. TF.js 버전
+    log('info', `TF.js 버전: ${tf.version.tfjs}`);
+
+    // 2. 모델 로드
+    log('info', '\n[1] tfjs_model/model.json 로드...');
+    let model;
+    try {
+        model = await tf.loadLayersModel('tfjs_model/model.json');
+        log('ok',  `    ✅ 성공`);
+        log('info', `    inputNames : ${JSON.stringify(model.inputNames)}`);
+        log('info', `    inputs[0].shape : ${JSON.stringify(model.inputs[0].shape)}`);
+        log('info', `    MAX_LEN 감지 : ${model.inputs[0].shape[1]}`);
+    } catch(e) {
+        log('err', `    ❌ 실패: ${e.message}`);
+        log('err', `    stack: ${e.stack}`);
+        return;
+    }
+
+    const MAX_LEN = model.inputs[0].shape[1] || 96;
+    const isMulti = model.inputNames && model.inputNames.length > 1;
+
+    // 3. 사전 파일들
+    for (const fname of ['char2idx.json', 'idx2tag.json', 'jamo_vocab.json']) {
+        log('info', `\n[2] ${fname} 로드...`);
+        try {
+            const data = await fetch(fname).then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            });
+            const keys = Object.keys(data);
+            log('ok', `    ✅ 성공 — 키 ${keys.length}개 (예: ${keys.slice(0,3).join(', ')})`);
+        } catch(e) {
+            log('err', `    ❌ 실패: ${e.message}`);
+        }
+    }
+
+    // 4. 추론 테스트
+    log('info', `\n[3] 추론 테스트 (isMulti=${isMulti}, MAX_LEN=${MAX_LEN})...`);
+    try {
+        let inp;
+        if (isMulti) {
+            inp = {};
+            model.inputNames.forEach(name => {
+                inp[name] = tf.zeros([1, MAX_LEN], 'int32');
+            });
+            log('info', `    입력 키: ${JSON.stringify(Object.keys(inp))}`);
+        } else {
+            inp = tf.zeros([1, MAX_LEN], 'int32');
+            log('info', `    단일 텐서 입력`);
+        }
+
+        const out = model.predict(inp);
+        log('ok', `    ✅ 추론 성공 — 출력 shape: ${JSON.stringify(out.shape)}`);
+        out.dispose();
+        if (isMulti) Object.values(inp).forEach(t => t.dispose());
+        else inp.dispose();
+    } catch(e) {
+        log('err', `    ❌ 추론 실패: ${e.message}`);
+        log('err', `    stack: ${e.stack}`);
+    }
+}
+
+run();
+</script>
+</body>
+</html>

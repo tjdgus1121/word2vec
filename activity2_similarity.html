@@ -1419,6 +1419,11 @@
         </div>
 
         <div id="demo-view" class="hidden">
+          <div style="text-align: right; margin-bottom: 10px">
+            <button type="button" class="btn-secondary" onclick="goHome()">
+              ⬅️ 역할 선택으로 돌아가기
+            </button>
+          </div>
           <div
             class="tutorial"
             style="
@@ -1472,7 +1477,26 @@
 (한 줄에 하나의 문장을 입력하세요)"
             ></textarea>
 
-            <div style="margin-top: 20px; text-align: center">
+            <div style="margin-top: 12px; text-align: right">
+              <button
+                onclick="loadDemoExample()"
+                style="
+                  background: #e0f7fa;
+                  color: #00838f;
+                  border: 1.5px solid #00bcd4;
+                  border-radius: 8px;
+                  padding: 8px 18px;
+                  font-size: 0.95em;
+                  font-family: 'Noto Sans KR', sans-serif;
+                  cursor: pointer;
+                  font-weight: 600;
+                "
+              >
+                📚 예시 문장 불러오기
+              </button>
+            </div>
+
+            <div style="margin-top: 10px; text-align: center">
               <button
                 class="btn-success"
                 id="start-demo-btn"
@@ -2077,6 +2101,8 @@
         onChildAdded,
         onChildChanged,
       } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+      import { initializeAppCheck, ReCaptchaV3Provider } from
+        "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyAxTrULE0XqTOoAAsx2gNbKqUd0Cp5doaI",
@@ -2090,6 +2116,12 @@
       };
 
       const app = initializeApp(firebaseConfig);
+
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider('6LfPn40sAAAAALalWapAaJpjD8Ua6EJLnoD9pPEP'),
+        isTokenAutoRefreshEnabled: true,
+      });
+
       const database = getDatabase(app);
 
       window.firebaseDB = database;
@@ -5900,6 +5932,81 @@
       }
 
       // ==========================================
+      // Gemini 형태소 분석 (Flash 2.0 Lite)
+      // ==========================================
+      const GEMINI_PROXY = 'https://tfidf.tjdgus1121.workers.dev';
+
+      async function callGeminiMorpheme(sentences) {
+        const BATCH = 10;
+        const result = [];
+        for (let i = 0; i < sentences.length; i += BATCH) {
+          const batch = sentences.slice(i, i + BATCH);
+          const prompt = `한국어 문장들을 형태소로 분리하고 품사를 태깅하세요.
+
+규칙:
+- 명사(일반/고유/대명사) → tag: "NNG"
+- 동사/형용사 → 어간만 반환 → tag: "VV"
+- 조사 → tag: "JX"
+- 어미 → tag: "EF"
+- 외국어(영어 등) → tag: "SL"
+- 숫자 → tag: "SN"
+- 나머지(부사, 접속사, 기호 등) → tag: "ETC"
+- 조사와 어미는 반드시 분리
+- JSON 배열만 반환, 설명 없이
+
+출력 형식: [[{"lex":"형태소","tag":"NNG"}, ...], ...]
+
+문장들:
+${batch.map((s, idx) => `${i + idx + 1}. ${s}`).join('\n')}`;
+
+          const res = await fetch(`${GEMINI_PROXY}/gemini-2.0-flash-lite`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                  type: 'array',
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        lex: { type: 'string' },
+                        tag: { type: 'string' }
+                      },
+                      required: ['lex', 'tag']
+                    }
+                  }
+                }
+              }
+            })
+          });
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error?.message ?? `HTTP ${res.status}`);
+          }
+
+          const data = await res.json();
+          const text = data.candidates[0].content.parts[0].text;
+          const raw = typeof text === 'string' ? JSON.parse(text) : text;
+
+          const CONTENT_TAGS = new Set(['NNG', 'SL']);
+          raw.forEach(sentMorphs => {
+            result.push(sentMorphs.map(m => ({
+              lex: m.lex,
+              tag: m.tag,
+              selected: CONTENT_TAGS.has(m.tag) && m.lex.length >= 2
+            })));
+          });
+        }
+        return result;
+      }
+
+      // ==========================================
       // Kiwi Web Worker (TF.js 형태소 분석)
       // morpheme_worker.js + tfjs_model/model.json 필요
       // ==========================================
@@ -5974,10 +6081,25 @@
         document.getElementById('morphAnalysisModal').classList.remove('show');
       }
 
-      // Worker 기반 전체 문장 분석 (실패 시 로컬 fallback)
+      // 전체 문장 분석: Gemini → Kiwi Worker → 로컬 순으로 시도
       async function _runMorphemeAnalysis(sentences) {
         showMorphAnalysisModal(sentences.length);
         try {
+          // 1순위: Gemini Flash 2.0 Lite
+          try {
+            console.log('✨ Gemini Flash 2.0 Lite로 형태소 분석');
+            updateMorphAnalysisModal(0, sentences.length, 'Gemini AI 분석 중...');
+            const geminiResult = await callGeminiMorpheme(sentences);
+            if (geminiResult && geminiResult.length === sentences.length) {
+              console.log('✅ Gemini 형태소 분석 완료');
+              return geminiResult;
+            }
+            throw new Error('Gemini 결과 문장 수 불일치');
+          } catch (e) {
+            console.warn('⚠️ Gemini 분석 실패, Kiwi fallback:', e.message);
+          }
+
+          // 2순위: Kiwi Worker
           if (morphemeWorker && workerKiwiReady) {
             console.log('🧠 Kiwi Worker로 형태소 분석');
             try {
@@ -6003,18 +6125,51 @@
             }
           }
 
-          // 로컬 분석 fallback
+          // 3순위: 로컬 분석 fallback
           console.log('🔬 로컬 형태소 분석 (fallback)');
           const result = [];
           for (let i = 0; i < sentences.length; i++) {
             updateMorphAnalysisModal(i + 1, sentences.length, sentences[i]);
-            await new Promise(r => setTimeout(r, 0)); // UI 업데이트 허용
+            await new Promise(r => setTimeout(r, 0));
             result.push(await _localAnalyzeMorphemes(sentences[i]));
           }
           return result;
         } finally {
           hideMorphAnalysisModal();
         }
+      }
+
+      // 예시 문장 불러오기
+      const DEMO_EXAMPLES = [
+        `인공지능은 수학적 원리를 기반으로 데이터를 학습한다.
+인공지능 모델은 대량의 데이터에서 패턴을 찾아 예측한다.
+머신러닝은 인공지능의 핵심 기술로 알고리즘을 통해 학습한다.
+딥러닝은 신경망 구조를 활용하여 복잡한 데이터를 분석한다.
+자연어처리는 컴퓨터가 인간의 언어를 이해하도록 돕는 기술이다.
+컴퓨터 비전은 이미지 데이터를 분석하여 사물을 인식한다.`,
+
+        `환경 오염은 생태계를 파괴하고 생물 다양성을 감소시킨다.
+기후 변화로 인해 해수면이 상승하고 극지방 빙하가 녹고 있다.
+친환경 에너지는 탄소 배출을 줄이고 지속가능한 발전을 이끈다.
+미세먼지는 대기 오염의 주요 원인으로 건강에 악영향을 준다.
+재활용과 자원 절약은 환경 보호의 기본적인 실천 방법이다.
+태양광과 풍력 에너지는 화석연료를 대체할 수 있는 자원이다.`,
+
+        `운동은 신체 건강을 유지하고 면역력을 높이는 데 효과적이다.
+규칙적인 수면은 뇌 기능 회복과 집중력 향상에 중요하다.
+균형 잡힌 식사는 영양소를 공급하여 신체 활동을 지원한다.
+스트레스 관리는 정신 건강과 신체 건강에 모두 영향을 미친다.
+걷기와 달리기는 심폐 기능을 강화하는 유산소 운동이다.
+충분한 수분 섭취는 체온 조절과 신진대사에 필수적이다.`
+      ];
+
+      let demoExampleIndex = 0;
+
+      function loadDemoExample() {
+        const textarea = document.getElementById('demo-sentences');
+        if (!textarea) return;
+        textarea.value = DEMO_EXAMPLES[demoExampleIndex % DEMO_EXAMPLES.length];
+        demoExampleIndex++;
       }
 
       // DOM 로드 완료 시 이벤트 리스너 등록

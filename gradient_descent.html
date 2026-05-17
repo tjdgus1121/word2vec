@@ -1,0 +1,2771 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>경사하강법 — 인공지능이 스스로 배우는 방법</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {delimiters:[
+    {left:'$$',right:'$$',display:true},
+    {left:'$',right:'$',display:false}
+  ]})"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+  background: #f6f8fa;
+  color: #24292f;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── 헤더 ── */
+header {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f5ff 100%);
+  border-bottom: 1px solid #d0d7de;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+header .logo { font-size: 28px; }
+header h1 { font-size: 1.4rem; font-weight: 700; color: #0969da; }
+header p  { font-size: 0.85rem; color: #8c959f; margin-top: 2px; }
+
+/* ── 진행 단계 표시 ── */
+#progress-bar {
+  display: flex;
+  align-items: center;
+  padding: 14px 32px;
+  background: #ffffff;
+  border-bottom: 1px solid #d0d7de;
+  gap: 8px;
+  overflow-x: auto;
+}
+.step-dot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.step-dot .dot {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700;
+  background: #eaeef2;
+  border: 2px solid #d0d7de;
+  color: #8c959f;
+  transition: all 0.3s;
+}
+.step-dot.active .dot   { background: #0969da; border-color: #0969da; color: #fff; }
+.step-dot.done   .dot   { background: #1a7f37; border-color: #2da44e; color: #fff; }
+.step-dot .label { font-size: 0.78rem; color: #8c959f; }
+.step-dot.active .label { color: #0969da; font-weight: 600; }
+.step-dot.done   .label { color: #1a7f37; }
+.step-connector { flex: 0 0 24px; height: 2px; background: #d0d7de; border-radius: 1px; }
+.step-connector.done-line { background: #2da44e; }
+
+/* ── 메인 레이아웃 ── */
+main { padding: 32px; max-width: 1100px; margin: 0 auto; }
+
+/* ── 섹션 카드 ── */
+.stage { display: none; }
+.stage.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+
+.card {
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 12px;
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.card h2 {
+  font-size: 1.3rem;
+  color: #0969da;
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 10px;
+}
+.card h2 .tag {
+  font-size: 0.7rem;
+  background: #ddf4ff;
+  border: 1px solid #79c0ff;
+  color: #0969da;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.card p, .card li { line-height: 1.7; color: #57606a; font-size: 0.95rem; }
+.card ul { padding-left: 20px; }
+.card li { margin: 4px 0; }
+.card .highlight {
+  background: #ddf4ff;
+  border-left: 3px solid #0969da;
+  padding: 12px 16px;
+  border-radius: 0 8px 8px 0;
+  margin: 16px 0;
+  font-size: 0.92rem;
+  color: #24292f;
+}
+
+/* ── 수식 블록 ── */
+.math-block {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+/* ── Canvas 영역 ── */
+.canvas-wrap {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+  justify-content: center;
+}
+canvas {
+  border-radius: 10px;
+  border: 1px solid #d0d7de;
+  background: #ffffff;
+  display: block;
+}
+.canvas-label {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #8c959f;
+  margin-top: 6px;
+}
+
+/* ── 슬라이더 / 컨트롤 ── */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-end;
+  margin: 16px 0;
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+.ctrl-group label { font-size: 0.82rem; color: #57606a; }
+.ctrl-group .val {
+  font-size: 1rem; font-weight: 700; color: #24292f;
+  min-width: 60px; text-align: center;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 180px; height: 6px;
+  border-radius: 3px;
+  background: #d0d7de;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #0969da;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+}
+
+/* ── 버튼 ── */
+.btn {
+  padding: 10px 22px;
+  border-radius: 8px;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn-primary { background: #0969da; color: #fff; }
+.btn-primary:hover { background: #0860ca; }
+.btn-secondary { background: #f6f8fa; color: #24292f; border: 1px solid #d0d7de; }
+.btn-secondary:hover { background: #eaeef2; }
+.btn-success { background: #1a7f37; color: #fff; }
+.btn-success:hover { background: #2da44e; }
+.btn-danger { background: #cf222e; color: #fff; }
+.btn-danger:hover { background: #a40e26; }
+.btn-sm { padding: 6px 14px; font-size: 0.82rem; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── 네비게이션 ── */
+#nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  border-top: 1px solid #d0d7de;
+  background: #ffffff;
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+}
+#nav-bar .stage-title { color: #8c959f; font-size: 0.85rem; }
+#nav-bar .nav-btns { display: flex; gap: 12px; }
+
+/* ── 정보 박스 ── */
+.info-box {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 0.88rem;
+  color: #57606a;
+}
+.info-box.warn { border-color: #d4a72c; background: #fff8c5; color: #9a6700; }
+.info-box.good { border-color: #2da44e; background: #dafbe1; color: #1a7f37; }
+.info-box.mt { margin-top: 14px; }
+.accent-red  { color: #cf222e; }
+.accent-blue { color: #0969da; }
+
+/* ── 공통 레이아웃 유틸 ── */
+.btn-row           { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.cost-history-wrap { margin-top: 20px; }
+.section-block     { margin: 16px 0; }
+.section-block-top { margin-top: 16px; }
+.section-list      { margin-top: 10px; padding-left: 20px; }
+.math-caption      { font-size: 0.8rem; color: #8c959f; margin-top: 8px; }
+
+/* ── 통계 ── */
+.stat-row { display: flex; gap: 24px; flex-wrap: wrap; margin: 14px 0; }
+.stat {
+  background: #f6f8fa; border: 1px solid #d0d7de;
+  border-radius: 8px; padding: 10px 18px; min-width: 120px; text-align: center;
+}
+.stat .stat-label { font-size: 0.75rem; color: #8c959f; margin-bottom: 4px; }
+.stat .stat-val   { font-size: 1.1rem; font-weight: 700; color: #0969da; font-variant-numeric: tabular-nums; }
+
+/* ── 서브 진행 표시 ── */
+.substep-indicator { display: flex; gap: 6px; margin: 12px 0; }
+.sub-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #d0d7de; transition: background 0.3s;
+}
+.sub-dot.active { background: #0969da; }
+.sub-dot.done   { background: #2da44e; }
+
+/* ── 퀴즈 카드 ── */
+.quiz-card { margin: 12px 0; border: 1px solid #d0d7de; border-radius: 8px; overflow: hidden; }
+.quiz-q {
+  padding: 13px 16px; background: #f6f8fa; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+  -webkit-user-select: none; user-select: none; transition: background 0.2s;
+}
+.quiz-q:hover { background: #eaeef2; }
+.quiz-q .qt { font-size: 0.9rem; color: #24292f; flex: 1; padding-right: 12px; }
+.quiz-toggle { color: #0969da; font-size: 0.78rem; white-space: nowrap; }
+.quiz-a {
+  display: none; padding: 14px 16px;
+  background: #ffffff; font-size: 0.88rem; color: #57606a; line-height: 1.8;
+  border-top: 1px solid #d0d7de;
+}
+.quiz-a.open { display: block; }
+.quiz-a strong { color: #24292f; }
+
+/* ── 그래디언트 인디케이터 ── */
+.grad-indicator {
+  display: flex; align-items: center; gap: 16px;
+  background: #f6f8fa; border: 1px solid #d0d7de;
+  border-radius: 8px; padding: 10px 16px; margin: 12px 0;
+}
+.grad-val { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 70px; }
+.grad-val.pos { color: #bc4c00; }
+.grad-val.neg { color: #0969da; }
+.grad-val.zero { color: #1a7f37; }
+.grad-dir { font-size: 0.88rem; }
+
+/* ── 출발점 버튼 / 유틸 ── */
+.startpos-btns { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.stat-flex { flex: 1; text-align: left; }
+.stat-sub { font-size: 0.85rem; color: #57606a; margin-top: 6px; }
+.grad-dir-muted { color: #8c959f; }
+.grad-label { font-size: 0.75rem; color: #8c959f; }
+.grad-dir-text { font-size: 0.88rem; }
+.cost-history-canvas { width: 100%; max-width: 740px; }
+.sub1-text { margin: 10px 0; min-height: 48px; font-size: 0.95rem; color: #57606a; }
+.hidden { display: none; }
+
+/* ── 계산 연습 (Stage 3) ── */
+.iter-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.iter-badge {
+  background: #0969da; color: #fff;
+  font-size: 0.78rem; font-weight: 700; padding: 3px 12px; border-radius: 20px;
+}
+.iter-values { font-size: 0.9rem; color: #57606a; }
+
+.calc-step {
+  background: #f6f8fa; border: 1px solid #d0d7de;
+  border-radius: 10px; padding: 18px 22px; margin: 12px 0;
+  transition: border-color 0.25s, background 0.25s;
+}
+.calc-step.locked { opacity: 0.35; pointer-events: none; }
+.calc-step.correct { border-color: #2da44e; background: #dafbe1; }
+.calc-step-title {
+  font-size: 0.8rem; font-weight: 700; color: #8c959f;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;
+}
+.calc-row {
+  display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; font-size: 1rem; line-height: 2.4; color: #24292f;
+}
+.blank-input {
+  width: 80px; padding: 5px 8px;
+  border: 2px solid #d0d7de; border-radius: 6px;
+  font-size: 0.95rem; font-weight: 700; text-align: center;
+  font-family: 'Consolas', 'Courier New', monospace;
+  background: #ffffff; color: #24292f;
+  outline: none; transition: border-color 0.2s;
+}
+.blank-input:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.12); }
+.blank-input.ok  { border-color: #2da44e; background: #dafbe1; color: #1a7f37; }
+.blank-input.err { border-color: #cf222e; background: #fff0ef; color: #cf222e; }
+.blank-input.given {
+  border-color: #d0d7de; background: #eaeef2; color: #57606a;
+  cursor: default; font-weight: 600;
+}
+.calc-hint { font-size: 0.82rem; color: #8c959f; margin-top: 6px; }
+.calc-feedback { font-size: 0.88rem; margin-top: 8px; font-weight: 600; min-height: 20px; }
+.calc-feedback.ok  { color: #1a7f37; }
+.calc-feedback.err { color: #cf222e; }
+
+.calc-summary-table {
+  width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.9rem;
+}
+.calc-summary-table th {
+  background: #f6f8fa; border: 1px solid #d0d7de;
+  padding: 8px 12px; text-align: center; color: #57606a; font-weight: 600;
+}
+.calc-summary-table td {
+  border: 1px solid #d0d7de; padding: 8px 12px; text-align: center; color: #24292f;
+}
+.calc-summary-table tr:nth-child(even) td { background: #f6f8fa; }
+.calc-summary-table .highlight-col { color: #0969da; font-weight: 700; }
+
+/* ── 최종 비교 ── */
+.compare-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;
+}
+@media (max-width: 700px) {
+  .compare-grid { grid-template-columns: 1fr; }
+  main { padding: 16px; }
+}
+
+/* ── 핵심 강조 박스 (교사 시연용) ── */
+.essence-box {
+  background: linear-gradient(135deg, #fff8e1 0%, #fffde7 100%);
+  border: 2px solid #f9a825;
+  border-radius: 12px;
+  padding: 22px 28px;
+  margin: 20px 0;
+  text-align: center;
+  font-size: 1.08rem;
+  line-height: 2.1;
+  color: #33270a;
+}
+.essence-box strong { color: #e65100; font-size: 1.12rem; }
+
+/* ── x→θ 대응 비교 ── */
+.notation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+@media (max-width: 600px) { .notation-grid { grid-template-columns: 1fr; } }
+.notation-card {
+  background: #f6f8fa;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+  padding: 14px 18px;
+}
+.notation-card.ml { border-color: #79c0ff; background: #ddf4ff; }
+.notation-card .nc-title {
+  font-size: 0.78rem; font-weight: 700; color: #8c959f;
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;
+}
+.notation-card.ml .nc-title { color: #0969da; }
+.notation-card .nc-row { font-size: 0.9rem; color: #57606a; line-height: 1.8; }
+.notation-card .nc-row strong { color: #24292f; }
+
+/* ── 학습률 레이스 ── */
+.race-legend { display: flex; gap: 20px; margin: 10px 0; font-size: 0.88rem; flex-wrap: wrap; }
+.race-swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+.race-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+.race-stat { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 8px; padding: 8px 12px; text-align: center; }
+.race-stat .rs-label { font-size: 0.72rem; color: #8c959f; margin-bottom: 2px; }
+.race-stat .rs-val   { font-size: 0.95rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── 방향 예측 퀴즈 ── */
+.predict-feedback { padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; margin: 10px 0; line-height: 1.7; }
+.predict-feedback.correct { background: #dafbe1; border: 1px solid #2da44e; color: #1a7f37; }
+.predict-feedback.wrong   { background: #fff0ef; border: 1px solid #cf222e; color: #cf222e; }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⛰️</div>
+  <div>
+    <h1>경사하강법 — 인공지능이 스스로 배우는 방법</h1>
+    <p>1차원 직관 → 2차원 확장 → 머신러닝 적용까지 단계별로 탐구합니다</p>
+  </div>
+</header>
+
+<!-- 진행 표시 -->
+<div id="progress-bar">
+  <div class="step-dot active" id="pd0">
+    <div class="dot">1</div>
+    <div class="label">문제 제기</div>
+  </div>
+  <div class="step-connector" id="pc01"></div>
+  <div class="step-dot" id="pd1">
+    <div class="dot">2</div>
+    <div class="label">y=x² 직관</div>
+  </div>
+  <div class="step-connector" id="pc12"></div>
+  <div class="step-dot" id="pd2">
+    <div class="dot">3</div>
+    <div class="label">탐구 체험</div>
+  </div>
+  <div class="step-connector" id="pc23"></div>
+  <div class="step-dot" id="pd3">
+    <div class="dot">4</div>
+    <div class="label">θ 연결</div>
+  </div>
+  <div class="step-connector" id="pc34"></div>
+  <div class="step-dot" id="pd4">
+    <div class="dot">5</div>
+    <div class="label">직접 계산</div>
+  </div>
+  <div class="step-connector" id="pc45"></div>
+  <div class="step-dot" id="pd5">
+    <div class="dot">6</div>
+    <div class="label">2차원 확장</div>
+  </div>
+  <div class="step-connector" id="pc56"></div>
+  <div class="step-dot" id="pd6">
+    <div class="dot">7</div>
+    <div class="label">머신러닝 적용</div>
+  </div>
+</div>
+
+<main>
+
+<!-- ══════════════════════════════════════════════════
+     STAGE 0 — 문제 제기 (ML 동기)
+═══════════════════════════════════════════════════ -->
+<div class="stage active" id="stage-0">
+
+  <div class="card">
+    <h2>🤖 인공지능은 어떻게 "학습"할까? <span class="tag">Stage 1</span></h2>
+    <p>우리가 키와 몸무게 데이터를 가지고 있다고 해봅시다.<br>
+    AI는 이 데이터를 보고 <strong>"가장 잘 맞는 직선"</strong>을 스스로 찾아내야 합니다.</p>
+    <div class="highlight">
+      💡 핵심 질문: 수백만 개의 가능한 직선 중에서 AI는 <em>어떻게</em> 최적의 직선을 찾을까?
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 직접 직선을 맞춰보세요</h2>
+    <p>아래 슬라이더로 직선의 기울기($\theta_1$)와 절편($\theta_0$)을 바꿔보세요.<br>
+    <strong>오차(비용)가 얼마나 되는지</strong> 실시간으로 확인해보세요.</p>
+
+    <div class="canvas-wrap">
+      <div>
+        <canvas id="c0-data" width="420" height="300"></canvas>
+        <div class="canvas-label">데이터 공간 — 직선이 데이터를 얼마나 잘 통과하나?</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>기울기 $\theta_1$</label>
+        <input type="range" id="s0-slope" min="-0.5" max="2.5" step="0.05" value="0.0">
+        <div class="val" id="v0-slope">0.00</div>
+      </div>
+      <div class="ctrl-group">
+        <label>절편 $\theta_0$</label>
+        <input type="range" id="s0-intercept" min="-0.3" max="1.2" step="0.02" value="0.5">
+        <div class="val" id="v0-intercept">0.50</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-label">현재 비용 J(θ)</div>
+        <div class="stat-val" id="v0-cost">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">최솟값 (최적)</div>
+        <div class="stat-val" id="v0-mincost">—</div>
+      </div>
+    </div>
+
+    <div class="info-box">
+      슬라이더를 움직여 비용을 줄여보세요. 비용이 0에 가까울수록 직선이 데이터에 잘 맞습니다.
+      어느 정도 맞췄다면 <strong>[AI에게 맡기기]</strong>를 눌러 경사하강법과 결과를 비교해보세요!
+    </div>
+
+    <div class="btn-row">
+      <button type="button" class="btn btn-success" id="btn-vs-ai">AI에게 맡기기 ▶</button>
+      <button type="button" class="btn btn-secondary hidden" id="btn-vs-clear">AI 선 지우기 ✕</button>
+    </div>
+    <div class="info-box hidden" id="vs-inline-result"></div>
+
+    <div class="math-block">
+      $$J(\theta_0, \theta_1) = \frac{1}{2m}\sum_{i=1}^{m}\left(\hat{y}^{(i)} - y^{(i)}\right)^2$$
+      <p class="math-caption">비용함수(Cost Function) — 예측값과 실제값의 차이를 수치화</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>💡 발견 — 당신이 한 것이 이미 경사하강법입니다</h2>
+    <p>슬라이더를 조정할 때 무의식적으로 이런 판단을 했을 겁니다:</p>
+    <div class="highlight">
+      직선이 데이터보다 <strong>아래</strong>에 있다 → 절편을 <strong>올렸다</strong><br>
+      직선의 기울기가 너무 <strong>작다</strong> → 기울기를 <strong>올렸다</strong><br><br>
+      이것이 바로 <strong>비용의 기울기(경사)를 보고 파라미터를 조정</strong>하는 것입니다.
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">🤔 어느 방향으로 움직여야 할지 어떻게 알았나요? (클릭해서 확인)</span>
+        <span class="quiz-toggle">▼ 확인</span>
+      </div>
+      <div class="quiz-a">
+        비용이 <em>증가하는 방향</em>의 <strong>반대</strong>로 움직였습니다.<br>
+        수식으로는: 기울기 $\dfrac{\partial J}{\partial \theta} > 0$ 이면 θ를 줄이고,
+        기울기 $< 0$ 이면 θ를 늘립니다.<br><br>
+        경사하강법은 이 판단을 <strong>자동·반복</strong>으로 수행합니다.
+      </div>
+    </div>
+    <div class="info-box good">
+      ✅ 비용을 수식으로 정의하고, 기울기의 반대 방향으로 조금씩 움직이면 — AI가 스스로 최적값을 찾아냅니다.
+    </div>
+  </div>
+
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STAGE 1 — 1D 직관
+═══════════════════════════════════════════════════ -->
+<div class="stage" id="stage-1">
+
+  <!-- ① x/y 직관 단계 -->
+  <div class="card">
+    <h2>🎯 먼저 y = x² 그래프로 직관 익히기 <span class="tag">Stage 2</span></h2>
+    <p>복잡한 파라미터 이야기 전에, 친숙한 <strong>y = x²</strong> 포물선으로 시작합니다.<br>
+    어떤 x에서 출발해도 y의 최솟값(y = 0, x = 0)을 자동으로 찾아가는 방법이 있을까요?</p>
+
+    <div class="highlight">
+      💡 핵심 아이디어: <strong>"지금 서 있는 x에서 그래프의 기울기를 보고,
+      y가 작아지는 방향으로 x를 조금 이동한다."</strong>
+    </div>
+
+    <div class="substep-indicator" id="sub1-dots">
+      <div class="sub-dot active"></div>
+      <div class="sub-dot"></div>
+      <div class="sub-dot"></div>
+      <div class="sub-dot"></div>
+      <div class="sub-dot"></div>
+    </div>
+    <div id="sub1-text" class="sub1-text"></div>
+  </div>
+
+  <div class="card">
+    <div class="canvas-wrap">
+      <div>
+        <canvas id="c1-curve" width="480" height="320"></canvas>
+        <div class="canvas-label">y = x² 그래프 — x 위치에 따른 y값 변화 (빨간 점: 현재 위치, 주황 점선: 접선)</div>
+      </div>
+    </div>
+
+    <div class="math-block">
+      <span id="math1-update">$$x \;\leftarrow\; x \;-\; \alpha \;\cdot\; f'(x)$$</span>
+      <p class="math-caption">
+        $\alpha$ = 학습률 (한 번에 움직이는 보폭), &nbsp;
+        $f'(x) = 2x$ (현재 위치 x에서의 기울기)
+      </p>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>학습률 $\alpha$ (보폭)</label>
+        <input type="range" id="s1-lr" min="0.05" max="0.95" step="0.05" value="0.3">
+        <div class="val" id="v1-lr">0.30</div>
+      </div>
+      <div class="ctrl-group">
+        <label>시작점 $x_0$</label>
+        <input type="range" id="s1-init" min="-4" max="4" step="0.5" value="3.5">
+        <div class="val" id="v1-init">3.5</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-label">현재 x</div>
+        <div class="stat-val" id="v1-theta">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">현재 y = x²</div>
+        <div class="stat-val" id="v1-cost">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">반복 횟수</div>
+        <div class="stat-val" id="v1-iter">0</div>
+      </div>
+    </div>
+
+    <div class="grad-indicator">
+      <div>
+        <div class="grad-label">현재 기울기 f'(x) = 2x</div>
+        <div class="grad-val" id="v1-grad">—</div>
+      </div>
+      <div class="grad-dir grad-dir-text grad-dir-muted" id="v1-dir">한 걸음을 눌러보세요</div>
+    </div>
+
+    <div class="btn-row">
+      <button type="button" class="btn btn-primary" id="btn1-step">한 걸음 내딛기 →</button>
+      <button type="button" class="btn btn-success" id="btn1-run">자동 실행 ▶</button>
+      <button type="button" class="btn btn-secondary" id="btn1-reset">처음으로 ↺</button>
+    </div>
+
+    <div class="info-box warn hidden" id="warn1-lr">
+      ⚠️ 학습률(보폭)이 너무 큽니다! 최솟값을 지나쳐 발산할 수 있어요.
+    </div>
+    <div class="info-box good hidden" id="good1-conv">
+      ✅ 수렴했습니다! x ≈ 0 (y 최솟값)에 도달했어요.
+    </div>
+  </div>
+
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STAGE-EXPLORE — 탐구 체험
+═══════════════════════════════════════════════════ -->
+<div class="stage" id="stage-explore">
+
+  <!-- 탐구 ① 학습률 레이스 -->
+  <div class="card">
+    <h2>🏎️ 학습률 레이스 <span class="tag">탐구</span></h2>
+    <p>α = 0.05(느림), 0.30(적당), 0.90(큰 보폭) 세 가지가 같은 시작점에서 동시에 출발합니다.<br>
+    어느 α가 가장 빠르게 최솟값(x = 0)에 도달하는지 직접 확인해보세요!</p>
+
+    <div class="race-legend">
+      <span><span class="race-swatch" style="background:#8c959f"></span>α = 0.05 (느린 보폭)</span>
+      <span><span class="race-swatch" style="background:#0969da"></span>α = 0.30 (적당)</span>
+      <span><span class="race-swatch" style="background:#cf222e"></span>α = 0.90 (큰 보폭)</span>
+    </div>
+
+    <div class="canvas-wrap">
+      <div>
+        <canvas id="c1-race" width="480" height="300"></canvas>
+        <div class="canvas-label">y = x² — 세 학습률의 수렴 경로 비교</div>
+      </div>
+    </div>
+
+    <div class="race-stats">
+      <div class="race-stat"><div class="rs-label">α = 0.05 현재 x</div><div class="rs-val" id="race-x0" style="color:#8c959f">3.500</div></div>
+      <div class="race-stat"><div class="rs-label">α = 0.30 현재 x</div><div class="rs-val" id="race-x1" style="color:#0969da">3.500</div></div>
+      <div class="race-stat"><div class="rs-label">α = 0.90 현재 x</div><div class="rs-val" id="race-x2" style="color:#cf222e">3.500</div></div>
+    </div>
+    <div class="stat-row" style="justify-content:center; margin-top:0">
+      <div class="stat"><div class="stat-label">공통 반복 횟수</div><div class="stat-val" id="race-iter">0</div></div>
+    </div>
+
+    <div class="btn-row">
+      <button type="button" class="btn btn-primary"   id="btn-race-start">학습률 레이스 시작 ▶</button>
+      <button type="button" class="btn btn-secondary" id="btn-race-reset">초기화 ↺</button>
+    </div>
+    <div class="info-box hidden" id="race-msg"></div>
+  </div>
+
+  <!-- 탐구 ② 다음 이동 방향 예측하기 -->
+  <div class="card">
+    <h2>🎯 다음 이동 방향 예측하기 <span class="tag">탐구</span></h2>
+    <p>랜덤한 x 위치에서 시작합니다. 경사하강법이 다음 스텝에서 어느 방향으로 이동할지 예측해보세요!</p>
+
+    <div class="canvas-wrap">
+      <div>
+        <canvas id="c1-predict" width="480" height="280"></canvas>
+        <div class="canvas-label">y = x² — 빨간 점이 현재 위치 (α = 0.3)</div>
+      </div>
+    </div>
+
+    <div class="highlight" id="predict-question" style="font-size:1rem; margin:12px 0"></div>
+
+    <div class="btn-row" id="predict-choice-btns">
+      <button type="button" class="btn btn-primary"   onclick="answerPredict('left')">← 왼쪽으로 이동</button>
+      <button type="button" class="btn btn-danger"    onclick="answerPredict('right')">오른쪽으로 이동 →</button>
+    </div>
+
+    <div class="predict-feedback" id="predict-feedback" style="display:none"></div>
+
+    <div class="btn-row" id="predict-extra-btns" style="display:none">
+      <button type="button" class="btn btn-secondary" onclick="showPredictStep()">실제 한 걸음 보기 👁️</button>
+      <button type="button" class="btn btn-secondary" onclick="newPredictQuestion()">다른 시작점 🔀</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STAGE-CONNECT — x→θ 연결 + 개념 정리
+═══════════════════════════════════════════════════ -->
+<div class="stage" id="stage-connect">
+
+  <div class="card">
+    <h2>🔗 이제 머신러닝의 언어로 옮겨봅시다</h2>
+
+    <div class="essence-box">
+      <strong>경사하강법의 본질은</strong><br>
+      현재 위치의 기울기를 보고,<br>
+      <strong>함수값이 작아지는 방향으로 입력값을 조금 옮기는 것이다.</strong>
+    </div>
+
+    <p>지금은 이해를 돕기 위해 <strong>x</strong>라는 위치를 움직였지만,<br>
+    머신러닝에서는 우리가 조정하려는 값이 x가 아니라 <strong>파라미터 θ</strong>이고,<br>
+    줄이려는 함수는 y가 아니라 <strong>비용함수 J(θ)</strong>입니다.<br>
+    따라서 같은 원리를 다음과 같이 표현합니다.</p>
+
+    <div class="notation-grid">
+      <div class="notation-card">
+        <div class="nc-title">📐 직관 단계 — x / y 표기</div>
+        <div class="nc-row">
+          위치: <strong>x</strong><br>
+          함수: <strong>y = f(x) = x²</strong><br>
+          기울기: <strong>f'(x) = 2x</strong><br>
+          업데이트: <strong>x ← x − α · f'(x)</strong>
+        </div>
+      </div>
+      <div class="notation-card ml">
+        <div class="nc-title">🤖 머신러닝 — θ / J(θ) 표기</div>
+        <div class="nc-row">
+          파라미터: <strong>θ</strong><br>
+          비용함수: <strong>J(θ)</strong><br>
+          기울기: <strong>dJ/dθ</strong><br>
+          업데이트: <strong>θ ← θ − α · dJ/dθ</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="math-block">
+      $$\underbrace{\theta}_{\text{파라미터(x에 해당)}} \;\leftarrow\; \theta \;-\; \underbrace{\alpha}_{\text{보폭}} \;\cdot\; \underbrace{\dfrac{dJ}{d\theta}}_{\text{기울기(f'(x)에 해당)}}$$
+      <p class="math-caption">x → θ, &nbsp; f'(x) → dJ/dθ, &nbsp; y → J(θ) 로 대응됩니다</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📚 핵심 개념 정리 <span class="tag">확인 퀴즈</span></h2>
+    <div class="stat-row">
+      <div class="stat stat-flex">
+        <div class="stat-label">기울기 (Gradient)</div>
+        <div class="stat-sub">어느 방향으로 갈지</div>
+      </div>
+      <div class="stat stat-flex">
+        <div class="stat-label">학습률 α (보폭)</div>
+        <div class="stat-sub">얼마나 크게 이동할지</div>
+      </div>
+      <div class="stat stat-flex">
+        <div class="stat-label">반복 (Iteration)</div>
+        <div class="stat-sub">조금씩 개선되어 수렴</div>
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">Q1. 최솟값에 가까워질수록 이동량이 왜 자동으로 줄어드나요?</span>
+        <span class="quiz-toggle">▼ 정답</span>
+      </div>
+      <div class="quiz-a">
+        최솟값 근처에서는 <strong>기울기(f'(x) = 2x)가 0에 가까워지기 때문</strong>입니다.<br>
+        $x \leftarrow x - \alpha \cdot f'(x)$ 에서 기울기가 작아지면 이동량도 자동으로 줄어듭니다.<br>
+        θ 표기로 바꿔도 원리는 동일합니다: $\theta \leftarrow \theta - \alpha \cdot \dfrac{dJ}{d\theta}$<br>
+        이것이 경사하강법이 자동으로 "조심스럽게" 수렴하는 이유입니다.
+      </div>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">Q2. 학습률 α(보폭)가 너무 크면 왜 발산하나요? (α를 0.95로 실험해보고 예측해보세요)</span>
+        <span class="quiz-toggle">▼ 정답</span>
+      </div>
+      <div class="quiz-a">
+        보폭이 기울기보다 <strong>훨씬 크면 최솟값을 지나쳐 반대편 더 높은 곳</strong>으로 올라갑니다.<br>
+        거기서 또 기울기 반대 방향으로 크게 이동하면 점점 더 멀어집니다(발산).<br>
+        적절한 α 선택이 딥러닝 실무에서도 핵심 과제입니다.
+      </div>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">Q3. "경사하강법"을 처음 듣는 친구에게 한 문장으로 설명한다면?</span>
+        <span class="quiz-toggle">▼ 예시 답</span>
+      </div>
+      <div class="quiz-a">
+        <em>"산에서 눈을 감고 발 아래 경사만 느껴가며 가장 가파른 내리막 방향으로 한 걸음씩 내려가는 것."</em><br><br>
+        전체 지형을 보지 않아도, 현재 위치의 기울기만으로 최솟값을 찾아갑니다.
+        이 단순한 원리가 ChatGPT·이미지 인식·번역기 모두에 쓰입니다.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STAGE-CALC — 직접 계산해보기
+═══════════════════════════════════════════════════ -->
+<div class="stage" id="stage-calc">
+
+  <div class="card">
+    <h2>✏️ 수식을 직접 계산해보기 <span class="tag">Stage 3</span></h2>
+    <p>경사하강법을 실제로 손으로 계산해봅시다.<br>
+    각 단계의 빈칸을 채우고 <strong>확인</strong>을 눌러 다음 단계로 진행하세요.</p>
+    <div class="highlight">
+      <strong>설정:</strong> 함수 $f(x) = x^2$, &nbsp; 학습률 $\alpha = 0.3$, &nbsp; 시작점 $x = 3.0$
+    </div>
+    <div class="info-box">
+      💡 계산기를 사용해도 좋습니다. 중요한 것은 수식의 의미를 이해하는 것입니다.
+    </div>
+  </div>
+
+  <!-- ── 반복 1 ── -->
+  <div class="card">
+    <div class="iter-header">
+      <span class="iter-badge">반복 1</span>
+      <span class="iter-values">현재 위치: $x = 3.0$</span>
+    </div>
+
+    <div class="calc-step" id="cs-0-0">
+      <div class="calc-step-title">Step 1 &nbsp;—&nbsp; 기울기 계산</div>
+      <div class="calc-row">
+        <span>$f'(x) \;=\; 2x \;=\; 2 \times$</span>
+        <input type="number" class="blank-input given" value="3.0" readonly tabindex="-1">
+        <span>$=$</span>
+        <input type="number" class="blank-input" id="b-0-0" placeholder="?">
+      </div>
+      <div class="calc-hint">힌트: $\dfrac{d}{dx}x^2 = 2x$</div>
+      <div class="calc-feedback" id="fb-0-0"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm" onclick="checkCalc('0-0', 6.0, 0.05)">확인 ✓</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHint('0-0', 6.0)">정답 보기</button>
+      </div>
+    </div>
+
+    <div class="calc-step locked" id="cs-0-1">
+      <div class="calc-step-title">Step 2 &nbsp;—&nbsp; 파라미터 업데이트</div>
+      <div class="calc-row">
+        <span>$x_{\text{new}} = x - \alpha \times f'(x)$</span>
+      </div>
+      <div class="calc-row">
+        <span>$= \;$</span>
+        <input type="number" class="blank-input given" value="3.0" readonly tabindex="-1">
+        <span>$- \;$</span>
+        <input type="number" class="blank-input given" value="0.3" readonly tabindex="-1">
+        <span>$\times$</span>
+        <input type="number" class="blank-input given" value="6.0" readonly tabindex="-1">
+        <span>$=$</span>
+        <input type="number" class="blank-input" id="b-0-1" placeholder="?">
+      </div>
+      <div class="calc-hint">힌트: 3.0 − 0.3 × 6.0 = ?</div>
+      <div class="calc-feedback" id="fb-0-1"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm" onclick="checkCalc('0-1', 1.2, 0.05)">확인 ✓</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHint('0-1', 1.2)">정답 보기</button>
+      </div>
+    </div>
+
+    <div class="calc-step locked" id="cs-0-2">
+      <div class="calc-step-title">Step 3 &nbsp;—&nbsp; 새 비용 확인</div>
+      <div class="calc-row">
+        <span>$f(x_{\text{new}}) = x_{\text{new}}^2 =$</span>
+        <input type="number" class="blank-input given" value="1.2" readonly tabindex="-1">
+        <span>$^2 =$</span>
+        <input type="number" class="blank-input" id="b-0-2" placeholder="?">
+      </div>
+      <div class="calc-hint">힌트: 1.2 × 1.2 = ?</div>
+      <div class="calc-feedback" id="fb-0-2"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm" onclick="checkCalc('0-2', 1.44, 0.02)">확인 ✓</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHint('0-2', 1.44)">정답 보기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 반복 2 ── -->
+  <div class="card locked" id="calc-card-1">
+    <div class="iter-header">
+      <span class="iter-badge">반복 2</span>
+      <span class="iter-values">현재 위치: $x = 1.2$</span>
+    </div>
+
+    <div class="calc-step" id="cs-1-0">
+      <div class="calc-step-title">Step 1 &nbsp;—&nbsp; 기울기 계산</div>
+      <div class="calc-row">
+        <span>$f'(x) = 2 \times$</span>
+        <input type="number" class="blank-input given" value="1.2" readonly tabindex="-1">
+        <span>$=$</span>
+        <input type="number" class="blank-input" id="b-1-0" placeholder="?">
+      </div>
+      <div class="calc-hint">힌트: 2 × 1.2</div>
+      <div class="calc-feedback" id="fb-1-0"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm" onclick="checkCalc('1-0', 2.4, 0.05)">확인 ✓</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHint('1-0', 2.4)">정답 보기</button>
+      </div>
+    </div>
+
+    <div class="calc-step locked" id="cs-1-1">
+      <div class="calc-step-title">Step 2 &nbsp;—&nbsp; 파라미터 업데이트</div>
+      <div class="calc-row">
+        <span>$x_{\text{new}} =$</span>
+        <input type="number" class="blank-input given" value="1.2" readonly tabindex="-1">
+        <span>$-$</span>
+        <input type="number" class="blank-input given" value="0.3" readonly tabindex="-1">
+        <span>$\times$</span>
+        <input type="number" class="blank-input given" value="2.4" readonly tabindex="-1">
+        <span>$=$</span>
+        <input type="number" class="blank-input" id="b-1-1" placeholder="?">
+      </div>
+      <div class="calc-hint">힌트: 1.2 − 0.3 × 2.4</div>
+      <div class="calc-feedback" id="fb-1-1"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm" onclick="checkCalc('1-1', 0.48, 0.02)">확인 ✓</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHint('1-1', 0.48)">정답 보기</button>
+      </div>
+    </div>
+
+    <div class="calc-step locked" id="cs-1-2">
+      <div class="calc-step-title">Step 3 &nbsp;—&nbsp; 새 비용 확인</div>
+      <div class="calc-row">
+        <span>$f(x_{\text{new}}) =$</span>
+        <input type="number" class="blank-input given" value="0.48" readonly tabindex="-1">
+        <span>$^2 =$</span>
+        <input type="number" class="blank-input" id="b-1-2" placeholder="?">
+      </div>
+      <div class="calc-hint">힌트: 0.48 × 0.48</div>
+      <div class="calc-feedback" id="fb-1-2"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm" onclick="checkCalc('1-2', 0.2304, 0.005)">확인 ✓</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHint('1-2', 0.2304)">정답 보기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 반복 3 ── -->
+  <div class="card locked" id="calc-card-2">
+    <div class="iter-header">
+      <span class="iter-badge">반복 3</span>
+      <span class="iter-values">현재 위치: $x = 0.48$</span>
+    </div>
+
+    <div class="calc-step" id="cs-2-0">
+      <div class="calc-step-title">Step 1 &nbsp;—&nbsp; 기울기 계산</div>
+      <div class="calc-row">
+        <span>$f'(x) = 2 \times$</span>
+        <input type="number" class="blank-input given" value="0.48" readonly tabindex="-1">
+        <span>$=$</span>
+        <input type="number" class="blank-input" id="b-2-0" placeholder="?">
+      </div>
+      <div class="calc-hint">힌트: 2 × 0.48</div>
+      <div class="calc-feedback" id="fb-2-0"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm" onclick="checkCalc('2-0', 0.96, 0.02)">확인 ✓</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHint('2-0', 0.96)">정답 보기</button>
+      </div>
+    </div>
+
+    <div class="calc-step locked" id="cs-2-1">
+      <div class="calc-step-title">Step 2 &nbsp;—&nbsp; 파라미터 업데이트</div>
+      <div class="calc-row">
+        <span>$x_{\text{new}} =$</span>
+        <input type="number" class="blank-input given" value="0.48" readonly tabindex="-1">
+        <span>$-$</span>
+        <input type="number" class="blank-input given" value="0.3" readonly tabindex="-1">
+        <span>$\times$</span>
+        <input type="number" class="blank-input given" value="0.96" readonly tabindex="-1">
+        <span>$=$</span>
+        <input type="number" class="blank-input" id="b-2-1" placeholder="?">
+      </div>
+      <div class="calc-hint">힌트: 0.48 − 0.3 × 0.96</div>
+      <div class="calc-feedback" id="fb-2-1"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm" onclick="checkCalc('2-1', 0.192, 0.005)">확인 ✓</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHint('2-1', 0.192)">정답 보기</button>
+      </div>
+    </div>
+
+    <div class="calc-step locked" id="cs-2-2">
+      <div class="calc-step-title">Step 3 &nbsp;—&nbsp; 새 비용 확인</div>
+      <div class="calc-row">
+        <span>$f(x_{\text{new}}) =$</span>
+        <input type="number" class="blank-input given" value="0.192" readonly tabindex="-1">
+        <span>$^2 =$</span>
+        <input type="number" class="blank-input" id="b-2-2" placeholder="?">
+      </div>
+      <div class="calc-hint">힌트: 0.192 × 0.192 ≈ 0.0369</div>
+      <div class="calc-feedback" id="fb-2-2"></div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary btn-sm" onclick="checkCalc('2-2', 0.036864, 0.003)">확인 ✓</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="showHint('2-2', 0.036864)">정답 보기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 요약 & 패턴 관찰 ── -->
+  <div class="card locked" id="calc-card-observe">
+    <h2>🔍 패턴 관찰 — 3번의 계산 결과</h2>
+    <table class="calc-summary-table">
+      <thead>
+        <tr>
+          <th>반복</th>
+          <th>x (현재)</th>
+          <th>기울기 f'(x) = 2x</th>
+          <th>x (다음)</th>
+          <th class="highlight-col">f(x) = x²</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td><td>3.0</td><td>6.0</td><td>1.2</td>
+          <td class="highlight-col">1.44</td>
+        </tr>
+        <tr>
+          <td>2</td><td>1.2</td><td>2.4</td><td>0.48</td>
+          <td class="highlight-col">0.2304</td>
+        </tr>
+        <tr>
+          <td>3</td><td>0.48</td><td>0.96</td><td>0.192</td>
+          <td class="highlight-col">0.0369</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">📊 x값이 매 반복마다 얼마나 줄어드나요? 규칙이 있나요?</span>
+        <span class="quiz-toggle">▼ 확인</span>
+      </div>
+      <div class="quiz-a">
+        3.0 → 1.2 → 0.48 → 0.192 — 매번 <strong>0.4배</strong>로 줄어듭니다 (40% 수준으로 감소).<br>
+        이것은 우연이 아닙니다: 갱신 공식 $x \leftarrow x(1 - 2\alpha) = x \times (1 - 0.6) = x \times 0.4$ 이기 때문입니다.<br>
+        α = 0.3 일 때 비율이 0.4로 고정 → 기하급수적으로 감소합니다.
+      </div>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">📉 f(x)는 매 반복마다 얼마나 줄어드나요?</span>
+        <span class="quiz-toggle">▼ 확인</span>
+      </div>
+      <div class="quiz-a">
+        9 → 1.44 → 0.2304 → 0.0369 — 매번 약 <strong>0.16배</strong>(16%)로 줄어듭니다.<br>
+        x가 0.4배 줄면 f(x)=x²는 0.4²=0.16배로 줄어듭니다.<br>
+        값이 <em>기하급수적으로 감소</em>하는 것이 경사하강법의 핵심 특성입니다.
+      </div>
+    </div>
+    <div class="info-box good mt">
+      ✅ 3번만 계산했는데도 f(x)가 9.0 → 0.037로 약 <strong>99% 감소</strong>했습니다!<br>
+      실제 머신러닝에서는 이 과정을 수백~수천 번 반복하여 완전히 수렴시킵니다.
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STAGE 2 — 2D 등고선
+═══════════════════════════════════════════════════ -->
+<div class="stage" id="stage-2">
+
+  <div class="card">
+    <h2>🏔️ 2차원으로 확장 — 3D 비용 곡면 <span class="tag">Stage 3</span></h2>
+    <p>파라미터가 두 개 $(\theta_0, \theta_1)$가 되면 비용함수는 <strong>3D 지형</strong>이 됩니다.<br>
+    봉우리와 계곡이 여러 개 있을 때, 경사하강법은 현재 위치에서<br>
+    <strong>가장 가파르게 내려가는 방향</strong>으로만 이동합니다 — 전체 지형은 보지 못합니다.</p>
+    <div class="highlight">
+      ⚠️ <strong>로컬 미니멈(지역 최솟값)</strong>: 주변보다 낮지만 전체 최솟값은 아닌 지점에 갇힐 수 있습니다.
+      딥러닝에서 이 문제를 극복하는 것이 핵심 과제 중 하나입니다.
+    </div>
+
+    <div class="highlight">
+      $$\theta_0 \leftarrow \theta_0 - \alpha \cdot \frac{\partial J}{\partial \theta_0}$$
+      $$\theta_1 \leftarrow \theta_1 - \alpha \cdot \frac{\partial J}{\partial \theta_1}$$
+      두 파라미터를 <strong>동시에</strong> 업데이트합니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="canvas-wrap">
+      <div>
+        <canvas id="c2-surface3d" width="640" height="460"></canvas>
+        <div class="canvas-label">비용 지형 $J(\theta_0, \theta_1)$ — 좌우 드래그로 회전 | 빨간 선: GD 경로</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>학습률 $\alpha$</label>
+        <input type="range" id="s2-lr" min="0.01" max="0.5" step="0.01" value="0.1">
+        <div class="val" id="v2-lr">0.10</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-label">θ₀ (절편)</div>
+        <div class="stat-val" id="v2-t0">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">θ₁ (기울기)</div>
+        <div class="stat-val" id="v2-t1">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">비용 J</div>
+        <div class="stat-val" id="v2-cost">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">반복 횟수</div>
+        <div class="stat-val" id="v2-iter">0</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button type="button" class="btn btn-primary" id="btn2-step">한 걸음 →</button>
+      <button type="button" class="btn btn-success" id="btn2-run">자동 실행 ▶</button>
+      <button type="button" class="btn btn-secondary" id="btn2-reset">처음으로 ↺</button>
+    </div>
+
+    <div class="info-box mt">
+      3D 곡면 위의 <strong class="accent-red">빨간 점</strong>이 현재 파라미터 위치입니다.
+      경사하강법이 그릇 바닥(최솟값)을 향해 내려가는 경로가 빨간 선으로 표시됩니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🧪 출발점 실험 — 로컬 미니멈 체험 <span class="tag">탐구</span></h2>
+    <p>출발점에 따라 경사하강법이 도달하는 최솟값이 달라질 수 있습니다.<br>
+    아래 버튼으로 다양한 출발점을 시험해보세요.</p>
+    <div class="startpos-btns">
+      <button type="button" class="btn btn-secondary" onclick="setStartPos(0.80, 1.15)">🔴 봉우리 A 정상에서 출발</button>
+      <button type="button" class="btn btn-secondary" onclick="setStartPos(-0.30, 1.60)">🟠 봉우리 B 근처에서 출발</button>
+      <button type="button" class="btn btn-secondary" onclick="setStartPos(0.50, 0.25)">🟡 중간 평지에서 출발</button>
+    </div>
+    <div class="info-box mt">
+      출발 후 "자동 실행"을 눌러 어디에 수렴하는지 관찰하세요.
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">🤔 출발점마다 도달하는 최솟값이 다를 수 있는 이유는? (생각해보고 클릭)</span>
+        <span class="quiz-toggle">▼ 정답</span>
+      </div>
+      <div class="quiz-a">
+        이것이 <strong>로컬 미니멈(지역 최솟값)</strong> 문제입니다.<br>
+        경사하강법은 <em>현재 위치 주변만</em> 보고 내리막 방향으로 이동하기 때문에,
+        전체 최솟값(글로벌 미니멈)이 아니라 가장 가까운 계곡에 갇힐 수 있습니다.<br><br>
+        <strong>실제 딥러닝에서의 해결 방법:</strong><br>
+        • 여러 출발점에서 시작해 가장 좋은 결과 선택<br>
+        • 모멘텀(관성) 추가 — 작은 언덕을 넘어 더 좋은 계곡으로<br>
+        • Adam, RMSProp 등 개선된 최적화 알고리즘 사용
+      </div>
+    </div>
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">Q. 실제 딥러닝에서는 수백만 개의 파라미터가 있습니다. 이 경우 로컬 미니멈이 더 심각할까요, 덜 심각할까요?</span>
+        <span class="quiz-toggle">▼ 정답</span>
+      </div>
+      <div class="quiz-a">
+        놀랍게도 <strong>덜 심각</strong>합니다.<br>
+        고차원 공간에서는 모든 방향이 동시에 극솟값이 되려면 각 방향마다 기울기가 0이어야 합니다.
+        파라미터 수가 많을수록 이런 "완전한 로컬 미니멈"은 극히 드뭅니다.<br>
+        대신 어떤 방향으로든 빠져나갈 수 있는 <em>안장점(saddle point)</em>이 더 많습니다.
+        딥러닝에서는 이 안장점이 오히려 더 큰 도전입니다.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STAGE 3 — ML 적용 / 결론
+═══════════════════════════════════════════════════ -->
+<div class="stage" id="stage-3">
+
+  <div class="card">
+    <h2>🏆 머신러닝에서의 경사하강법 <span class="tag">Stage 4</span></h2>
+    <p>처음 보았던 데이터로 돌아옵시다.<br>
+    경사하강법이 <strong>자동으로</strong> 최적의 직선을 찾아가는 과정을 보겠습니다.</p>
+  </div>
+
+  <div class="card">
+    <div class="compare-grid">
+      <div>
+        <canvas id="c3-data" width="380" height="280"></canvas>
+        <div class="canvas-label">데이터 공간 — 직선이 수렴하는 과정</div>
+      </div>
+      <div>
+        <canvas id="c3-contour" width="380" height="280"></canvas>
+        <div class="canvas-label">파라미터 공간 — 등고선에서의 경로</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-label">학습 반복 횟수</div>
+        <div class="stat-val" id="v3-iter">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">현재 비용</div>
+        <div class="stat-val" id="v3-cost">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">최종 기울기 θ₁</div>
+        <div class="stat-val" id="v3-t1">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">최종 절편 θ₀</div>
+        <div class="stat-val" id="v3-t0">—</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button type="button" class="btn btn-success" id="btn3-run">학습 시작 ▶</button>
+      <button type="button" class="btn btn-secondary" id="btn3-reset">초기화 ↺</button>
+    </div>
+
+    <div class="cost-history-wrap">
+      <canvas id="c3-cost-history" width="740" height="160" class="cost-history-canvas"></canvas>
+      <div class="canvas-label">학습 곡선 (Learning Curve) — 반복할수록 비용이 줄어드는 것을 확인하세요</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📝 정리 — 경사하강법이란?</h2>
+
+    <div class="highlight">
+      경사하강법은 비용함수의 <strong>기울기(경사)</strong>를 이용해 파라미터를 반복적으로 업데이트하여
+      비용함수의 <strong>최솟값</strong>을 찾는 최적화 알고리즘입니다.
+    </div>
+
+    <div class="section-block">
+      <strong class="accent-blue">핵심 개념 3가지</strong>
+      <ul class="section-list">
+        <li><strong>비용함수 J(θ):</strong> 예측이 얼마나 틀렸는지 수치화한 값. 이걸 최소로 만들어야 합니다.</li>
+        <li><strong>그래디언트 (기울기):</strong> 현재 위치에서 비용이 가장 빠르게 증가하는 방향. 그 반대로 이동합니다.</li>
+        <li><strong>학습률 α:</strong> 한 번에 얼마나 이동할지 결정. 너무 크면 발산, 너무 작으면 느립니다.</li>
+      </ul>
+    </div>
+
+    <div class="math-block">
+      $$\theta \leftarrow \theta - \alpha \cdot \nabla J(\theta)$$
+      <p class="math-caption">일반형: θ를 그래디언트의 반대 방향으로 α만큼 이동</p>
+    </div>
+
+    <div class="section-block-top">
+      <strong class="accent-blue">머신러닝에서 왜 중요한가?</strong>
+      <ul class="section-list">
+        <li>신경망(딥러닝)도 수백만 개의 파라미터를 경사하강법으로 학습합니다.</li>
+        <li>ChatGPT, 이미지 인식, 번역기 — 모두 경사하강법 계열 알고리즘으로 학습됩니다.</li>
+        <li>학습률, 초기값, 반복 횟수를 잘 설정하는 것이 AI 개발자의 핵심 능력입니다.</li>
+      </ul>
+    </div>
+
+    <div class="info-box good mt">
+      🎉 수고했습니다! 이제 경사하강법의 직관과 원리를 이해했습니다.
+      실제 딥러닝에서는 이 방법을 더 발전시킨 Adam, RMSProp 등을 사용합니다.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>✍️ 내재화 — 스스로 정리해보기 <span class="tag">최종 퀴즈</span></h2>
+    <p>학습한 내용을 자신의 말로 설명할 수 있어야 진짜 이해한 것입니다.<br>
+    각 질문을 먼저 생각해보고 클릭해서 확인하세요.</p>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">Q1. 경사하강법에서 "기울기(그래디언트)"가 하는 역할을 한 문장으로 설명하세요.</span>
+        <span class="quiz-toggle">▼ 예시 답</span>
+      </div>
+      <div class="quiz-a">
+        <strong>현재 위치에서 비용이 가장 빠르게 증가하는 방향</strong>을 알려줘서,
+        그 <em>반대 방향</em>으로 이동하게 합니다.<br><br>
+        기울기가 양수(+)이면 오른쪽이 높다 → 왼쪽으로 이동<br>
+        기울기가 음수(-)이면 왼쪽이 높다 → 오른쪽으로 이동<br>
+        기울기가 0이면 최솟값 도달 → 멈춤
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">Q2. 학습률(α)을 0.001로 설정했을 때와 10으로 설정했을 때 각각 어떤 문제가 생길까요?</span>
+        <span class="quiz-toggle">▼ 예시 답</span>
+      </div>
+      <div class="quiz-a">
+        <strong>α = 0.001 (너무 작음):</strong> 한 번 이동량이 매우 적어 수천~수만 번 반복해야 합니다.
+        학습 시간이 매우 길어집니다.<br><br>
+        <strong>α = 10 (너무 큼):</strong> 최솟값을 훌쩍 지나쳐 반대편으로 이동하고,
+        거기서 또 크게 이동하여 비용이 점점 커지는 <em>발산</em>이 일어납니다.<br><br>
+        적절한 α는 보통 0.001 ~ 0.1 사이에서 실험으로 찾습니다.
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">Q3. ChatGPT(GPT-4)는 약 1조 개의 파라미터를 가집니다. 경사하강법으로 이 파라미터들을 어떻게 학습할까요?</span>
+        <span class="quiz-toggle">▼ 해설</span>
+      </div>
+      <div class="quiz-a">
+        원리는 동일합니다 — 각 파라미터에 대해 비용함수의 기울기를 계산하고,
+        기울기 반대 방향으로 조금씩 이동합니다.<br><br>
+        <strong>차이점:</strong><br>
+        • <strong>역전파(Backpropagation):</strong> 수조 개의 기울기를 효율적으로 계산하는 알고리즘<br>
+        • <strong>미니배치(Mini-batch):</strong> 전체 데이터 대신 일부(수백~수천 개)만 쓰는 확률적 경사하강법<br>
+        • <strong>Adam 옵티마이저:</strong> 각 파라미터마다 적응형 학습률을 사용하는 개선 버전<br><br>
+        수백 개의 GPU가 수주~수개월 동안 이 과정을 반복하여 GPT를 학습합니다.
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggleQuiz(this)">
+        <span class="qt">Q4. 이 수업에서 가장 인상 깊었던 개념은 무엇이고, 왜 그랬나요? (자유롭게 생각해보세요)</span>
+        <span class="quiz-toggle">▼ 예시 생각</span>
+      </div>
+      <div class="quiz-a">
+        정해진 답이 없습니다. 다음 중 하나라도 생각해봤다면 훌륭합니다:<br><br>
+        • <em>"전체 지형을 보지 않고도 현재 기울기만으로 최솟값을 찾아간다"</em>는 단순함이 인상적<br>
+        • 산에서 길을 잃었을 때 경사만 따라 내려가면 마을에 닿는 것처럼, 직관적으로 이해되는 알고리즘<br>
+        • 학습률 하나의 숫자가 AI의 수렴 여부를 결정한다는 민감성<br>
+        • ChatGPT 같은 거대 AI도 결국 이 단순한 원리의 반복이라는 사실<br><br>
+        <strong>경사하강법은 현대 AI의 심장</strong>입니다. 이 원리를 이해한 것이 AI를 공부하는 첫걸음입니다.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</main>
+
+<!-- 네비게이션 바 -->
+<div id="nav-bar">
+  <div class="stage-title" id="nav-stage-title">Stage 1 / 5 — 문제 제기</div>
+  <div class="nav-btns">
+    <button type="button" class="btn btn-secondary" id="btn-prev" disabled>← 이전</button>
+    <button type="button" class="btn btn-primary"   id="btn-next">다음 →</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// 공통 데이터 — 키/몸무게 (단순화된 선형 관계)
+// ═══════════════════════════════════════════════════════════════
+const DATA = [
+  {x:155, y:48},{x:158, y:52},{x:160, y:54},{x:163, y:58},
+  {x:165, y:57},{x:168, y:62},{x:170, y:65},{x:172, y:67},
+  {x:175, y:70},{x:177, y:73},{x:180, y:78},{x:162, y:55},
+  {x:167, y:60},{x:173, y:69},{x:159, y:50},{x:176, y:74},
+];
+
+// 정규화: x → [0,1] 범위로 (그래디언트 계산 안정화)
+const xArr = DATA.map(d=>d.x), yArr = DATA.map(d=>d.y);
+const xMin=Math.min(...xArr), xMax=Math.max(...xArr);
+const yMin=Math.min(...yArr), yMax=Math.max(...yArr);
+const xNorm = xArr.map(x=>(x-xMin)/(xMax-xMin));
+const yNorm = yArr.map(y=>(y-yMin)/(yMax-yMin));
+const m = DATA.length;
+
+function costFn(t0, t1, xs, ys) {
+  let sum = 0;
+  for (let i=0; i<xs.length; i++) {
+    const e = (t0 + t1*xs[i]) - ys[i];
+    sum += e*e;
+  }
+  return sum / (2*m);
+}
+
+function gradients(t0, t1, xs, ys) {
+  let g0=0, g1=0;
+  for (let i=0; i<xs.length; i++) {
+    const e = (t0 + t1*xs[i]) - ys[i];
+    g0 += e;
+    g1 += e * xs[i];
+  }
+  return [g0/m, g1/m];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 단계 관리
+// ═══════════════════════════════════════════════════════════════
+const STAGES = ['stage-0','stage-1','stage-explore','stage-connect','stage-calc','stage-2','stage-3'];
+const STAGE_TITLES = [
+  'Stage 1 / 7 — 문제 제기',
+  'Stage 2 / 7 — y=x² 직관',
+  'Stage 3 / 7 — 탐구 체험',
+  'Stage 4 / 7 — θ 연결',
+  'Stage 5 / 7 — 직접 계산',
+  'Stage 6 / 7 — 2차원 확장',
+  'Stage 7 / 7 — 머신러닝 적용',
+];
+let curStage = 0;
+
+function gotoStage(idx) {
+  document.getElementById(STAGES[curStage]).classList.remove('active');
+  curStage = idx;
+  document.getElementById(STAGES[curStage]).classList.add('active');
+  document.getElementById('nav-stage-title').textContent = STAGE_TITLES[curStage];
+  document.getElementById('btn-prev').disabled = curStage === 0;
+  document.getElementById('btn-next').disabled = curStage === STAGES.length - 1;
+  document.getElementById('btn-next').textContent = curStage === STAGES.length-1 ? '완료 ✓' : '다음 →';
+
+  // 진행 표시 업데이트
+  for (let i=0; i<7; i++) {
+    const pd = document.getElementById('pd'+i);
+    pd.classList.remove('active','done');
+    if (i < curStage) pd.classList.add('done');
+    else if (i === curStage) pd.classList.add('active');
+    if (i < 6) {
+      const pc = document.getElementById('pc'+i+(i+1));
+      pc.classList.toggle('done-line', i < curStage);
+    }
+  }
+
+  // 해당 스테이지 초기화
+  if (idx === 1) initStage1();
+  if (idx === 2) initExplore();
+  if (idx === 4) initStageCalc();
+  if (idx === 5) initStage2();
+  if (idx === 6) initStage3();
+
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.getElementById('btn-prev').addEventListener('click', ()=>{ if(curStage>0) gotoStage(curStage-1); });
+document.getElementById('btn-next').addEventListener('click', ()=>{ if(curStage<STAGES.length-1) gotoStage(curStage+1); });
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE 0 — 데이터 스캐터 + 수동 슬라이더
+// ═══════════════════════════════════════════════════════════════
+let s0AiT0 = null, s0AiT1 = null;
+
+(function() {
+  const cv = document.getElementById('c0-data');
+  const ctx = cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const PAD=40;
+
+  // 최솟값 미리 계산 (GD로 수렴 후 값)
+  let bestT0=yNorm[0], bestT1=0.5;
+  for (let iter=0;iter<2000;iter++) {
+    const [g0,g1]=gradients(bestT0,bestT1,xNorm,yNorm);
+    bestT0 -= 0.1*g0; bestT1 -= 0.1*g1;
+  }
+  const minCost = costFn(bestT0, bestT1, xNorm, yNorm);
+  document.getElementById('v0-mincost').textContent = minCost.toFixed(5);
+
+  function draw(slope, intercept) {
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+
+    // 축
+    ctx.strokeStyle='#d0d7de'; ctx.lineWidth=1;
+    ctx.strokeRect(PAD,PAD,W-2*PAD,H-2*PAD);
+
+    const toX = x => PAD + (x-xMin)/(xMax-xMin)*(W-2*PAD);
+    const toY = y => H-PAD - (y-yMin)/(yMax-yMin)*(H-2*PAD);
+
+    // 직선 (slope=θ₁ 정규화 기준 → 실제 단위로 변환)
+    const lineX1=xMin, lineX2=xMax;
+    const x1n=0, x2n=1;
+    const y1n=intercept+slope*x1n;
+    const y2n=intercept+slope*x2n;
+    const y1 = y1n*(yMax-yMin)+yMin;
+    const y2 = y2n*(yMax-yMin)+yMin;
+    ctx.beginPath();
+    ctx.moveTo(toX(lineX1), toY(y1));
+    ctx.lineTo(toX(lineX2), toY(y2));
+    ctx.strokeStyle='#0969da'; ctx.lineWidth=2;
+    ctx.stroke();
+
+    // 오차 선
+    for (let i=0;i<m;i++) {
+      const pred = intercept + slope*xNorm[i];
+      const predY = pred*(yMax-yMin)+yMin;
+      ctx.beginPath();
+      ctx.moveTo(toX(xArr[i]), toY(yArr[i]));
+      ctx.lineTo(toX(xArr[i]), toY(predY));
+      ctx.strokeStyle='rgba(207,34,46,0.35)'; ctx.lineWidth=1.5;
+      ctx.stroke();
+    }
+
+    // 점
+    for (let i=0;i<m;i++) {
+      ctx.beginPath();
+      ctx.arc(toX(xArr[i]), toY(yArr[i]), 5, 0, Math.PI*2);
+      ctx.fillStyle='#dc6d1c'; ctx.fill();
+    }
+
+    // AI 직선 (경사하강법 결과 — 초록 점선)
+    if (s0AiT0 !== null) {
+      const ay1 = (s0AiT0 + s0AiT1*0)*(yMax-yMin)+yMin;
+      const ay2 = (s0AiT0 + s0AiT1*1)*(yMax-yMin)+yMin;
+      ctx.beginPath();
+      ctx.moveTo(toX(lineX1), toY(ay1));
+      ctx.lineTo(toX(lineX2), toY(ay2));
+      ctx.strokeStyle='#1a7f37'; ctx.lineWidth=2.5;
+      ctx.setLineDash([8,5]); ctx.stroke(); ctx.setLineDash([]);
+      // 범례
+      ctx.font='11px sans-serif'; ctx.textAlign='left';
+      ctx.strokeStyle='#0969da'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(PAD+6,PAD+10); ctx.lineTo(PAD+22,PAD+10); ctx.stroke();
+      ctx.fillStyle='#0969da'; ctx.fillText('나', PAD+26, PAD+14);
+      ctx.strokeStyle='#1a7f37'; ctx.lineWidth=2;
+      ctx.setLineDash([8,5]);
+      ctx.beginPath(); ctx.moveTo(PAD+6,PAD+26); ctx.lineTo(PAD+22,PAD+26); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#1a7f37'; ctx.fillText('AI', PAD+26, PAD+30);
+    }
+
+    // 축 라벨
+    ctx.fillStyle='#8c959f'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('키 (cm)', W/2, H-6);
+    ctx.save(); ctx.translate(12, H/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('몸무게 (kg)', 0, 0); ctx.restore();
+  }
+
+  function update() {
+    const slopeNorm = parseFloat(document.getElementById('s0-slope').value);
+    const interNorm = parseFloat(document.getElementById('s0-intercept').value);
+    document.getElementById('v0-slope').textContent = slopeNorm.toFixed(2);
+    document.getElementById('v0-intercept').textContent = interNorm.toFixed(2);
+    draw(slopeNorm, interNorm);
+    const cost = costFn(interNorm, slopeNorm, xNorm, yNorm);
+    document.getElementById('v0-cost').textContent = cost.toFixed(5);
+  }
+
+  document.getElementById('s0-slope').addEventListener('input', update);
+  document.getElementById('s0-intercept').addEventListener('input', update);
+  update();
+  window.s0Update = update;
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE 1 — 1D 경사하강법
+// ═══════════════════════════════════════════════════════════════
+const SUB1_TEXTS = [
+  'y = x² 그래프를 봅시다. 이 포물선의 최솟값은 x = 0, y = 0 입니다. 하지만 AI는 이 사실을 미리 알 수 없습니다!',
+  '어떤 x에서든 <strong>기울기(미분값) f\'(x) = 2x</strong>를 계산할 수 있습니다. 양수면 오른쪽이 더 높고, 음수면 왼쪽이 더 높다는 뜻입니다.',
+  '"한 걸음 내딛기"를 눌러보세요. 기울기가 양수 → x를 왼쪽으로, 음수 → x를 오른쪽으로 이동합니다. $x_{\\text{new}} = x - \\alpha \\cdot f\'(x)$',
+  '학습률 $\\alpha$는 <strong>한 번에 움직이는 보폭</strong>입니다. 너무 작으면 느리고, 너무 크면 최솟값을 지나쳐 발산합니다!',
+  '✅ 수렴 완료! x ≈ 0에 도달했어요. 다음 탭에서 이 원리를 탐구하고 직접 계산해볼 수 있습니다.',
+];
+let sub1Step = 0;
+
+function initStage1() {
+  sub1Step = 0;
+  updateSub1();
+  resetStage1();
+}
+
+function initExplore() {
+  resetRace();
+  newPredictQuestion();
+}
+
+function updateSub1() {
+  const dots = document.querySelectorAll('#sub1-dots .sub-dot');
+  dots.forEach((d,i) => {
+    d.classList.remove('active','done');
+    if (i < sub1Step) d.classList.add('done');
+    else if (i === sub1Step) d.classList.add('active');
+  });
+  document.getElementById('sub1-text').innerHTML = SUB1_TEXTS[sub1Step];
+  if (window.renderMathInElement) {
+    renderMathInElement(document.getElementById('sub1-text'), {
+      delimiters:[{left:'$',right:'$',display:false},{left:'$$',right:'$$',display:true}]
+    });
+  }
+}
+
+let s1theta = 3.5, s1lr = 0.3, s1iter = 0, s1running = false, s1rafId = null;
+
+function resetStage1() {
+  s1theta = parseFloat(document.getElementById('s1-init').value);
+  s1iter = 0;
+  s1running = false;
+  clearInterval(s1rafId);
+  s1rafId = null;
+  document.getElementById('btn1-run').textContent = '자동 실행 ▶';
+  document.getElementById('warn1-lr').classList.add('hidden');
+  document.getElementById('good1-conv').classList.add('hidden');
+  drawStage1();
+  updateStage1Stats();
+}
+
+function drawStage1() {
+  const cv = document.getElementById('c1-curve');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const PAD=50;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+
+  const tMin=-5, tMax=5;
+  const jMin=0, jMax=25;
+
+  const tx = t => PAD + (t-tMin)/(tMax-tMin)*(W-2*PAD);
+  const ty = j => H-PAD - (j-jMin)/(jMax-jMin)*(H-2*PAD);
+
+  // 격자
+  ctx.strokeStyle='#eaeef2'; ctx.lineWidth=1;
+  for (let t=-4;t<=4;t+=2) {
+    ctx.beginPath(); ctx.moveTo(tx(t),PAD); ctx.lineTo(tx(t),H-PAD); ctx.stroke();
+  }
+  for (let j=0;j<=25;j+=5) {
+    ctx.beginPath(); ctx.moveTo(PAD,ty(j)); ctx.lineTo(W-PAD,ty(j)); ctx.stroke();
+  }
+
+  // 축
+  ctx.strokeStyle='#d0d7de'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(PAD,H-PAD); ctx.lineTo(W-PAD,H-PAD); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD,PAD); ctx.lineTo(PAD,H-PAD); ctx.stroke();
+
+  // 포물선
+  ctx.beginPath();
+  for (let t=tMin; t<=tMax; t+=0.05) {
+    const j=t*t;
+    if (j>jMax) continue;
+    const px=tx(t), py=ty(j);
+    if (t===tMin || j>jMax-0.1) ctx.moveTo(px,py);
+    else ctx.lineTo(px,py);
+  }
+  ctx.strokeStyle='#0969da'; ctx.lineWidth=2.5;
+  ctx.stroke();
+
+  // 접선
+  const grad = 2*s1theta;
+  const jAt  = s1theta*s1theta;
+  const slope = grad;
+  const t1l = s1theta - 1.5, t1r = s1theta + 1.5;
+  const j1l = jAt + slope*(t1l-s1theta), j1r = jAt + slope*(t1r-s1theta);
+  ctx.beginPath();
+  ctx.moveTo(tx(t1l), ty(j1l));
+  ctx.lineTo(tx(t1r), ty(j1r));
+  ctx.strokeStyle='#bc4c00'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // 현재 점
+  if (jAt <= jMax) {
+    ctx.beginPath();
+    ctx.arc(tx(s1theta), ty(jAt), 8, 0, Math.PI*2);
+    ctx.fillStyle='#cf222e'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+  }
+
+  // 화살표 (다음 스텝 방향)
+  const s1lr_val = parseFloat(document.getElementById('s1-lr').value);
+  const nextTheta = s1theta - s1lr_val * grad;
+  if (Math.abs(nextTheta) < 5 && nextTheta*nextTheta < jMax) {
+    ctx.beginPath();
+    ctx.moveTo(tx(s1theta), ty(jAt));
+    ctx.lineTo(tx(nextTheta), ty(nextTheta*nextTheta));
+    ctx.strokeStyle='rgba(9,105,218,0.5)'; ctx.lineWidth=1.5;
+    ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  // 라벨
+  ctx.fillStyle='#8c959f'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('x', W/2, H-8);
+  ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('y = x²', 0, 0); ctx.restore();
+
+  // x값 표시
+  ctx.fillStyle='#cf222e'; ctx.font='bold 12px sans-serif';
+  ctx.fillText('x = '+(s1theta.toFixed(2)), tx(s1theta), ty(jAt)-14);
+}
+
+function updateStage1Stats() {
+  document.getElementById('v1-theta').textContent = s1theta.toFixed(3);
+  document.getElementById('v1-cost').textContent  = (s1theta*s1theta).toFixed(4);
+  document.getElementById('v1-iter').textContent  = s1iter;
+
+  const grad = 2 * s1theta;
+  const gradEl = document.getElementById('v1-grad');
+  const dirEl  = document.getElementById('v1-dir');
+  gradEl.textContent = grad.toFixed(4);
+  gradEl.className = 'grad-val ' + (grad > 0.001 ? 'pos' : grad < -0.001 ? 'neg' : 'zero');
+  if (Math.abs(grad) < 0.001) {
+    dirEl.textContent = '✅ 최솟값 도달! 기울기 f\'(x) ≈ 0, 더 이상 이동하지 않음';
+    dirEl.style.color = '#1a7f37';
+  } else if (grad > 0) {
+    dirEl.textContent = '기울기 양수 → 오른쪽이 더 높음 → x를 왼쪽(−방향)으로 이동';
+    dirEl.style.color = '#bc4c00';
+  } else {
+    dirEl.textContent = '기울기 음수 → 왼쪽이 더 높음 → x를 오른쪽(+방향)으로 이동';
+    dirEl.style.color = '#0969da';
+  }
+}
+
+function stepStage1() {
+  s1lr = parseFloat(document.getElementById('s1-lr').value);
+  const grad = 2*s1theta;
+  s1theta = s1theta - s1lr * grad;
+  s1iter++;
+  if (sub1Step < 2) { sub1Step = 2; updateSub1(); }
+  if (sub1Step < 3 && s1iter > 3) { sub1Step = 3; updateSub1(); }
+
+  const warn = s1lr > 0.9;
+  document.getElementById('warn1-lr').classList.toggle('hidden', !warn);
+  const conv = Math.abs(s1theta) < 0.001;
+  document.getElementById('good1-conv').classList.toggle('hidden', !conv);
+  if (conv && sub1Step < 4) { sub1Step = 4; updateSub1(); }
+
+  drawStage1();
+  updateStage1Stats();
+}
+
+document.getElementById('btn1-step').addEventListener('click', () => { stopStage1(); stepStage1(); });
+document.getElementById('btn1-run').addEventListener('click', () => {
+  if (s1running) stopStage1();
+  else startStage1();
+});
+document.getElementById('btn1-reset').addEventListener('click', resetStage1);
+document.getElementById('s1-lr').addEventListener('input', () => {
+  s1lr = parseFloat(document.getElementById('s1-lr').value);
+  document.getElementById('v1-lr').textContent = s1lr.toFixed(2);
+  drawStage1();
+});
+document.getElementById('s1-init').addEventListener('input', () => {
+  document.getElementById('v1-init').textContent = document.getElementById('s1-init').value;
+  resetStage1();
+});
+
+function startStage1() {
+  s1running = true;
+  document.getElementById('btn1-run').textContent = '일시정지 ⏸';
+  s1rafId = setInterval(() => {
+    stepStage1();
+    if (Math.abs(s1theta) < 0.0001) stopStage1();
+  }, 120);
+}
+function stopStage1() {
+  s1running = false;
+  document.getElementById('btn1-run').textContent = '자동 실행 ▶';
+  clearInterval(s1rafId);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE 2 — 3D 비용 곡면 + GD 경로
+// ═══════════════════════════════════════════════════════════════
+
+// 파라미터 범위 (Stage 3 buildS3ContourCache에서도 사용)
+const T0MIN=-0.5, T0MAX=1.5, T1MIN=-0.5, T1MAX=2.0;
+const SURF_N = 28;
+
+let s2t0, s2t1, s2iter, s2running, s2rafId;
+let s2path = [];
+let s2surfData = null;
+// rotY: 좌우 드래그로 변경 가능 / rotX: 음수 = 위에서 아래로 내려다보는 시점
+let s2rotY = -0.40;
+const s2rotX = -0.85;
+let s2dragging = false, s2dragLast = {x:0, y:0};
+let s2autoRafId = null;
+
+// 지형 함수 — 가우시안 언덕 2개 + 계곡 2개
+// "언덕(빨강)에서 출발 → 가장 가까운 계곡(파랑)으로 내려감" 서사를 명확히 보여줌
+function terrainFn(t0, t1) {
+  const x = t0 - 0.5;   // T0 중심=0.5 기준
+  const z = t1 - 0.75;  // T1 중심=0.75 기준
+
+  // 언덕 (볼록한 봉우리)
+  const h1 =  0.70 * Math.exp(-(Math.pow(x - 0.30, 2)*3.5 + Math.pow(z - 0.40, 2)*3.5));
+  const h2 =  0.50 * Math.exp(-(Math.pow(x + 0.55, 2)*4.0 + Math.pow(z + 0.45, 2)*4.0));
+
+  // 계곡 (오목한 최솟값)
+  const v1 = -0.55 * Math.exp(-(Math.pow(x + 0.30, 2)*3.5 + Math.pow(z - 0.30, 2)*3.5));
+  const v2 = -0.40 * Math.exp(-(Math.pow(x - 0.50, 2)*5.0 + Math.pow(z + 0.55, 2)*5.0));
+
+  return h1 + h2 + v1 + v2 + 0.70;
+}
+
+// 수치 그래디언트 (지형 함수 기준)
+function terrainGrad(t0, t1) {
+  const h = (T0MAX - T0MIN) * 0.004;
+  return [
+    (terrainFn(t0+h, t1) - terrainFn(t0-h, t1)) / (2*h),
+    (terrainFn(t0, t1+h) - terrainFn(t0, t1-h)) / (2*h),
+  ];
+}
+
+function buildSurfData() {
+  const jGrid = [];
+  let minJ = Infinity, maxJ = -Infinity;
+  for (let i = 0; i <= SURF_N; i++) {
+    jGrid[i] = [];
+    for (let j = 0; j <= SURF_N; j++) {
+      const t0 = T0MIN + i/SURF_N*(T0MAX-T0MIN);
+      const t1 = T1MIN + j/SURF_N*(T1MAX-T1MIN);
+      const jv = terrainFn(t0, t1);
+      jGrid[i][j] = jv;
+      if (jv > maxJ) maxJ = jv;
+      if (jv < minJ) minJ = jv;
+    }
+  }
+  s2surfData = {jGrid, minJ, maxJ};
+}
+
+function project3D(t0, t1, jNorm, W, H) {
+  const nx = (t0-(T0MIN+T0MAX)/2) / ((T0MAX-T0MIN)/2);
+  const ny = jNorm * 1.7 - 0.18;
+  const nz = (t1-(T1MIN+T1MAX)/2) / ((T1MAX-T1MIN)/2);
+  // Y축 회전 (수평)
+  const x1 =  nx*Math.cos(s2rotY) + nz*Math.sin(s2rotY);
+  const z1 = -nx*Math.sin(s2rotY) + nz*Math.cos(s2rotY);
+  // X축 회전 (기울기)
+  const y2 = ny*Math.cos(s2rotX) - z1*Math.sin(s2rotX);
+  const z2 = ny*Math.sin(s2rotX) + z1*Math.cos(s2rotX);
+  // 원근 투영 — 위에서 내려다보는 시점
+  const sc = 2.6 / (z2 + 3.8);
+  return { sx: W*0.5 + x1*sc*W*0.46, sy: H*0.50 - y2*sc*H*0.42, depth: z2 };
+}
+
+function surfColor(v) {
+  v = Math.max(0, Math.min(1, v));
+  let r, g, b;
+  if (v < 0.25) {
+    const t = v/0.25;
+    r = Math.round(10 + t*10); g = Math.round(55 + t*145); b = Math.round(215 - t*25);
+  } else if (v < 0.5) {
+    const t = (v-0.25)/0.25;
+    r = Math.round(20 + t*195); g = Math.round(200 + t*45); b = Math.round(190 - t*180);
+  } else if (v < 0.75) {
+    const t = (v-0.5)/0.25;
+    r = Math.round(215 + t*35); g = Math.round(245 - t*105); b = 10;
+  } else {
+    const t = (v-0.75)/0.25;
+    r = 250; g = Math.round(140 - t*110); b = 10;
+  }
+  return `rgb(${r},${g},${b})`;
+}
+
+function drawSurface3D() {
+  const cv = document.getElementById('c2-surface3d');
+  if (!cv || !s2surfData) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#f0f4f8';
+  ctx.fillRect(0, 0, W, H);
+
+  const {jGrid, minJ, maxJ} = s2surfData;
+  const jRange = maxJ - minJ;
+  const jFloor = -0.18; // 바닥 평면 높이 (표면 최솟값보다 아래)
+
+  const allQuads = [];
+
+  // ── 바닥 평면 ──
+  const floorPts = [[T0MIN,T1MIN],[T0MAX,T1MIN],[T0MAX,T1MAX],[T0MIN,T1MAX]]
+    .map(([t0,t1]) => project3D(t0, t1, jFloor, W, H));
+  allQuads.push({
+    pts: floorPts, depth: floorPts.reduce((s,p)=>s+p.depth,0)/4, type:'floor'
+  });
+
+  // ── 측면 벽 (4면) — 표면 가장자리에서 바닥까지 수직 내벽 ──
+  const addWallStrip = (t0a, t1a, t0b, t1b, jan, jbn) => {
+    const pts = [
+      project3D(t0a, t1a, jan,    W, H),
+      project3D(t0b, t1b, jbn,    W, H),
+      project3D(t0b, t1b, jFloor, W, H),
+      project3D(t0a, t1a, jFloor, W, H),
+    ];
+    allQuads.push({ pts, depth: pts.reduce((s,p)=>s+p.depth,0)/4, type:'wall' });
+  };
+  for (let i = 0; i < SURF_N; i++) {
+    const t0a = T0MIN + i/SURF_N*(T0MAX-T0MIN);
+    const t0b = T0MIN + (i+1)/SURF_N*(T0MAX-T0MIN);
+    addWallStrip(t0a, T1MIN, t0b, T1MIN, (jGrid[i][0]-minJ)/jRange,      (jGrid[i+1][0]-minJ)/jRange);
+    addWallStrip(t0a, T1MAX, t0b, T1MAX, (jGrid[i][SURF_N]-minJ)/jRange,  (jGrid[i+1][SURF_N]-minJ)/jRange);
+  }
+  for (let j = 0; j < SURF_N; j++) {
+    const t1a = T1MIN + j/SURF_N*(T1MAX-T1MIN);
+    const t1b = T1MIN + (j+1)/SURF_N*(T1MAX-T1MIN);
+    addWallStrip(T0MIN, t1a, T0MIN, t1b, (jGrid[0][j]-minJ)/jRange,      (jGrid[0][j+1]-minJ)/jRange);
+    addWallStrip(T0MAX, t1a, T0MAX, t1b, (jGrid[SURF_N][j]-minJ)/jRange,  (jGrid[SURF_N][j+1]-minJ)/jRange);
+  }
+
+  // ── 표면 쿼드 ──
+  for (let i = 0; i < SURF_N; i++) {
+    for (let j = 0; j < SURF_N; j++) {
+      const corners = [[i,j],[i+1,j],[i+1,j+1],[i,j+1]].map(([ii,jj]) => {
+        const t0 = T0MIN + ii/SURF_N*(T0MAX-T0MIN);
+        const t1 = T1MIN + jj/SURF_N*(T1MAX-T1MIN);
+        const jn = (jGrid[ii][jj]-minJ)/jRange;
+        return { jn, pr: project3D(t0, t1, jn, W, H) };
+      });
+      allQuads.push({
+        pts: corners.map(c=>c.pr),
+        depth: corners.reduce((s,c)=>s+c.pr.depth,0)/4,
+        avgJn: corners.reduce((s,c)=>s+c.jn,0)/4,
+        type: 'surface'
+      });
+    }
+  }
+
+  // ── 화가 알고리즘: 깊이순 정렬 후 그리기 ──
+  allQuads.sort((a,b) => b.depth - a.depth);
+  for (const q of allQuads) {
+    ctx.beginPath();
+    ctx.moveTo(q.pts[0].sx, q.pts[0].sy);
+    for (let k = 1; k < q.pts.length; k++) ctx.lineTo(q.pts[k].sx, q.pts[k].sy);
+    ctx.closePath();
+    if (q.type === 'surface') {
+      ctx.fillStyle = surfColor(q.avgJn);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 0.3; ctx.stroke();
+    } else if (q.type === 'wall') {
+      ctx.fillStyle = 'rgba(210,220,235,0.94)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(9,105,218,0.15)'; ctx.lineWidth = 0.4; ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(195,210,228,0.88)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(9,105,218,0.20)'; ctx.lineWidth = 0.6; ctx.stroke();
+    }
+  }
+
+  // ── GD 경로 ──
+  if (s2path.length > 1) {
+    ctx.beginPath();
+    const p0 = s2path[0];
+    const pr0 = project3D(p0.t0, p0.t1, (terrainFn(p0.t0,p0.t1)-minJ)/jRange, W, H);
+    ctx.moveTo(pr0.sx, pr0.sy);
+    for (let k = 1; k < s2path.length; k++) {
+      const pk = s2path[k];
+      const prk = project3D(pk.t0, pk.t1, (terrainFn(pk.t0,pk.t1)-minJ)/jRange, W, H);
+      ctx.lineTo(prk.sx, prk.sy);
+    }
+    ctx.strokeStyle = '#ff3333'; ctx.lineWidth = 3;
+    ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 10;
+    ctx.stroke(); ctx.shadowBlur = 0;
+  }
+
+  // ── 현재 위치 ──
+  const jcn = (terrainFn(s2t0, s2t1)-minJ)/jRange;
+  const prc = project3D(s2t0, s2t1, jcn, W, H);
+  const grd = ctx.createRadialGradient(prc.sx-2, prc.sy-2, 1, prc.sx, prc.sy, 9);
+  grd.addColorStop(0, '#ffaaaa'); grd.addColorStop(1, '#cc0000');
+  ctx.beginPath(); ctx.arc(prc.sx, prc.sy, 9, 0, Math.PI*2);
+  ctx.fillStyle = grd; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+  // ── 안내 라벨 ──
+  ctx.fillStyle = 'rgba(70,80,95,0.75)';
+  ctx.font = '11px sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText('← θ₀ →', 10, H-10);
+  ctx.fillText('J(θ) ↑', 10, 20);
+  ctx.textAlign = 'right';
+  ctx.fillText('← 드래그로 좌우 회전', W-10, H-10);
+}
+
+function startAutoRotate() {
+  if (s2autoRafId) return;
+  let last = null;
+  function tick(ts) {
+    if (last !== null && !s2dragging) {
+      s2rotY += (ts - last) * 0.00008; // 매우 느린 속도
+      drawSurface3D();
+    }
+    last = ts;
+    s2autoRafId = requestAnimationFrame(tick);
+  }
+  s2autoRafId = requestAnimationFrame(tick);
+}
+
+function setupHorizontalDrag() {
+  const cv = document.getElementById('c2-surface3d');
+  if (!cv || cv._dragSetup) return;
+  cv._dragSetup = true;
+  cv.style.cursor = 'ew-resize';
+  const start = e => {
+    s2dragging = true;
+    const pt = e.touches ? e.touches[0] : e;
+    s2dragLast = {x: pt.clientX};
+  };
+  const move = e => {
+    if (!s2dragging) return;
+    const pt = e.touches ? e.touches[0] : e;
+    s2rotY += (pt.clientX - s2dragLast.x) * 0.010;
+    s2dragLast = {x: pt.clientX};
+    drawSurface3D();
+    e.preventDefault();
+  };
+  const end = () => { s2dragging = false; };
+  cv.addEventListener('mousedown', start);
+  window.addEventListener('mousemove', move, {passive:false});
+  window.addEventListener('mouseup', end);
+  cv.addEventListener('touchstart', start, {passive:true});
+  window.addEventListener('touchmove', move, {passive:false});
+  window.addEventListener('touchend', end);
+}
+
+function initStage2() {
+  s2t0 = 0.80; s2t1 = 1.15;   // h1 봉우리 정상 근처에서 시작
+  s2iter = 0; s2running = false;
+  s2path = [{t0: s2t0, t1: s2t1}];
+  clearInterval(s2rafId);
+  document.getElementById('btn2-run').textContent = '자동 실행 ▶';
+  buildSurfData();
+  setupHorizontalDrag();
+  drawStage2();
+  updateStage2Stats();
+  startAutoRotate();
+}
+
+function drawStage2() {
+  drawSurface3D();
+}
+
+function drawStage2Data() {
+  const cv = document.getElementById('c2-data');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const PAD=36;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#d0d7de'; ctx.lineWidth=1;
+  ctx.strokeRect(PAD,PAD,W-2*PAD,H-2*PAD);
+
+  const toX=x=>PAD+(x-xMin)/(xMax-xMin)*(W-2*PAD);
+  const toY=y=>H-PAD-(y-yMin)/(yMax-yMin)*(H-2*PAD);
+
+  // 직선 (정규화 → 원래 스케일)
+  const predY0 = (s2t0 + s2t1*0)*(yMax-yMin)+yMin;
+  const predY1 = (s2t0 + s2t1*1)*(yMax-yMin)+yMin;
+  ctx.beginPath();
+  ctx.moveTo(toX(xMin), toY(predY0));
+  ctx.lineTo(toX(xMax), toY(predY1));
+  ctx.strokeStyle='#0969da'; ctx.lineWidth=2; ctx.stroke();
+
+  // 점
+  for (let i=0;i<m;i++) {
+    ctx.beginPath();
+    ctx.arc(toX(xArr[i]), toY(yArr[i]), 4, 0, Math.PI*2);
+    ctx.fillStyle='#dc6d1c'; ctx.fill();
+  }
+  ctx.fillStyle='#8c959f'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('키 (cm)', W/2, H-6);
+}
+
+function updateStage2Stats() {
+  document.getElementById('v2-t0').textContent = s2t0.toFixed(3);
+  document.getElementById('v2-t1').textContent = s2t1.toFixed(3);
+  document.getElementById('v2-cost').textContent = terrainFn(s2t0, s2t1).toFixed(4);
+  document.getElementById('v2-iter').textContent = s2iter;
+}
+
+function stepStage2() {
+  const lr = parseFloat(document.getElementById('s2-lr').value);
+  const [g0, g1] = terrainGrad(s2t0, s2t1);
+  s2t0 = Math.max(T0MIN, Math.min(T0MAX, s2t0 - lr*g0));
+  s2t1 = Math.max(T1MIN, Math.min(T1MAX, s2t1 - lr*g1));
+  s2iter++;
+  s2path.push({t0: s2t0, t1: s2t1});
+  drawStage2();
+  updateStage2Stats();
+}
+
+document.getElementById('btn2-step').addEventListener('click', () => { stopStage2(); stepStage2(); });
+document.getElementById('btn2-run').addEventListener('click', () => {
+  if (s2running) stopStage2(); else startStage2();
+});
+document.getElementById('btn2-reset').addEventListener('click', initStage2);
+document.getElementById('s2-lr').addEventListener('input', () => {
+  document.getElementById('v2-lr').textContent = parseFloat(document.getElementById('s2-lr').value).toFixed(2);
+});
+
+function startStage2() {
+  s2running=true;
+  document.getElementById('btn2-run').textContent='일시정지 ⏸';
+  s2rafId=setInterval(()=>{
+    const prev = terrainFn(s2t0, s2t1);
+    stepStage2();
+    if (Math.abs(terrainFn(s2t0,s2t1) - prev) < 0.000005) stopStage2();
+  }, 80);
+}
+function stopStage2() {
+  s2running=false;
+  document.getElementById('btn2-run').textContent='자동 실행 ▶';
+  clearInterval(s2rafId);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE 3 — 최종 시연 (랜덤 데이터)
+// ═══════════════════════════════════════════════════════════════
+let s3t0, s3t1, s3iter, s3running, s3rafId;
+let s3path = [];
+let s3contourCache = null;
+let s3xArr, s3yArr, s3xNorm, s3yNorm, s3m, s3xMin, s3xMax, s3yMin, s3yMax;
+
+function generateS3Data() {
+  s3m = 12 + Math.floor(Math.random() * 9);
+  const slope = 0.4 + Math.random() * 0.9;
+  const intercept = 28 + Math.random() * 28;
+  s3xArr = []; s3yArr = [];
+  for (let i = 0; i < s3m; i++) {
+    const x = 150 + Math.random() * 30;
+    const y = slope * x + intercept + (Math.random() - 0.5) * 14;
+    s3xArr.push(Math.round(x * 10) / 10);
+    s3yArr.push(Math.round(y * 10) / 10);
+  }
+  s3xMin = Math.min(...s3xArr); s3xMax = Math.max(...s3xArr);
+  s3yMin = Math.min(...s3yArr); s3yMax = Math.max(...s3yArr);
+  if (s3xMax === s3xMin) s3xMax = s3xMin + 1;
+  if (s3yMax === s3yMin) s3yMax = s3yMin + 1;
+  s3xNorm = s3xArr.map(x => (x - s3xMin) / (s3xMax - s3xMin));
+  s3yNorm = s3yArr.map(y => (y - s3yMin) / (s3yMax - s3yMin));
+}
+
+function initStage3() {
+  generateS3Data();
+  s3t0=-0.3; s3t1=-0.2; s3iter=0; s3running=false;
+  s3path=[{t0:s3t0,t1:s3t1}];
+  s3costHistory=[];
+  clearInterval(s3rafId);
+  document.getElementById('btn3-run').textContent='학습 시작 ▶';
+  buildS3ContourCache();
+  drawStage3();
+  drawCostHistory();
+  updateStage3Stats();
+}
+
+function buildS3ContourCache() {
+  const cv=document.getElementById('c3-contour');
+  if (!cv) return;
+  const W=cv.width, H=cv.height, PAD=36;
+  s3contourCache=document.createElement('canvas');
+  s3contourCache.width=W; s3contourCache.height=H;
+  const octx=s3contourCache.getContext('2d');
+  octx.fillStyle='#ffffff'; octx.fillRect(0,0,W,H);
+  const iw=W-2*PAD, ih=H-2*PAD;
+  const imgData=octx.createImageData(iw,ih);
+  let maxJ=0;
+  const costs=[];
+  for (let py=0;py<ih;py++) {
+    for (let px=0;px<iw;px++) {
+      const t0=T0MIN+(px/iw)*(T0MAX-T0MIN);
+      const t1=T1MIN+((ih-1-py)/ih)*(T1MAX-T1MIN);
+      const j=costFn(t0,t1,s3xNorm,s3yNorm);
+      costs.push(j); if(j>maxJ) maxJ=j;
+    }
+  }
+  for (let i=0;i<costs.length;i++) {
+    const v=Math.pow(costs[i]/maxJ,0.35);
+    const idx=i*4;
+    imgData.data[idx]  =Math.min(255,Math.round(v<0.5?v*2*30:30+(v-0.5)*2*200));
+    imgData.data[idx+1]=Math.min(255,Math.round(v<0.5?v*2*80:80+(v-0.5)*2*150));
+    imgData.data[idx+2]=Math.min(255,Math.round(v<0.5?50+v*2*150:200-(v-0.5)*2*180));
+    imgData.data[idx+3]=255;
+  }
+  octx.putImageData(imgData, PAD, PAD);
+}
+
+function drawStage3() {
+  // 등고선
+  const cv2=document.getElementById('c3-contour');
+  if (!cv2) return;
+  const ctx2=cv2.getContext('2d');
+  const W2=cv2.width, H2=cv2.height, PAD2=36;
+  ctx2.clearRect(0,0,W2,H2);
+  if (s3contourCache) ctx2.drawImage(s3contourCache,0,0);
+  const tx2=t0=>PAD2+(t0-T0MIN)/(T0MAX-T0MIN)*(W2-2*PAD2);
+  const ty2=t1=>H2-PAD2-(t1-T1MIN)/(T1MAX-T1MIN)*(H2-2*PAD2);
+  if (s3path.length>1) {
+    ctx2.beginPath();
+    ctx2.moveTo(tx2(s3path[0].t0),ty2(s3path[0].t1));
+    for (let i=1;i<s3path.length;i++) ctx2.lineTo(tx2(s3path[i].t0),ty2(s3path[i].t1));
+    ctx2.strokeStyle='rgba(207,34,46,0.9)'; ctx2.lineWidth=2; ctx2.stroke();
+  }
+  ctx2.beginPath();
+  ctx2.arc(tx2(s3t0),ty2(s3t1),6,0,Math.PI*2);
+  ctx2.fillStyle='#cf222e'; ctx2.fill();
+  ctx2.strokeStyle='#fff'; ctx2.lineWidth=2; ctx2.stroke();
+
+  // 데이터 산점도
+  const cv=document.getElementById('c3-data');
+  if (!cv) return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height, PAD=36;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#d0d7de'; ctx.lineWidth=1; ctx.strokeRect(PAD,PAD,W-2*PAD,H-2*PAD);
+  const toX=x=>PAD+(x-s3xMin)/(s3xMax-s3xMin)*(W-2*PAD);
+  const toY=y=>H-PAD-(y-s3yMin)/(s3yMax-s3yMin)*(H-2*PAD);
+  const predY0=(s3t0+s3t1*0)*(s3yMax-s3yMin)+s3yMin;
+  const predY1=(s3t0+s3t1*1)*(s3yMax-s3yMin)+s3yMin;
+  ctx.beginPath();
+  ctx.moveTo(toX(s3xMin),toY(predY0));
+  ctx.lineTo(toX(s3xMax),toY(predY1));
+  ctx.strokeStyle=s3iter>0?'#1a7f37':'#0969da'; ctx.lineWidth=2; ctx.stroke();
+  for (let i=0;i<s3m;i++) {
+    ctx.beginPath();
+    ctx.arc(toX(s3xArr[i]),toY(s3yArr[i]),4,0,Math.PI*2);
+    ctx.fillStyle='#dc6d1c'; ctx.fill();
+  }
+  ctx.fillStyle='#8c959f'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('키 (cm)', W/2, H-6);
+  ctx.save(); ctx.translate(12,H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('몸무게(kg)',0,0); ctx.restore();
+}
+
+function updateStage3Stats() {
+  document.getElementById('v3-iter').textContent=s3iter;
+  document.getElementById('v3-cost').textContent=costFn(s3t0,s3t1,s3xNorm,s3yNorm).toFixed(5);
+  const realT1=s3t1*(s3yMax-s3yMin)/(s3xMax-s3xMin);
+  const realT0=s3t0*(s3yMax-s3yMin)+s3yMin-realT1*s3xMin;
+  document.getElementById('v3-t1').textContent=realT1.toFixed(3);
+  document.getElementById('v3-t0').textContent=realT0.toFixed(1);
+}
+
+function stepStage3() {
+  const [g0,g1]=gradients(s3t0,s3t1,s3xNorm,s3yNorm);
+  s3t0-=0.15*g0; s3t1-=0.15*g1;
+  s3iter++;
+  if (s3iter%3===0) s3path.push({t0:s3t0,t1:s3t1});
+  s3costHistory.push(costFn(s3t0,s3t1,s3xNorm,s3yNorm));
+  drawStage3();
+  drawCostHistory();
+  updateStage3Stats();
+}
+
+document.getElementById('btn3-run').addEventListener('click', ()=>{
+  if (s3running) {
+    s3running=false; clearInterval(s3rafId);
+    document.getElementById('btn3-run').textContent='계속 ▶';
+  } else {
+    s3running=true;
+    document.getElementById('btn3-run').textContent='일시정지 ⏸';
+    s3rafId=setInterval(()=>{
+      stepStage3();
+      if (costFn(s3t0,s3t1,s3xNorm,s3yNorm)<0.00005) {
+        s3running=false; clearInterval(s3rafId);
+        document.getElementById('btn3-run').textContent='학습 완료 ✓';
+      }
+    }, 50);
+  }
+});
+document.getElementById('btn3-reset').addEventListener('click', initStage3);
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE-CALC — 직접 계산 빈칸 채우기
+// ═══════════════════════════════════════════════════════════════
+function initStageCalc() {
+  // 모든 calc-step 초기화 (잠금/해제/입력값 리셋)
+  for (let iter = 0; iter < 3; iter++) {
+    for (let step = 0; step < 3; step++) {
+      const cs = document.getElementById(`cs-${iter}-${step}`);
+      if (!cs) continue;
+      cs.classList.remove('correct');
+      cs.classList.toggle('locked', !(iter === 0 && step === 0));
+      const inp = document.getElementById(`b-${iter}-${step}`);
+      if (inp) { inp.value = ''; inp.className = 'blank-input'; }
+      const fb = document.getElementById(`fb-${iter}-${step}`);
+      if (fb) { fb.textContent = ''; fb.className = 'calc-feedback'; }
+    }
+    if (iter > 0) {
+      const card = document.getElementById(`calc-card-${iter}`);
+      if (card) card.classList.add('locked');
+    }
+  }
+  const obs = document.getElementById('calc-card-observe');
+  if (obs) obs.classList.add('locked');
+
+  // KaTeX 렌더링
+  setTimeout(() => {
+    if (window.renderMathInElement) {
+      renderMathInElement(document.getElementById('stage-calc'), {
+        delimiters:[{left:'$',right:'$',display:false},{left:'$$',right:'$$',display:true}]
+      });
+    }
+  }, 100);
+}
+
+function checkCalc(id, expected, tol) {
+  const inp = document.getElementById('b-' + id);
+  const fb  = document.getElementById('fb-' + id);
+  const val = parseFloat(inp.value.replace(',', '.'));
+
+  if (isNaN(val)) {
+    fb.textContent = '숫자를 입력하세요.';
+    fb.className = 'calc-feedback err';
+    inp.classList.add('err');
+    return;
+  }
+
+  if (Math.abs(val - expected) <= tol) {
+    inp.classList.remove('err'); inp.classList.add('ok');
+    inp.readOnly = true;
+    fb.textContent = '✅ 정답! (' + expected + ')';
+    fb.className = 'calc-feedback ok';
+    const [iter, step] = id.split('-').map(Number);
+    const cs = document.getElementById(`cs-${iter}-${step}`);
+    if (cs) cs.classList.add('correct');
+    unlockCalcNext(iter, step);
+  } else {
+    inp.classList.remove('ok'); inp.classList.add('err');
+    fb.textContent = '❌ 다시 시도해보세요.';
+    fb.className = 'calc-feedback err';
+  }
+}
+
+function showHint(id, answer) {
+  const inp = document.getElementById('b-' + id);
+  const fb  = document.getElementById('fb-' + id);
+  inp.value = answer;
+  inp.classList.remove('err'); inp.classList.add('ok');
+  inp.readOnly = true;
+  fb.textContent = '정답: ' + answer;
+  fb.className = 'calc-feedback ok';
+  const [iter, step] = id.split('-').map(Number);
+  const cs = document.getElementById(`cs-${iter}-${step}`);
+  if (cs) cs.classList.add('correct');
+  unlockCalcNext(iter, step);
+}
+
+function unlockCalcNext(iter, step) {
+  const nextStep = document.getElementById(`cs-${iter}-${step + 1}`);
+  if (nextStep) {
+    nextStep.classList.remove('locked');
+    return;
+  }
+  // 이 iteration 완료 → 다음 카드 열기
+  const nextCard = document.getElementById(`calc-card-${iter + 1}`);
+  if (nextCard) {
+    nextCard.classList.remove('locked');
+    // 첫 step도 unlock 확인 (카드가 locked 상태였다면 이미 첫 step은 잠금 해제 상태)
+    return;
+  }
+  // 모든 iteration 완료 → 관찰 카드 열기
+  const obs = document.getElementById('calc-card-observe');
+  if (obs) {
+    obs.classList.remove('locked');
+    obs.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 퀴즈 카드 토글
+// ═══════════════════════════════════════════════════════════════
+function toggleQuiz(qEl) {
+  const ans    = qEl.nextElementSibling;
+  const toggle = qEl.querySelector('.quiz-toggle');
+  const isOpen = ans.classList.contains('open');
+  ans.classList.toggle('open', !isOpen);
+  toggle.textContent = toggle.textContent.replace(isOpen ? '▲' : '▼', isOpen ? '▼' : '▲');
+  if (!isOpen && window.renderMathInElement) {
+    renderMathInElement(ans, {
+      delimiters:[{left:'$',right:'$',display:false},{left:'$$',right:'$$',display:true}]
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE 2 — 출발점 변경
+// ═══════════════════════════════════════════════════════════════
+function setStartPos(t0, t1) {
+  stopStage2();
+  s2t0 = t0; s2t1 = t1;
+  s2iter = 0;
+  s2path = [{t0, t1}];
+  drawStage2();
+  updateStage2Stats();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STAGE 3 — 비용 이력 그래프
+// ═══════════════════════════════════════════════════════════════
+let s3costHistory = [];
+
+function drawCostHistory() {
+  const cv = document.getElementById('c3-cost-history');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const PAD = { t: 16, r: 20, b: 32, l: 52 };
+  const gW = W - PAD.l - PAD.r;
+  const gH = H - PAD.t - PAD.b;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+
+  if (s3costHistory.length < 2) {
+    ctx.fillStyle = '#8c959f';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('학습을 시작하면 비용 곡선이 나타납니다', W / 2, H / 2);
+    return;
+  }
+
+  const maxC = s3costHistory[0];
+  const minC = Math.min(...s3costHistory);
+  const range = maxC - minC || 1;
+
+  // 격자
+  ctx.strokeStyle = '#eaeef2';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = PAD.t + (gH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(PAD.l + gW, y); ctx.stroke();
+    const val = maxC - (range / 4) * i;
+    ctx.fillStyle = '#8c959f'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(val.toFixed(4), PAD.l - 4, y + 3);
+  }
+
+  // 축 라벨
+  ctx.fillStyle = '#8c959f'; ctx.font = '11px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('반복 횟수 (Iteration)', PAD.l + gW / 2, H - 4);
+  ctx.save(); ctx.translate(12, PAD.t + gH / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('비용 J(θ)', 0, 0); ctx.restore();
+
+  // 곡선
+  ctx.beginPath();
+  s3costHistory.forEach((c, i) => {
+    const x = PAD.l + (i / (s3costHistory.length - 1)) * gW;
+    const y = PAD.t + (1 - (c - minC) / range) * gH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  const grad = ctx.createLinearGradient(PAD.l, 0, PAD.l + gW, 0);
+  grad.addColorStop(0, '#cf222e');
+  grad.addColorStop(1, '#1a7f37');
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // 마지막 점
+  const lx = PAD.l + gW;
+  const lc = s3costHistory[s3costHistory.length - 1];
+  const ly = PAD.t + (1 - (lc - minC) / range) * gH;
+  ctx.beginPath();
+  ctx.arc(lx, ly, 5, 0, Math.PI * 2);
+  ctx.fillStyle = '#1a7f37'; ctx.fill();
+  ctx.fillStyle = '#1a7f37'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('J = ' + lc.toFixed(5), lx - 8, ly - 8);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VS — 사람 vs 경사하강법 (Stage 0)
+// ═══════════════════════════════════════════════════════════════
+function vsStartAI() {
+  const slope = parseFloat(document.getElementById('s0-slope').value);
+  const inter  = parseFloat(document.getElementById('s0-intercept').value);
+  const hCost  = costFn(inter, slope, xNorm, yNorm);
+
+  let t0 = inter, t1 = slope, iters = 0;
+  for (let it = 0; it < 3000; it++) {
+    const [g0, g1] = gradients(t0, t1, xNorm, yNorm);
+    t0 -= 0.15 * g0; t1 -= 0.15 * g1;
+    iters++;
+    if (Math.abs(0.15*g0) + Math.abs(0.15*g1) < 1e-8) break;
+  }
+  const aCost = costFn(t0, t1, xNorm, yNorm);
+
+  s0AiT0 = t0; s0AiT1 = t1;
+  if (window.s0Update) window.s0Update();
+
+  document.getElementById('btn-vs-clear').classList.remove('hidden');
+  const resultEl = document.getElementById('vs-inline-result');
+  resultEl.classList.remove('hidden', 'good');
+
+  const ratio = hCost / Math.max(aCost, 1e-9);
+  let comment;
+  if (ratio < 1.5) {
+    comment = `🎉 훌륭해요! 내 비용 ${hCost.toFixed(4)} ≈ AI 비용 ${aCost.toFixed(4)} — 거의 최적값에 도달했습니다!`;
+    resultEl.classList.add('good');
+  } else if (ratio < 5) {
+    comment = `👀 내 비용 ${hCost.toFixed(4)} vs AI ${aCost.toFixed(4)} (${iters}회 반복) — AI가 ${ratio.toFixed(1)}배 더 정확합니다.`;
+  } else {
+    comment = `🤖 내 비용 ${hCost.toFixed(4)} vs AI ${aCost.toFixed(4)} (${iters}회 반복) — 경사하강법의 위력을 느꼈나요?`;
+  }
+  resultEl.textContent = comment;
+}
+
+function vsClear() {
+  s0AiT0 = null; s0AiT1 = null;
+  if (window.s0Update) window.s0Update();
+  document.getElementById('btn-vs-clear').classList.add('hidden');
+  const resultEl = document.getElementById('vs-inline-result');
+  resultEl.classList.add('hidden');
+  resultEl.classList.remove('good');
+}
+
+document.getElementById('btn-vs-ai').addEventListener('click', vsStartAI);
+document.getElementById('btn-vs-clear').addEventListener('click', vsClear);
+
+// ═══════════════════════════════════════════════════════════════
+// 학습률 레이스 (Stage 1)
+// ═══════════════════════════════════════════════════════════════
+const RACE_LRS    = [0.05, 0.30, 0.90];
+const RACE_COLORS = ['#8c959f', '#0969da', '#cf222e'];
+const RACE_START  = 3.5;
+let raceThetas = [RACE_START, RACE_START, RACE_START];
+let raceIter = 0, raceRunning = false, raceRafId = null;
+
+function drawRaceCanvas() {
+  const cv = document.getElementById('c1-race');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, PAD = 50;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+
+  const tMin = -5, tMax = 5, jMin = 0, jMax = 25;
+  const tx = t => PAD + (t - tMin) / (tMax - tMin) * (W - 2*PAD);
+  const ty = j => H - PAD - (j - jMin) / (jMax - jMin) * (H - 2*PAD);
+
+  ctx.strokeStyle = '#eaeef2'; ctx.lineWidth = 1;
+  for (let t = -4; t <= 4; t += 2) {
+    ctx.beginPath(); ctx.moveTo(tx(t), PAD); ctx.lineTo(tx(t), H - PAD); ctx.stroke();
+  }
+  for (let j = 0; j <= 25; j += 5) {
+    ctx.beginPath(); ctx.moveTo(PAD, ty(j)); ctx.lineTo(W - PAD, ty(j)); ctx.stroke();
+  }
+  ctx.strokeStyle = '#d0d7de'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PAD, H - PAD); ctx.lineTo(W - PAD, H - PAD); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD, PAD); ctx.lineTo(PAD, H - PAD); ctx.stroke();
+
+  ctx.beginPath();
+  for (let t = tMin; t <= tMax; t += 0.05) {
+    const j = t * t;
+    if (j > jMax) continue;
+    if (t === tMin) ctx.moveTo(tx(t), ty(j));
+    else ctx.lineTo(tx(t), ty(j));
+  }
+  ctx.strokeStyle = '#c4cfdb'; ctx.lineWidth = 2; ctx.stroke();
+
+  ctx.fillStyle = '#8c959f'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('x', W / 2, H - 6);
+  ctx.save(); ctx.translate(14, H / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('y = x²', 0, 0); ctx.restore();
+
+  for (let i = 0; i < 3; i++) {
+    const t = raceThetas[i];
+    const j = t * t;
+    if (j > jMax || Math.abs(t) > tMax) continue;
+    ctx.beginPath();
+    ctx.arc(tx(t), ty(j), 7, 0, Math.PI * 2);
+    ctx.fillStyle = RACE_COLORS[i]; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+  }
+}
+
+function raceStep() {
+  raceIter++;
+  for (let i = 0; i < 3; i++) {
+    raceThetas[i] = raceThetas[i] - RACE_LRS[i] * (2 * raceThetas[i]);
+  }
+  document.getElementById('race-iter').textContent = raceIter;
+  for (let i = 0; i < 3; i++) {
+    document.getElementById('race-x' + i).textContent = raceThetas[i].toFixed(4);
+  }
+  drawRaceCanvas();
+
+  const conv1 = Math.abs(raceThetas[1]) < 0.001;
+  const div2  = Math.abs(raceThetas[2]) > 50;
+  if (conv1 || div2 || raceIter >= 300) {
+    clearInterval(raceRafId);
+    raceRunning = false;
+    document.getElementById('btn-race-start').textContent = '완료 ✓';
+    document.getElementById('btn-race-start').disabled = false;
+    const msgEl = document.getElementById('race-msg');
+    msgEl.classList.remove('hidden');
+    let parts = [];
+    if (div2 || Math.abs(raceThetas[2]) > 5)
+      parts.push('⚠️ α=0.90은 발산 — 보폭이 너무 커서 최솟값을 지나쳤습니다');
+    else if (Math.abs(raceThetas[2]) < 0.01)
+      parts.push('✅ α=0.90 수렴');
+    parts.push(`✅ α=0.30 수렴 (${raceIter}회)`);
+    if (Math.abs(raceThetas[0]) < 0.01)
+      parts.push('✅ α=0.05 수렴');
+    else
+      parts.push(`🐢 α=0.05는 아직 x=${raceThetas[0].toFixed(3)} — 더 많은 반복이 필요합니다`);
+    msgEl.textContent = parts.join('　|　');
+  }
+}
+
+function resetRace() {
+  clearInterval(raceRafId);
+  raceRunning = false; raceIter = 0;
+  raceThetas = [RACE_START, RACE_START, RACE_START];
+  const iterEl = document.getElementById('race-iter');
+  if (iterEl) iterEl.textContent = '0';
+  for (let i = 0; i < 3; i++) {
+    const el = document.getElementById('race-x' + i);
+    if (el) el.textContent = RACE_START.toFixed(3);
+  }
+  const startBtn = document.getElementById('btn-race-start');
+  if (startBtn) { startBtn.textContent = '학습률 레이스 시작 ▶'; startBtn.disabled = false; }
+  const msgEl = document.getElementById('race-msg');
+  if (msgEl) { msgEl.classList.add('hidden'); msgEl.textContent = ''; }
+  drawRaceCanvas();
+}
+
+document.getElementById('btn-race-start').addEventListener('click', () => {
+  if (raceRunning) return;
+  raceRunning = true;
+  document.getElementById('btn-race-start').textContent = '실행 중...';
+  document.getElementById('btn-race-start').disabled = true;
+  raceRafId = setInterval(raceStep, 80);
+});
+document.getElementById('btn-race-reset').addEventListener('click', resetRace);
+
+// ═══════════════════════════════════════════════════════════════
+// 방향 예측 퀴즈 (Stage 1)
+// ═══════════════════════════════════════════════════════════════
+const PREDICT_LR = 0.3;
+let predictX = 0, predictAnswered = false;
+
+function drawPredictCanvas(showStep) {
+  const cv = document.getElementById('c1-predict');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height, PAD = 50;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+
+  const tMin = -5, tMax = 5, jMin = 0, jMax = 25;
+  const tx = t => PAD + (t - tMin) / (tMax - tMin) * (W - 2*PAD);
+  const ty = j => H - PAD - (j - jMin) / (jMax - jMin) * (H - 2*PAD);
+
+  ctx.strokeStyle = '#eaeef2'; ctx.lineWidth = 1;
+  for (let t = -4; t <= 4; t += 2) {
+    ctx.beginPath(); ctx.moveTo(tx(t), PAD); ctx.lineTo(tx(t), H - PAD); ctx.stroke();
+  }
+  for (let j = 0; j <= 25; j += 5) {
+    ctx.beginPath(); ctx.moveTo(PAD, ty(j)); ctx.lineTo(W - PAD, ty(j)); ctx.stroke();
+  }
+  ctx.strokeStyle = '#d0d7de'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(PAD, H - PAD); ctx.lineTo(W - PAD, H - PAD); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(PAD, PAD); ctx.lineTo(PAD, H - PAD); ctx.stroke();
+
+  ctx.beginPath();
+  for (let t = tMin; t <= tMax; t += 0.05) {
+    const j = t * t;
+    if (j > jMax) continue;
+    if (t === tMin) ctx.moveTo(tx(t), ty(j));
+    else ctx.lineTo(tx(t), ty(j));
+  }
+  ctx.strokeStyle = '#0969da'; ctx.lineWidth = 2.5; ctx.stroke();
+
+  const jAt = predictX * predictX;
+  if (jAt <= jMax) {
+    ctx.beginPath();
+    ctx.arc(tx(predictX), ty(jAt), 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#cf222e'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+  }
+
+  if (showStep) {
+    const nextX = predictX - PREDICT_LR * 2 * predictX;
+    const nextJ = nextX * nextX;
+    if (Math.abs(nextX) <= tMax && nextJ <= jMax) {
+      ctx.beginPath();
+      ctx.moveTo(tx(predictX), ty(jAt));
+      ctx.lineTo(tx(nextX), ty(nextJ));
+      ctx.strokeStyle = '#1a7f37'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(tx(nextX), ty(nextJ), 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#1a7f37'; ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    }
+  }
+
+  ctx.fillStyle = '#8c959f'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('x', W / 2, H - 6);
+  ctx.save(); ctx.translate(14, H / 2); ctx.rotate(-Math.PI / 2);
+  ctx.fillText('y = x²', 0, 0); ctx.restore();
+}
+
+function newPredictQuestion() {
+  const sign = Math.random() < 0.5 ? 1 : -1;
+  predictX = sign * (0.8 + Math.random() * 3.2);
+  predictAnswered = false;
+
+  const grad = 2 * predictX;
+  const qEl = document.getElementById('predict-question');
+  if (qEl) {
+    qEl.innerHTML =
+      `현재 위치: <strong>x = ${predictX.toFixed(2)}</strong>　` +
+      `기울기 f'(x) = 2x = <strong>${grad.toFixed(2)}</strong><br>` +
+      `경사하강법 다음 스텝에서 x는 어느 방향으로 이동할까요?`;
+  }
+
+  const fb = document.getElementById('predict-feedback');
+  if (fb) { fb.style.display = 'none'; fb.className = 'predict-feedback'; fb.textContent = ''; }
+  const extraBtns = document.getElementById('predict-extra-btns');
+  if (extraBtns) extraBtns.style.display = 'none';
+  const choiceBtns = document.getElementById('predict-choice-btns');
+  if (choiceBtns) choiceBtns.style.display = '';
+
+  drawPredictCanvas(false);
+}
+
+function answerPredict(direction) {
+  if (predictAnswered) return;
+  predictAnswered = true;
+
+  const grad = 2 * predictX;
+  const correctDir = grad > 0 ? 'left' : 'right';
+  const correct = direction === correctDir;
+
+  const fb = document.getElementById('predict-feedback');
+  fb.style.display = '';
+  if (correct) {
+    fb.className = 'predict-feedback correct';
+    fb.innerHTML =
+      `✅ 맞습니다! f'(x) = ${grad.toFixed(2)}로 <strong>${grad > 0 ? '양수(오른쪽이 더 높음)' : '음수(왼쪽이 더 높음)'}</strong> → ` +
+      `x를 <strong>${correctDir === 'left' ? '왼쪽(−방향)' : '오른쪽(+방향)'}</strong>으로 이동합니다.`;
+  } else {
+    fb.className = 'predict-feedback wrong';
+    fb.innerHTML =
+      `❌ 아쉽습니다. f'(x) = ${grad.toFixed(2)}로 ` +
+      `<strong>${grad > 0 ? '양수 → 오른쪽이 더 높음 → 왼쪽' : '음수 → 왼쪽이 더 높음 → 오른쪽'}</strong>으로 이동해야 합니다.`;
+  }
+
+  document.getElementById('predict-choice-btns').style.display = 'none';
+  document.getElementById('predict-extra-btns').style.display = '';
+}
+
+function showPredictStep() {
+  drawPredictCanvas(true);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// KaTeX 렌더링 (지연 적용)
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  setTimeout(()=>{
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters:[
+          {left:'$$',right:'$$',display:true},
+          {left:'$',right:'$',display:false}
+        ]
+      });
+    }
+  }, 500);
+});
+</script>
+</body>
+</html>

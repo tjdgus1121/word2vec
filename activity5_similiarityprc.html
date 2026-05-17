@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>유사도 퀴즈 — 유클리드 & 코사인</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<link rel="stylesheet" href="../nav.css">
+<script src="../nav.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#080808;--s1:#111;--s2:#191919;--s3:#222;--s4:#2a2a2a;
+  --border:rgba(255,255,255,0.08);--bhi:rgba(255,255,255,0.14);
+  --accent:#b8ff57;--blue:#57c8ff;--purple:#c57bff;--coral:#ff7c57;--gold:#ffd166;
+  --text:#e8e8e8;--muted:#666;
+  --mono:'JetBrains Mono','Space Mono',monospace;
+  --body:'Noto Sans KR',sans-serif;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--body);overflow-x:hidden;}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,0.018) 1px,transparent 1px);
+  background-size:44px 44px;
+}
+
+/* ── 화면 전환 ── */
+.screen{display:none;position:relative;z-index:1;}
+.screen.on{display:flex;}
+#startScreen {min-height:100vh;min-height:100dvh;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;gap:36px;}
+#quizScreen  {min-height:100vh;min-height:100dvh;flex-direction:column;}
+#resultScreen{min-height:100vh;min-height:100dvh;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;gap:24px;}
+
+/* ── 시작 화면 ── */
+.start-hero{text-align:center;}
+.start-hero h1{font-size:clamp(1.8rem,5vw,3rem);font-weight:700;line-height:1.2;letter-spacing:-.02em;}
+.start-hero h1 em{color:var(--accent);font-style:normal;}
+.start-hero p{margin-top:14px;font-size:15px;color:var(--muted);line-height:1.9;max-width:520px;word-break:keep-all;}
+.guide-box{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:20px 24px;max-width:560px;width:100%;}
+.guide-box h3{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);margin-bottom:14px;text-transform:uppercase;}
+.guide-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;font-size:13px;line-height:1.75;}
+.guide-row:last-child{margin-bottom:0;}
+.guide-icon{font-size:18px;flex-shrink:0;margin-top:2px;}
+.guide-row strong{color:var(--accent);}
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;max-width:680px;}
+.mode-card{appearance:none;width:100%;background:var(--s1);color:var(--text);border:1.5px solid var(--border);border-radius:16px;padding:28px 18px;text-align:center;cursor:pointer;transition:transform .25s,border-color .25s,box-shadow .25s;font-family:var(--body);}
+.mode-card:hover,.mode-card:focus-visible{transform:translateY(-5px);outline:none;}
+.mode-card.eu:hover,.mode-card.eu:focus-visible {border-color:rgba(87,200,255,.45);box-shadow:0 14px 40px rgba(87,200,255,.1);}
+.mode-card.cos:hover,.mode-card.cos:focus-visible{border-color:rgba(197,123,255,.45);box-shadow:0 14px 40px rgba(197,123,255,.1);}
+.mode-card.mix:hover,.mode-card.mix:focus-visible{border-color:rgba(184,255,87,.45);box-shadow:0 14px 40px rgba(184,255,87,.1);}
+.mode-card:active{transform:translateY(-2px);}
+.mode-icon{font-size:2.4rem;margin-bottom:12px;}
+.mode-title{font-size:1rem;font-weight:700;margin-bottom:6px;}
+.mode-card.eu  .mode-title{color:var(--blue);}
+.mode-card.cos .mode-title{color:var(--purple);}
+.mode-card.mix .mode-title{color:var(--accent);}
+.mode-desc{font-size:12px;color:var(--muted);line-height:1.75;word-break:keep-all;}
+
+/* ── 퀴즈 상단 ── */
+.quiz-topbar{min-height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 24px;border-bottom:1px solid var(--border);background:rgba(8,8,8,0.96);}
+.q-badge{font-family:var(--mono);font-size:11px;letter-spacing:.12em;padding:4px 11px;border-radius:4px;text-transform:uppercase;}
+.q-badge.eu {border:1px solid rgba(87,200,255,.3); color:var(--blue);}
+.q-badge.cos{border:1px solid rgba(197,123,255,.3);color:var(--purple);}
+.q-badge.mix{border:1px solid rgba(184,255,87,.3); color:var(--accent);}
+.q-prog-txt{font-family:var(--mono);font-size:13px;color:var(--muted);}
+.q-score-txt{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);}
+.prog-wrap{height:3px;background:var(--s3);flex-shrink:0;}
+.prog-bar{height:100%;background:var(--accent);transition:width .5s ease;}
+.prog-bar-init{width:0;}
+.result-score-wrap{text-align:center;}
+.timer-row{display:flex;align-items:center;gap:10px;padding:10px 24px 0;flex-shrink:0;}
+.timer-outer{flex:1;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;}
+.timer-inner{height:100%;border-radius:3px;background:var(--accent);transition:width .12s linear,background .3s;}
+.timer-num{font-family:var(--mono);font-size:13px;color:var(--muted);width:30px;text-align:right;}
+
+/* ── 퀴즈 본문 (단일 열) ── */
+.quiz-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:0 16px 32px;}
+
+/* 문제+계산기 래퍼 */
+.q-left{width:100%;max-width:720px;display:flex;flex-direction:column;gap:18px;padding:20px 0 24px;}
+.q-calc-wrap{padding-top:0;}
+.q-type-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.q-type-badge{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;border-radius:4px;}
+.q-type-badge.eu {background:rgba(87,200,255,.1); color:var(--blue);  border:1px solid rgba(87,200,255,.25);}
+.q-type-badge.cos{background:rgba(197,123,255,.1);color:var(--purple);border:1px solid rgba(197,123,255,.25);}
+.q-streak{font-family:var(--mono);font-size:11px;color:var(--gold);}
+.q-title{font-size:16px;font-weight:700;line-height:1.45;word-break:keep-all;}
+.q-title em{color:var(--accent);font-style:normal;}
+
+/* 벡터 테이블 */
+.vec-scroll{overflow-x:auto;border-radius:8px;}
+.vec-table{border-collapse:collapse;font-family:var(--mono);font-size:14px;width:100%;min-width:max-content;}
+.vec-table th,.vec-table td{padding:9px 14px;text-align:center;border:1px solid var(--border);}
+.vec-table thead th{background:var(--s3);color:var(--muted);font-size:11px;letter-spacing:.1em;}
+.vec-table tbody tr:nth-child(1) td{background:var(--s2);}
+.vec-table tbody tr:nth-child(2) td{background:rgba(30,30,30,.8);}
+.vec-table td:first-child{font-weight:700;color:var(--accent);background:rgba(184,255,87,.04)!important;text-align:left;padding-left:18px;}
+
+/* 공식 */
+.formula-strip{font-family:var(--mono);font-size:12px;color:var(--muted);background:var(--s2);border-radius:8px;padding:10px 14px;border-left:3px solid var(--border);}
+.formula-strip.eu {border-left-color:var(--blue);}
+.formula-strip.cos{border-left-color:var(--purple);}
+
+/* 힌트 */
+.hint-area{display:flex;flex-direction:column;gap:8px;}
+.hint-btn{font-family:var(--mono);font-size:11px;background:none;border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:6px;cursor:pointer;align-self:flex-start;transition:all .15s;}
+.hint-btn:hover,.hint-btn:focus-visible{border-color:var(--accent);color:var(--accent);outline:none;}
+.hint-content{display:none;background:var(--s2);border-radius:10px;padding:14px 16px;font-family:var(--mono);font-size:12px;line-height:2.1;border:1px solid var(--border);}
+.hint-content.open{display:block;}
+.hl{color:var(--text);}
+.hla{color:var(--accent);font-weight:700;}
+.hlb{color:var(--blue);}
+.hlp{color:var(--purple);}
+
+/* 피드백 */
+.feedback{display:none;flex-direction:column;gap:8px;padding:14px 16px;border-radius:10px;font-size:13px;line-height:1.8;}
+.feedback.on{display:flex;}
+.feedback.ok{background:rgba(184,255,87,.07);border:1px solid rgba(184,255,87,.2);}
+.feedback.ng{background:rgba(255,124,87,.07);border:1px solid rgba(255,124,87,.2);}
+.fb-top{display:flex;align-items:center;gap:10px;}
+.fb-icon{font-size:20px;flex-shrink:0;}
+.fb-msg{flex:1;font-weight:700;}
+.fb-exp{font-size:12px;color:var(--muted);font-family:var(--mono);line-height:1.9;}
+
+/* ── 풀이 가이드 카드 ── */
+.guide-card{border-radius:12px;padding:18px 20px;}
+.guide-card.eu-guide{background:rgba(87,200,255,.05);border:1px solid rgba(87,200,255,.18);}
+.guide-card.cos-guide{background:rgba(197,123,255,.05);border:1px solid rgba(197,123,255,.18);}
+.guide-card-title{font-size:13px;font-weight:700;margin-bottom:14px;}
+.guide-card.eu-guide  .guide-card-title{color:var(--blue);}
+.guide-card.cos-guide .guide-card-title{color:var(--purple);}
+.guide-steps{display:flex;flex-direction:column;gap:11px;}
+.guide-step{display:flex;gap:12px;align-items:flex-start;font-size:13px;line-height:1.65;color:var(--text);}
+.step-num{background:var(--s4);color:var(--muted);border-radius:50%;width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);
+  font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;}
+.step-formula{display:block;font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:3px;}
+.hint-btn-gap{margin-top:14px;}
+.mt2{margin-top:2px;}.mt6{margin-top:6px;}.mt8{margin-top:8px;}
+
+/* ── 답 입력 폼 ── */
+.ans-form{display:flex;flex-direction:column;gap:14px;}
+.ans-input{
+  background:var(--s3);border:1px solid var(--border);border-radius:8px;
+  color:var(--text);font-family:var(--mono);font-size:1.25rem;
+  padding:10px 14px;width:150px;max-width:100%;outline:none;transition:border-color .15s;
+}
+.ans-input:focus{border-color:var(--accent);}
+.ans-input::placeholder{color:var(--muted);font-size:.85rem;}
+.frac-group{display:flex;flex-direction:column;gap:4px;}
+.frac-label{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.06em;}
+
+/* 유클리드 입력 행 */
+.eu-input-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.eu-sqrt-symbol{font-family:var(--mono);font-size:2rem;color:var(--blue);line-height:1;}
+.ans-sqrt-btn{
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  background:rgba(87,200,255,.13);color:var(--blue);
+  border:1px solid rgba(87,200,255,.3);border-radius:8px;
+  padding:10px 18px;cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.ans-sqrt-btn:hover,.ans-sqrt-btn:focus-visible{background:rgba(87,200,255,.26);outline:none;}
+.ans-result-display{font-family:var(--mono);font-size:1.7rem;font-weight:700;
+  color:var(--muted);min-width:60px;transition:color .2s;}
+.ans-result-display.ready{color:var(--accent);}
+
+/* 코사인 입력 행 */
+.cos-frac-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.frac-divider{font-family:var(--mono);font-size:1.5rem;color:var(--muted);flex-shrink:0;}
+.cos-result-display{font-family:var(--mono);font-size:1.5rem;font-weight:700;
+  color:var(--muted);min-width:80px;transition:color .2s;}
+.cos-result-display.ready{color:var(--accent);}
+
+/* 제출 버튼 */
+.submit-btn{
+  font-family:var(--mono);font-size:14px;font-weight:700;
+  background:var(--accent);color:#000;border:none;border-radius:10px;
+  padding:14px;cursor:pointer;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.submit-btn:hover,.submit-btn:focus-visible{background:#c8ff70;transform:translateY(-1px);outline:none;}
+.submit-btn:disabled{background:var(--s3);color:var(--muted);cursor:not-allowed;transform:none;}
+
+/* 다음 문제 버튼 */
+.next-btn{
+  font-family:var(--mono);font-size:13px;font-weight:700;
+  background:var(--s2);color:var(--text);border:1px solid var(--border);
+  border-radius:9px;padding:12px;cursor:pointer;transition:all .15s;
+  display:none;align-items:center;justify-content:center;gap:6px;
+}
+.next-btn.on{display:flex;}
+.next-btn:hover,.next-btn:focus-visible{border-color:var(--accent);color:var(--accent);outline:none;}
+
+/* ── 결과 화면 ── */
+.result-title{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:700;text-align:center;line-height:1.3;}
+.result-title em{color:var(--accent);font-style:normal;}
+.result-score-big{font-family:var(--mono);font-size:clamp(3.5rem,9vw,5.5rem);font-weight:700;color:var(--accent);line-height:1;}
+.result-max{font-family:var(--mono);font-size:14px;color:var(--muted);margin-top:4px;text-align:center;}
+.result-grade{font-size:14px;color:var(--muted);text-align:center;}
+.rb-wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;}
+.rb-item{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:18px 22px;text-align:center;min-width:110px;}
+.rb-val{font-family:var(--mono);font-size:1.8rem;font-weight:700;}
+.rb-val.blue{color:var(--blue);} .rb-val.purple{color:var(--purple);} .rb-val.gold{color:var(--gold);}
+.rb-lbl{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono);}
+.result-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+.res-btn{font-family:var(--mono);font-size:13px;font-weight:700;padding:12px 28px;border-radius:8px;cursor:pointer;transition:all .2s;}
+.res-btn.primary{background:var(--accent);border:none;color:#000;}
+.res-btn.primary:hover,.res-btn.primary:focus-visible{background:#c8ff70;transform:translateY(-2px);outline:none;}
+.res-btn.secondary{background:transparent;border:1px solid var(--border);color:var(--muted);}
+.res-btn.secondary:hover,.res-btn.secondary:focus-visible{border-color:var(--blue);color:var(--blue);outline:none;}
+.firebase-cta{background:linear-gradient(135deg,rgba(255,180,0,.05),rgba(197,123,255,.05));border:1px solid rgba(197,123,255,.2);border-radius:14px;padding:22px 28px;text-align:center;max-width:480px;width:100%;}
+.firebase-cta h3{font-size:14px;font-weight:700;color:var(--purple);margin-bottom:8px;}
+.firebase-cta p{font-size:12px;color:var(--muted);line-height:1.85;}
+
+/* ── 반응형 ── */
+@media(max-width:600px){
+  #startScreen{padding:36px 16px;gap:24px;}
+  .guide-box{padding:18px 16px;}
+  .quiz-topbar{padding:10px 14px;flex-wrap:wrap;}
+  .timer-row{padding:10px 14px 0;}
+  .quiz-body{padding:0 10px 24px;}
+  .q-left{gap:14px;padding:16px 0 20px;}
+  .guide-card{padding:16px 14px;}
+  .eu-input-row,.cos-frac-row{align-items:flex-end;}
+  .ans-input{width:132px;font-size:1.1rem;}
+  .submit-btn,.next-btn{min-height:46px;}
+}
+@media(max-width:480px){
+  .mode-grid{grid-template-columns:1fr;max-width:320px;}
+}
+</style>
+</head>
+<body>
+
+<!-- 사이드바 -->
+<div class="sidebar-toggle" role="button" aria-label="메뉴 열기" tabindex="0">
+  <i class="fas fa-bars"></i>
+</div>
+<aside class="sidebar">
+  <nav>
+    <a href="../indeximage.html"><i class="fa fa-home"></i><span>홈</span></a>
+    <a href="index.html"><i class="fa fa-font"></i><span>텍스트 마이닝 홈</span></a>
+    <a href="activity1_tfidf.html"><i class="fa fa-chart-bar"></i><span>TF-IDF</span></a>
+    <a href="activity2_similarity.html"><i class="fa fa-equals"></i><span>문서 유사도</span></a>
+    <a href="activity4_jaccard.html"><i class="fa fa-circle-notch"></i><span>자카드 유사도</span></a>
+    <a href="activity5_similiarityprc.html" class="active"><i class="fa fa-calculator"></i><span>유사도 퀴즈</span></a>
+  </nav>
+</aside>
+
+<!-- ① 시작 화면 -->
+<div id="startScreen" class="screen on">
+  <div class="start-hero">
+    <h1>유사도 계산 <em>퀴즈</em></h1>
+    <p>유클리드 거리와 코사인 유사도를 계산기로 직접 계산하고 제출하세요.<br>
+       벡터는 4~8차원, 숫자는 암산 가능한 범위로 출제됩니다.</p>
+  </div>
+
+  <div class="guide-box">
+    <h3>🧮 계산기 사용법</h3>
+    <div class="guide-row">
+      <div class="guide-icon">📏</div>
+      <div>
+        <strong>유클리드</strong>: 제곱차를 더한 뒤 <strong>√</strong> 버튼을 누르면 루트를 계산합니다.<br>
+        예) 9 + 16 = → <strong>√</strong> → 5 → ✓ 제출
+      </div>
+    </div>
+    <div class="guide-row">
+      <div class="guide-icon">🔺</div>
+      <div>
+        <strong>코사인</strong>: 내적을 먼저 계산한 뒤 ÷ 로 (크기×크기)를 나눠 제출하세요.<br>
+        예) 24 ÷ 25 = → 0.96 → ✓ 제출
+      </div>
+    </div>
+    <div class="guide-row">
+      <div class="guide-icon">💡</div>
+      <div>"계산 힌트 보기"를 눌러 단계별 풀이 가이드를 확인할 수 있습니다. <strong>기본 10점 + 시간 보너스 + 연속 보너스</strong></div>
+    </div>
+  </div>
+
+  <div class="mode-grid">
+    <button type="button" class="mode-card eu" data-mode="euclidean" aria-label="유클리드 거리 퀴즈 시작"><div class="mode-icon">📏</div><div class="mode-title">유클리드만</div><div class="mode-desc">두 벡터 사이의 거리.<br>√ 버튼으로 루트 계산!</div></button>
+    <button type="button" class="mode-card cos" data-mode="cosine" aria-label="코사인 유사도 퀴즈 시작"><div class="mode-icon">🔺</div><div class="mode-title">코사인만</div><div class="mode-desc">방향 유사도.<br>÷ 버튼으로 분수 계산!</div></button>
+    <button type="button" class="mode-card mix" data-mode="mixed" aria-label="혼합 모드 퀴즈 시작"><div class="mode-icon">⚡</div><div class="mode-title">혼합 모드</div><div class="mode-desc">두 유형 섞여 출제.<br>10문제 도전!</div></button>
+  </div>
+</div>
+
+<!-- ② 퀴즈 화면 -->
+<div id="quizScreen" class="screen">
+  <div class="quiz-topbar">
+    <span class="q-badge" id="modeBadge">유클리드</span>
+    <span class="q-prog-txt" id="progressTxt" aria-live="polite">1 / 10</span>
+    <span class="q-score-txt" id="scoreTxt" aria-live="polite">0점</span>
+  </div>
+  <div class="prog-wrap" role="progressbar" aria-label="문제 진행률" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0"><div class="prog-bar prog-bar-init" id="progBar"></div></div>
+  <div class="timer-row">
+    <div class="timer-outer" role="progressbar" aria-label="남은 시간" aria-valuemin="0" aria-valuemax="40" aria-valuenow="40"><div class="timer-inner" id="timerBar"></div></div>
+    <div class="timer-num" id="timerNum" aria-live="polite">40</div>
+  </div>
+
+  <div class="quiz-body">
+    <div class="q-left" id="qLeft"><!-- 동적 생성 --></div>
+
+    <!-- 풀이 가이드 + 답 입력 (동적 생성) -->
+    <div id="answerSection" class="q-left q-calc-wrap"></div>
+  </div>
+</div>
+
+<!-- ③ 결과 화면 -->
+<div id="resultScreen" class="screen">
+  <div class="result-title">퀴즈 <em>완료!</em></div>
+  <div class="result-score-wrap">
+    <div class="result-score-big" id="finalScore">0</div>
+    <div class="result-max" id="finalMax">기본+시간 최대 200점 + 연속 보너스</div>
+  </div>
+  <div class="result-grade" id="resultGrade"></div>
+  <div class="rb-wrap">
+    <div class="rb-item"><div class="rb-val blue"   id="rbCorrect">0</div><div class="rb-lbl">정답</div></div>
+    <div class="rb-item"><div class="rb-val purple" id="rbWrong">0</div><div class="rb-lbl">오답</div></div>
+    <div class="rb-item"><div class="rb-val gold"   id="rbStreak">0</div><div class="rb-lbl">최고 연속</div></div>
+  </div>
+  <div class="result-actions">
+    <button type="button" class="res-btn primary"   onclick="restartSame()">같은 모드 다시</button>
+    <button type="button" class="res-btn secondary" onclick="goStart()">모드 선택으로</button>
+  </div>
+  <div class="firebase-cta">
+    <h3>🔥 경쟁 모드 — Coming Soon</h3>
+    <p>Firebase 실시간 DB를 활용한 멀티플레이 경쟁 모드 준비 중입니다.<br>
+       같은 문제를 동시에 풀고 점수를 실시간으로 비교합니다.</p>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  QUIZ DATA
+// ══════════════════════════════════════
+const EUCLID_TPL = [
+  {diffs:[2,0,0,0],dist:2},{diffs:[3,0,0,0],dist:3},{diffs:[4,0,0,0],dist:4},{diffs:[5,0,0,0],dist:5},
+  {diffs:[1,1,1,1],dist:2},
+  {diffs:[1,2,2,0],dist:3},{diffs:[2,1,2,0],dist:3},{diffs:[2,2,1,0],dist:3},{diffs:[0,1,2,2],dist:3},
+  {diffs:[2,2,2,2],dist:4},
+  {diffs:[3,4,0,0],dist:5},{diffs:[4,3,0,0],dist:5},{diffs:[3,0,4,0],dist:5},{diffs:[0,4,0,3],dist:5},
+  {diffs:[2,4,4,0],dist:6},{diffs:[3,3,3,3],dist:6},
+  {diffs:[2,3,6,0],dist:7},{diffs:[6,2,3,0],dist:7},
+  // 6D
+  {diffs:[1,2,2,0,0,0],dist:3},{diffs:[3,4,0,0,0,0],dist:5},
+  {diffs:[2,2,2,2,0,0],dist:4},{diffs:[3,3,3,3,0,0],dist:6},
+  {diffs:[2,4,4,0,0,0],dist:6},{diffs:[2,3,6,0,0,0],dist:7},
+  // 8D
+  {diffs:[1,2,2,0,0,0,0,0],dist:3},{diffs:[3,4,0,0,0,0,0,0],dist:5},
+  {diffs:[2,2,2,2,0,0,0,0],dist:4},{diffs:[2,4,4,0,0,0,0,0],dist:6},
+];
+const MAG3 = [
+  [3,0,0,0],[0,3,0,0],[0,0,3,0],[0,0,0,3],
+  [1,2,2,0],[2,1,2,0],[2,2,1,0],[1,0,2,2],[0,1,2,2],[2,0,1,2],
+];
+const MAG5 = [
+  [5,0,0,0],[0,5,0,0],[0,0,5,0],
+  [3,4,0,0],[4,3,0,0],[3,0,4,0],[0,3,0,4],[4,0,0,3],[0,4,3,0],
+];
+
+// ══════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════
+const gcd = (a,b) => b===0 ? Math.abs(a) : gcd(b, a%b);
+function simplify(n,d){const g=gcd(Math.abs(n),d);return[n/g,d/g];}
+function fracStr(n,d){const[sn,sd]=simplify(n,d);return sd===1?`${sn}`:`${sn}/${sd}`;}
+function fmtDec(v){return Number.isInteger(v)?v.toFixed(0):parseFloat(v.toFixed(4)).toString();}
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+
+// ══════════════════════════════════════
+//  QUESTION GENERATION
+// ══════════════════════════════════════
+function genEuclid(){
+  const tpl=pick(EUCLID_TPL);
+  const dim=tpl.diffs.length;
+  const A=Array.from({length:dim},()=>Math.floor(Math.random()*5)+1);
+  const B=A.map((a,i)=>{
+    if(tpl.diffs[i]===0)return a;
+    const up=a+tpl.diffs[i],dn=a-tpl.diffs[i];
+    return(dn>=1&&Math.random()<.5)?dn:up;
+  });
+  const sq=tpl.diffs.reduce((s,d)=>s+d*d,0);
+  return{type:'eu',A,B,dim,dist:tpl.dist,squaredSum:sq,diffs:tpl.diffs};
+}
+function genCosine(){
+  const useMag5=Math.random()<.5;
+  const pool=useMag5?MAG5:MAG3,mag=useMag5?5:3,mag2=mag*mag;
+  const A=pool[Math.floor(Math.random()*pool.length)];
+  const B=pool[Math.floor(Math.random()*pool.length)];
+  const dot=A.reduce((s,a,i)=>s+a*B[i],0);
+  return{type:'cos',A,B,dim:4,dot,mag,mag2,cosine:dot/mag2};
+}
+function genQuestion(mode){
+  if(mode==='euclidean')return genEuclid();
+  if(mode==='cosine')   return genCosine();
+  return Math.random()<.5?genEuclid():genCosine();
+}
+
+// ══════════════════════════════════════
+//  HINT HTML
+// ══════════════════════════════════════
+function buildHint(q){
+  if(q.type==='eu'){
+    const rows=q.A.map((a,i)=>{
+      const b=q.B[i],d=a-b,sq=d*d;
+      return `<div class="hl">d<sub>${i+1}</sub>: (${a}−${b})² = (${d})² = <span class="hla">${sq}</span></div>`;
+    }).join('');
+    return `<div>각 차원 제곱차:</div>${rows}
+      <div class="mt6">합계: <span class="hla">${q.squaredSum}</span></div>
+      <div class="mt2">d(A,B) = √<span class="hlb">${q.squaredSum}</span> = <span class="hla">${q.dist}</span>
+        → 제곱합 칸에 <strong>${q.squaredSum}</strong> 입력 후 <span class="hla">√ 적용</span> 버튼 클릭!</div>`;
+  }else{
+    const dotP=q.A.map((a,i)=>`${a}×${q.B[i]}`).join(' + ');
+    const dotV=q.A.map((a,i)=>a*q.B[i]).join(' + ');
+    const aS2=q.A.map(a=>a*a).join('+'),bS2=q.B.map(b=>b*b).join('+');
+    return `<div><span class="hlb">① 내적 A·B</span></div>
+      <div class="hl">${dotP} = ${dotV} = <span class="hla">${q.dot}</span></div>
+      <div class="mt8"><span class="hlp">② 벡터 크기 (설계상 |A|=|B|=${q.mag})</span></div>
+      <div class="hl">|A|²= ${aS2} = ${q.mag2} → |A|=<span class="hla">${q.mag}</span></div>
+      <div class="hl">|B|²= ${bS2} = ${q.mag2} → |B|=<span class="hla">${q.mag}</span></div>
+      <div class="mt8"><span class="hlb">③ 코사인 유사도</span></div>
+      <div class="hl">cos = <span class="hla">${q.dot}</span> ÷ (${q.mag}×${q.mag}) = ${q.dot}÷${q.mag2}
+        = <span class="hla">${fracStr(q.dot,q.mag2)}</span>
+        → 분자: <strong>${q.dot}</strong>, 분모: <strong>${q.mag2}</strong> 입력 후 제출!</div>`;
+  }
+}
+
+// ══════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════
+const TOTAL=10, TIME=40;
+const BASE_SCORE=10;
+const MAX_TIME_BONUS=Math.floor(TIME/4);
+let GS={mode:'mixed',questions:[],cur:0,score:0,streak:0,maxStreak:0,correct:0,wrong:0,timeLeft:TIME,timer:null,answered:false};
+
+function startGame(mode){
+  GS={mode,cur:0,score:0,streak:0,maxStreak:0,correct:0,wrong:0,timeLeft:TIME,timer:null,answered:false,
+    questions:Array.from({length:TOTAL},()=>genQuestion(mode))};
+  showScreen('quizScreen');
+  const bd=document.getElementById('modeBadge');
+  bd.className='q-badge '+(mode==='euclidean'?'eu':mode==='cosine'?'cos':'mix');
+  bd.textContent=mode==='euclidean'?'유클리드':mode==='cosine'?'코사인':'혼합';
+  loadQuestion();
+}
+
+function loadQuestion(){
+  const q=GS.questions[GS.cur];
+  GS.answered=false;
+  updateProgressUI();
+  renderQuestion(q);
+  startTimer();
+}
+
+function updateProgressUI(){
+  const current=Math.min(GS.cur+1,TOTAL);
+  document.getElementById('progressTxt').textContent=`${current} / ${TOTAL}`;
+  document.getElementById('progBar').style.width=`${(current/TOTAL)*100}%`;
+  const wrap=document.querySelector('.prog-wrap');
+  if(wrap)wrap.setAttribute('aria-valuenow',current);
+}
+
+// ══════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════
+function renderQuestion(q){
+  const isEu=q.type==='eu';
+  const dims=Array.from({length:q.dim},(_,i)=>`<th>d<sub>${i+1}</sub></th>`).join('');
+  const rowA=q.A.map(v=>`<td>${v}</td>`).join('');
+  const rowB=q.B.map(v=>`<td>${v}</td>`).join('');
+  const formula=isEu?`d(A,B) = √( Σ (aᵢ − bᵢ)² )`:`cos(A,B) = (A·B) / ( |A| × |B| )`;
+  const streakBadge=GS.streak>=2?`<span class="q-streak">🔥 ${GS.streak}연속 정답!</span>`:'';
+
+  document.getElementById('qLeft').innerHTML=`
+    <div class="q-type-row">
+      <span class="q-type-badge ${isEu?'eu':'cos'}">${isEu?'📏 유클리드 거리':'🔺 코사인 유사도'}</span>
+      ${streakBadge}
+    </div>
+    <div class="q-title">두 벡터 <em>A</em>와 <em>B</em>의 <em>${isEu?'유클리드 거리':'코사인 유사도'}</em>를 구하세요.</div>
+    <div class="vec-scroll">
+      <table class="vec-table">
+        <thead><tr><th>벡터</th>${dims}</tr></thead>
+        <tbody>
+          <tr><td>A</td>${rowA}</tr>
+          <tr><td>B</td>${rowB}</tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="formula-strip ${isEu?'eu':'cos'}">${formula}</div>
+  `;
+  renderAnswerSection(q);
+}
+
+function toggleHint(btn){
+  const box=document.getElementById('hintBox');
+  const open=box.classList.toggle('open');
+  btn.setAttribute('aria-expanded',open?'true':'false');
+  btn.textContent=open?'💡 계산 보기 닫기':'💡 단계별 계산 보기';
+}
+
+// ══════════════════════════════════════
+//  ANSWER SECTION
+// ══════════════════════════════════════
+let euSqrtVal=null;
+let errorHideTimer=null;
+
+function clearErrorTimer(){
+  if(errorHideTimer){
+    clearTimeout(errorHideTimer);
+    errorHideTimer=null;
+  }
+}
+
+function renderAnswerSection(q){
+  const sec=document.getElementById('answerSection');
+  euSqrtVal=null;
+  if(q.type==='eu'){
+    sec.innerHTML=`
+      <div class="guide-card eu-guide">
+        <div class="guide-card-title">📐 유클리드 거리 — 풀이 순서</div>
+        <div class="guide-steps">
+          <div class="guide-step">
+            <span class="step-num">1</span>
+            <div>각 차원마다 두 값의 차이를 구해 <strong>제곱</strong>하세요.
+              <span class="step-formula">(a₁−b₁)², (a₂−b₂)², ···</span></div>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">2</span>
+            <div>제곱한 값들을 <strong>모두 더한 합계</strong>를 아래 칸에 입력하세요.</div>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">3</span>
+            <div><strong>√ 적용</strong> 버튼을 눌러 제곱근을 계산한 뒤 제출하세요.
+              <span class="step-formula">d(A,B) = √( 제곱합 )  &nbsp;허용 오차 ±0.01</span></div>
+          </div>
+        </div>
+        <button type="button" class="hint-btn hint-btn-gap" aria-expanded="false" aria-controls="hintBox" onclick="toggleHint(this)">💡 단계별 계산 보기</button>
+        <div class="hint-content" id="hintBox">${buildHint(q)}</div>
+      </div>
+      <div class="ans-form">
+        <div class="eu-input-row">
+          <span class="eu-sqrt-symbol">√</span>
+          <div class="frac-group">
+            <label for="sqSumInput" class="frac-label">제곱합 입력</label>
+            <input type="number" id="sqSumInput" class="ans-input" placeholder="예: 25" min="0"
+              oninput="euSqrtVal=null;const r=document.getElementById('euResult');r.textContent='—';r.classList.remove('ready');">
+          </div>
+          <button type="button" class="ans-sqrt-btn" onclick="applyEuSqrt()">√ 적용</button>
+          <span class="ans-result-display" id="euResult">—</span>
+        </div>
+        <button type="button" class="submit-btn" id="submitBtn" onclick="submitAnswer()">✓ 답 제출</button>
+        <div class="feedback" id="feedback"></div>
+        <button type="button" class="next-btn" id="nextBtn" onclick="nextQ()">다음 문제 →</button>
+      </div>`;
+  }else{
+    sec.innerHTML=`
+      <div class="guide-card cos-guide">
+        <div class="guide-card-title">🔺 코사인 유사도 — 풀이 순서</div>
+        <div class="guide-steps">
+          <div class="guide-step">
+            <span class="step-num">1</span>
+            <div><strong>내적(A·B)</strong> 계산: 같은 위치 원소끼리 곱한 뒤 모두 더하기
+              <span class="step-formula">A·B = a₁×b₁ + a₂×b₂ + ···</span></div>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">2</span>
+            <div>각 벡터의 <strong>크기(|A|, |B|)</strong> 계산 후 곱하기
+              <span class="step-formula">|A| = √(a₁²+a₂²+···) &nbsp; |B| = √(b₁²+b₂²+···)</span></div>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">3</span>
+            <div>분자에 <strong>내적</strong>, 분모에 <strong>|A|×|B|</strong> 입력 후 제출
+              <span class="step-formula">cos(A,B) = 내적 ÷ (|A|×|B|)  &nbsp;허용 오차 ±0.01</span></div>
+          </div>
+        </div>
+        <button type="button" class="hint-btn hint-btn-gap" aria-expanded="false" aria-controls="hintBox" onclick="toggleHint(this)">💡 단계별 계산 보기</button>
+        <div class="hint-content" id="hintBox">${buildHint(q)}</div>
+      </div>
+      <div class="ans-form">
+        <div class="cos-frac-row">
+          <div class="frac-group">
+            <label for="fracNumer" class="frac-label">내적 A·B (분자)</label>
+            <input type="number" id="fracNumer" class="ans-input" placeholder="예: 24" oninput="updateCosPreview()">
+          </div>
+          <span class="frac-divider">÷</span>
+          <div class="frac-group">
+            <label for="fracDenom" class="frac-label">|A|×|B| (분모)</label>
+            <input type="number" id="fracDenom" class="ans-input" placeholder="예: 25" oninput="updateCosPreview()">
+          </div>
+          <span class="frac-divider">=</span>
+          <span class="cos-result-display" id="cosResult">—</span>
+        </div>
+        <button type="button" class="submit-btn" id="submitBtn" onclick="submitAnswer()">✓ 답 제출</button>
+        <div class="feedback" id="feedback"></div>
+        <button type="button" class="next-btn" id="nextBtn" onclick="nextQ()">다음 문제 →</button>
+      </div>`;
+  }
+}
+
+function applyEuSqrt(){
+  const inp=document.getElementById('sqSumInput');
+  const val=parseFloat(inp.value);
+  const el=document.getElementById('euResult');
+  if(isNaN(val)||val<0){
+    el.textContent='오류';el.classList.remove('ready');
+    euSqrtVal=null;return;
+  }
+  euSqrtVal=Math.sqrt(val);
+  el.textContent=fmtDec(euSqrtVal);
+  el.classList.add('ready');
+}
+
+function updateCosPreview(){
+  const n=parseFloat(document.getElementById('fracNumer').value);
+  const d=parseFloat(document.getElementById('fracDenom').value);
+  const el=document.getElementById('cosResult');
+  if(!isNaN(n)&&!isNaN(d)&&d!==0){
+    el.textContent=fmtDec(n/d);el.classList.add('ready');
+  }else{
+    el.textContent='—';el.classList.remove('ready');
+  }
+}
+
+// ══════════════════════════════════════
+//  ANSWER SUBMIT
+// ══════════════════════════════════════
+function submitAnswer(){
+  if(GS.answered)return;
+  const q=GS.questions[GS.cur];
+  let val,displayVal;
+  if(q.type==='eu'){
+    if(euSqrtVal===null){
+      showFormError('제곱합을 입력한 뒤 √ 적용 버튼을 눌러 주세요!');return;
+    }
+    val=euSqrtVal;
+    displayVal=`√${document.getElementById('sqSumInput').value} = ${fmtDec(val)}`;
+  }else{
+    const n=parseFloat(document.getElementById('fracNumer').value);
+    const d=parseFloat(document.getElementById('fracDenom').value);
+    if(isNaN(n)||isNaN(d)){showFormError('분자와 분모를 모두 입력하세요.');return;}
+    if(d===0){showFormError('분모는 0이 될 수 없습니다.');return;}
+    val=n/d;
+    displayVal=`${n} ÷ ${d} = ${fmtDec(val)}`;
+  }
+  const TOL=0.01;
+  const isCorrect=q.type==='eu'
+    ?Math.abs(val-q.dist)<=TOL
+    :Math.abs(val-q.cosine)<=TOL;
+  finishAnswer(isCorrect,val,displayVal);
+}
+
+function finishAnswer(isCorrect,val,displayVal){
+  if(GS.answered)return;
+  GS.answered=true;
+  clearErrorTimer();
+  clearInterval(GS.timer);
+  document.getElementById('submitBtn').disabled=true;
+
+  const q=GS.questions[GS.cur];
+  let gained=0;
+  if(isCorrect){
+    const timeB=Math.floor(GS.timeLeft/4);
+    GS.streak++;if(GS.streak>GS.maxStreak)GS.maxStreak=GS.streak;
+    const stB=GS.streak>=3?(GS.streak-2)*3:0;
+    gained=BASE_SCORE+timeB+stB;
+    GS.score+=gained;GS.correct++;
+    document.getElementById('scoreTxt').textContent=GS.score+'점';
+  }else{
+    GS.streak=0;GS.wrong++;
+  }
+  showFeedback(isCorrect,q,gained,displayVal);
+}
+
+function showFormError(msg){
+  clearErrorTimer();
+  const fb=document.getElementById('feedback');
+  fb.className='feedback on ng';
+  fb.innerHTML=`<div class="fb-top"><span class="fb-icon">⚠️</span><span class="fb-msg">${msg}</span></div>`;
+  errorHideTimer=setTimeout(()=>{
+    if(!GS.answered)fb.className='feedback';
+    errorHideTimer=null;
+  },2500);
+}
+
+function showFeedback(ok,q,gained,displayVal){
+  const fb=document.getElementById('feedback');
+  const isEu=q.type==='eu';
+  let msg='',exp='';
+  if(ok){
+    const tB=Math.floor(GS.timeLeft/4);
+    const sB=gained-BASE_SCORE-tB;
+    msg=`✅ 정답! +${gained}점`;
+    exp=`기본 ${BASE_SCORE}점 + 시간보너스 ${tB}점${sB>0?' + 연속보너스 '+sB+'점':''}`;
+  }else{
+    msg='❌ 오답!';
+    const submittedStr=displayVal?`(입력값: ${displayVal})`:'';
+    exp=isEu
+      ?`정답: d = √${q.squaredSum} = <strong>${q.dist}</strong> ${submittedStr}`
+      :`정답: ${q.dot} ÷ ${q.mag2} = ${fracStr(q.dot,q.mag2)} ≈ ${fmtDec(q.cosine)} ${submittedStr}`;
+  }
+  fb.className='feedback on '+(ok?'ok':'ng');
+  fb.innerHTML=`<div class="fb-top"><span class="fb-icon">${ok?'🎉':'💭'}</span><span class="fb-msg">${msg}</span></div><div class="fb-exp">${exp}</div>`;
+  const nb=document.getElementById('nextBtn');
+  nb.textContent=GS.cur+1<TOTAL?'다음 문제 →':'결과 보기 →';
+  nb.classList.add('on');
+}
+
+function timeOut(){
+  if(GS.answered)return;
+  finishAnswer(false,null,null);
+  // 피드백 메시지 오버라이드
+  const q=GS.questions[GS.cur];
+  const isEu=q.type==='eu';
+  const fb=document.getElementById('feedback');
+  fb.className='feedback on ng';
+  const exp=isEu
+    ?`정답: d = √${q.squaredSum} = <strong>${q.dist}</strong>`
+    :`정답: ${q.dot} ÷ ${q.mag2} = ${fracStr(q.dot,q.mag2)} ≈ ${fmtDec(q.cosine)}`;
+  fb.innerHTML=`<div class="fb-top"><span class="fb-icon">⏰</span><span class="fb-msg">시간 초과!</span></div><div class="fb-exp">${exp}</div>`;
+  const nb=document.getElementById('nextBtn');
+  nb.textContent=GS.cur+1<TOTAL?'다음 문제 →':'결과 보기 →';
+  nb.classList.add('on');
+}
+
+function nextQ(){
+  GS.cur++;
+  if(GS.cur>=TOTAL)showResult();
+  else loadQuestion();
+}
+
+// ══════════════════════════════════════
+//  TIMER
+// ══════════════════════════════════════
+function startTimer(){
+  clearInterval(GS.timer);
+  GS.timeLeft=TIME;updateTimerUI();
+  GS.timer=setInterval(()=>{
+    GS.timeLeft--;updateTimerUI();
+    if(GS.timeLeft<=0){clearInterval(GS.timer);timeOut();}
+  },1000);
+}
+function updateTimerUI(){
+  const pct=(GS.timeLeft/TIME)*100;
+  const bar=document.getElementById('timerBar');
+  bar.style.width=pct+'%';
+  bar.style.background=GS.timeLeft>20?'var(--accent)':GS.timeLeft>10?'var(--gold)':'var(--coral)';
+  document.getElementById('timerNum').textContent=GS.timeLeft;
+  const outer=document.querySelector('.timer-outer');
+  if(outer)outer.setAttribute('aria-valuenow',GS.timeLeft);
+}
+
+// ══════════════════════════════════════
+//  RESULT
+// ══════════════════════════════════════
+function showResult(){
+  document.getElementById('finalScore').textContent=GS.score;
+  document.getElementById('finalMax').textContent=`기본+시간 최대 ${TOTAL*(BASE_SCORE+MAX_TIME_BONUS)}점 + 연속 보너스`;
+  document.getElementById('rbCorrect').textContent=GS.correct;
+  document.getElementById('rbWrong').textContent=GS.wrong;
+  document.getElementById('rbStreak').textContent=GS.maxStreak;
+  const pct=(GS.correct/TOTAL)*100;
+  const g=[  [90,'🏆 완벽해요! 유사도 마스터!'],
+    [70,'👍 잘했어요! 거의 다 됐어요'],
+    [50,'💪 좋아요! 더 연습하면 완벽해요'],
+    [0, '📚 다시 도전! 힌트를 꼭 활용해보세요']
+  ];
+  document.getElementById('resultGrade').textContent=g.find(([t])=>pct>=t)[1];
+  showScreen('resultScreen');
+}
+function restartSame(){startGame(GS.mode);}
+function goStart(){showScreen('startScreen');}
+function showScreen(id){
+  if(id!=='quizScreen')clearInterval(GS.timer);
+  ['startScreen','quizScreen','resultScreen'].forEach(s=>document.getElementById(s).classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+
+// ══════════════════════════════════════
+//  KEYBOARD SUPPORT
+// ══════════════════════════════════════
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('quizScreen').classList.contains('on'))return;
+  if(GS.answered){
+    if(e.key==='Enter'||e.key===' '){
+      e.preventDefault();
+      nextQ();
+    }
+    return;
+  }
+  const active=document.activeElement;
+  const inInput=active&&active.tagName==='INPUT';
+  // Enter: 유클리드는 √적용 or 제출, 코사인은 제출
+  if(e.key==='Enter'&&!inInput){
+    e.preventDefault();
+    const q=GS.questions[GS.cur];
+    if(q&&q.type==='eu'&&euSqrtVal===null)applyEuSqrt();
+    else submitAnswer();
+  }
+  if(e.key==='Enter'&&inInput){
+    e.preventDefault();
+    const q=GS.questions[GS.cur];
+    if(q&&q.type==='eu'&&active.id==='sqSumInput'&&euSqrtVal===null)applyEuSqrt();
+    else submitAnswer();
+  }
+});
+
+document.querySelectorAll('.mode-card[data-mode]').forEach(card=>{
+  card.addEventListener('click',()=>startGame(card.dataset.mode));
+});
+</script>
+</body>
+</html>

@@ -479,39 +479,137 @@
             padding: 4px 0;
         }
 
-        /* 탭 네비게이션 */
-        .tabs {
+        /* 스텝 네비게이션 */
+        .step-nav {
             display: flex;
-            gap: 4px;
-            background: var(--bg);
-            padding: 6px;
-            border-radius: 14px;
-            margin-bottom: 24px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 28px;
         }
 
-        .tab {
-            flex: 1;
-            padding: 14px 20px;
-            border: none;
-            background: transparent;
-            border-radius: 10px;
-            font-size: 1rem;
-            font-weight: 600;
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            font-family: inherit;
+            transition: all 0.2s;
+            min-width: 64px;
+        }
+
+        .step-circle {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: 2.5px solid var(--border);
+            background: white;
             color: var(--text-light);
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
         }
 
-        .tab:hover {
-            color: var(--text);
-            background: rgba(255, 255, 255, 0.5);
+        .step-item.done .step-circle {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
         }
 
-        .tab.active {
-            background: var(--card);
+        .step-item.active .step-circle {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35);
+            transform: scale(1.1);
+        }
+
+        .step-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-light);
+            white-space: nowrap;
+            transition: color 0.2s;
+        }
+
+        .step-item.active .step-label {
             color: var(--primary);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            font-weight: 700;
+        }
+
+        .step-item.done .step-label {
+            color: var(--success);
+        }
+
+        .step-connector {
+            flex: 1;
+            height: 3px;
+            background: var(--border);
+            min-width: 20px;
+            max-width: 80px;
+            margin-bottom: 22px;
+            transition: background 0.4s;
+            border-radius: 99px;
+        }
+
+        .step-connector.done {
+            background: var(--success);
+        }
+
+        /* 슬라이더 이전/다음 버튼 */
+        .step-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1.5px solid var(--border);
+        }
+
+        .step-info-center {
+            font-size: 0.88rem;
+            color: var(--text-light);
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .btn-step {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 22px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-step-prev {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-step-prev:hover:not(:disabled) { background: #F0F0FF; }
+
+        .btn-step-next {
+            background: var(--primary);
+            color: white;
+            border: 2px solid var(--primary);
+        }
+
+        .btn-step-next:hover:not(:disabled) { background: var(--primary-dark); }
+
+        .btn-step:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
         }
 
         /* 수식 영역 */
@@ -827,8 +925,8 @@
 
         .wc-btn {
             flex: 1;
-            padding: 8px 0;
-            font-size: 0.88rem;
+            padding: 10px 20px;
+            font-size: 1rem;
             font-weight: 600;
             border: none;
             background: white;
@@ -1196,6 +1294,44 @@
             animation: fadeIn 0.15s ease;
         }
 
+        .edit-tag-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 8px;
+        }
+
+        .edit-tag-btn {
+            flex: 1;
+            padding: 5px 4px;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            color: var(--text-light);
+            transition: all 0.15s;
+        }
+
+        .edit-tag-btn.tag-active-명사 {
+            background: #D1FAE5;
+            border-color: #10B981;
+            color: #065F46;
+        }
+
+        .edit-tag-btn.tag-active-동사 {
+            background: #FCE7F3;
+            border-color: #EC4899;
+            color: #9D174D;
+        }
+
+        .edit-tag-btn.tag-active-기타 {
+            background: #F1F5F9;
+            border-color: #94A3B8;
+            color: #475569;
+        }
+
         /* 에러 메시지 */
         .error-message {
             background: #FEF2F2;
@@ -1234,9 +1370,11 @@
 
             .card-title { font-size: 1.05rem; }
 
-            /* 탭: 2×2 그리드 */
-            .tabs { gap: 4px; padding: 4px; margin-bottom: 16px; }
-            .tab { flex: 1 1 calc(50% - 4px); padding: 10px 6px; font-size: 0.82rem; text-align: center; }
+            /* 스텝 네비게이터 모바일 */
+            .step-circle { width: 38px; height: 38px; font-size: 0.82rem; }
+            .step-label { font-size: 0.7rem; }
+            .step-connector { max-width: 40px; }
+            .btn-step { padding: 9px 14px; font-size: 0.85rem; }
 
             /* 설정 */
             .settings { flex-direction: column; align-items: flex-start; gap: 10px; }
@@ -1312,7 +1450,7 @@
         @media (max-width: 400px) {
             body { padding: 8px; }
             h1 { font-size: 1.35rem; }
-            .tab { font-size: 0.75rem; padding: 8px 4px; }
+            .step-circle { width: 32px; height: 32px; font-size: 0.75rem; }
             th, td { padding: 6px 7px; font-size: 0.75rem; }
             .card { padding: 12px; }
             .btn { font-size: 0.85rem; padding: 10px 12px; }
@@ -1574,6 +1712,463 @@
             font-weight: 600;
             -webkit-tap-highlight-color: transparent;
         }
+
+        /* =========================================
+           단어 스포트라이트 카드
+           ========================================= */
+        #wordSpotlightCard { display: none; }
+
+        .spotlight-nav-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin-bottom: 20px;
+            gap: 12px;
+        }
+
+        .spotlight-word-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+        }
+
+        .spotlight-word-text {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--primary);
+            letter-spacing: -0.02em;
+        }
+
+        .spotlight-word-counter {
+            font-size: 0.8rem;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        .spotlight-word-tf-total {
+            font-size: 0.82rem;
+            background: #FEF3C7;
+            color: #92400E;
+            border: 1px solid #FCD34D;
+            border-radius: 99px;
+            padding: 3px 12px;
+            font-weight: 700;
+        }
+
+        .btn-spot-nav {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: white;
+            color: var(--text-light);
+            font-size: 1.1rem;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .btn-spot-nav:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: #EEF2FF;
+        }
+
+        .btn-spot-nav:disabled { opacity: 0.25; cursor: not-allowed; }
+
+        .spot-sent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .spot-sent-row {
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 18px;
+            transition: border-color 0.25s, background 0.25s;
+        }
+
+        .spot-sent-row.has-word {
+            border-color: #FCD34D;
+            background: #FFFBEB;
+        }
+
+        .spot-sent-row.no-word {
+            background: #F8FAFC;
+            opacity: 0.65;
+        }
+
+        .spot-sent-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .spot-sent-label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-light);
+        }
+
+        .spot-tf-badge {
+            font-size: 0.88rem;
+            font-weight: 700;
+            padding: 3px 14px;
+            border-radius: 99px;
+        }
+
+        .spot-tf-badge.tf-active {
+            background: #FEF3C7;
+            color: #92400E;
+            border: 1.5px solid #FCD34D;
+        }
+
+        .spot-tf-badge.tf-zero {
+            background: #F1F5F9;
+            color: #94A3B8;
+            border: 1.5px solid var(--border);
+        }
+
+        .spot-sent-tokens {
+            line-height: 2.2;
+            word-break: keep-all;
+            font-size: 0.98rem;
+        }
+
+        .spot-token {
+            display: inline-block;
+            padding: 2px 5px;
+            border-radius: 5px;
+            margin: 1px 1px;
+        }
+
+        .spot-token.hit {
+            background: #FEF08A;
+            color: #713F12;
+            font-weight: 800;
+            border: 1.5px solid #FCD34D;
+            box-shadow: 0 2px 6px rgba(253, 211, 77, 0.45);
+            transform: scale(1.06);
+        }
+
+        .spot-token.selected { color: var(--text); }
+
+        .spot-token.other {
+            color: #CBD5E1;
+            font-size: 0.9em;
+        }
+
+        .spot-hint {
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--text-light);
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1.5px dashed var(--border);
+        }
+
+        .spot-meta-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            font-weight: 600;
+        }
+
+        /* 소 슬라이더: 단어 도트 네비게이터 */
+        .spot-word-dots {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+
+        .spot-word-dot {
+            padding: 4px 14px;
+            border-radius: 99px;
+            border: 1.5px solid var(--border);
+            background: white;
+            color: var(--text-light);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.18s;
+        }
+
+        .spot-word-dot.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+        }
+
+        .spot-word-dot:hover:not(.active) {
+            border-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        /* wordSelectorCard 하단 다음 버튼 영역 */
+        .word-selector-next {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 2px dashed #3B82F6;
+        }
+
+        .btn-go-result {
+            font-size: 1.05rem;
+            padding: 13px 32px;
+        }
+
+        /* TF-IDF 탭: 문장별 확인 섹션 */
+        .tfidf-sent-section {
+            margin-top: 28px;
+            border-top: 2px solid var(--border);
+            padding-top: 22px;
+        }
+
+        .tfidf-sent-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tfidf-formula-mini {
+            font-size: 0.78rem;
+            color: #6366F1;
+            font-weight: 600;
+            margin: 4px 0 8px 2px;
+            letter-spacing: 0.01em;
+        }
+
+        .tfidf-badge {
+            background: #EDE9FE;
+            color: #4C1D95;
+            border: 1.5px solid #C4B5FD;
+        }
+
+        /* TF-IDF 워드클라우드 섹션 */
+        .tfidf-cloud-full {
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .tfidf-cloud-controls {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .tfidf-cloud-full-toggle { width: auto; flex-shrink: 0; }
+
+        .wc-label-inline {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-light);
+        }
+
+        .tfidf-cloud-body {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .tfidf-cloud-full #wordCloudCanvas {
+            flex: 1 1 0;
+            min-width: 0;
+            width: 100% !important;
+            height: 400px !important;
+        }
+
+        /* 순위 패널 */
+        .wc-rank-panel {
+            flex: 0 0 240px;
+            width: 240px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            font-size: 0.8rem;
+        }
+
+        .wc-rank-header {
+            background: var(--bg);
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 0.78rem;
+            color: var(--text-light);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 4px;
+        }
+
+        .wc-rank-col-num   { width: 20px; flex-shrink: 0; font-size: 0.7rem; color: #CBD5E1; font-weight: 700; }
+        .wc-rank-col-word  { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .wc-rank-col-val   { width: 52px; text-align: right; flex-shrink: 0; font-size: 0.78rem; }
+        .wc-rank-col-bar   { width: 60px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; }
+        .wc-rank-hd-tf     { color: #4F46E5; }
+        .wc-rank-hd-tfidf  { color: #DC2626; }
+        .wc-bar-wrap       { width: 100%; height: 5px; background: #F1F5F9; border-radius: 3px; overflow: hidden; }
+        .wc-bar-tf         { display: block; height: 100%; background: #818CF8; border-radius: 3px; }
+        .wc-bar-tfidf      { display: block; height: 100%; background: #F97316; border-radius: 3px; }
+
+        .wc-rank-rows {
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .wc-rank-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 12px;
+            border-bottom: 1px solid #F1F5F9;
+            transition: background 0.1s;
+        }
+
+        .wc-rank-row:hover { background: #F8FAFC; }
+
+        .wc-rank-row:last-child { border-bottom: none; }
+
+        .wc-rank-num {
+            font-size: 0.7rem;
+            color: #CBD5E1;
+            font-weight: 700;
+            width: 18px;
+            flex-shrink: 0;
+        }
+
+        .wc-rank-word {
+            flex: 1;
+            font-weight: 700;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .wc-rank-tf {
+            width: 28px;
+            text-align: right;
+            color: #4F46E5;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .wc-rank-tfidf {
+            width: 44px;
+            text-align: right;
+            color: #DC2626;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .wc-rank-bar-wrap {
+            width: 52px;
+            flex-shrink: 0;
+        }
+
+        .wc-rank-bar {
+            height: 6px;
+            border-radius: 3px;
+            margin-bottom: 2px;
+        }
+
+        .wc-rank-bar.bar-tf    { background: #818CF8; }
+        .wc-rank-bar.bar-tfidf { background: #F97316; }
+
+        @media (max-width: 700px) {
+            .tfidf-cloud-body { flex-direction: column; }
+            .wc-rank-panel { width: 100%; flex: none; }
+        }
+
+        /* 결과 카드 상단 돌아가기 버튼 */
+        .result-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            color: var(--text-light);
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.18s;
+            margin-bottom: 20px;
+        }
+        .result-back-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* 단어 통계 메트릭 바 (DF·IDF) */
+        .spot-word-stats {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            background: #F0F9FF;
+            border: 1.5px solid #BAE6FD;
+            border-radius: 10px;
+            padding: 12px 20px;
+            margin-bottom: 16px;
+        }
+
+        .spot-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            flex: 1;
+        }
+
+        .spot-stat-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #0369A1;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .spot-stat-val {
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #0C4A6E;
+            line-height: 1;
+        }
+
+        .spot-stat-desc {
+            font-size: 0.68rem;
+            color: #0369A1;
+            white-space: nowrap;
+        }
+
+        .spot-stat-div {
+            width: 1.5px;
+            height: 40px;
+            background: #BAE6FD;
+            flex-shrink: 0;
+            margin: 0 12px;
+        }
     </style>
 </head>
 <body>
@@ -1584,6 +2179,8 @@
     </div>
 
     <div class="container">
+        <!-- 입력/분석/단어선택 섹션 ("다음" 시 숨김) -->
+        <div id="preResultSection">
         <header>
             <h1>📊 TF-IDF 계산 체험</h1>
             <p class="subtitle">형태소를 분석하고 단어 중요도를 계산해보세요</p>
@@ -1711,25 +2308,93 @@
                 </div>
             </div>
             <div class="word-chips" id="wordChips"></div>
+            <div class="word-selector-next">
+                <button type="button" class="btn btn-primary btn-go-result" id="btnGoResult" onclick="goToResult()">
+                    다음: 단어별 TF 확인 →
+                </button>
+            </div>
         </div>
 
-        <!-- 결과 카드 -->
+        </div><!-- /preResultSection -->
+
+        <!-- 결과 카드 (대 슬라이더: 5단계) -->
         <div class="card" id="resultCard" style="display: none;">
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('tf')">TF (단어 빈도)</button>
-                <button class="tab" onclick="switchTab('df')">DF (문장 빈도)</button>
-                <button class="tab" onclick="switchTab('idf')">IDF (역문장 빈도)</button>
-                <button class="tab" onclick="switchTab('tfidf')">TF-IDF</button>
+            <button type="button" class="result-back-btn" onclick="goBack()">← 단어 선택으로 돌아가기</button>
+
+            <!-- 대 슬라이더 스텝 인디케이터 -->
+            <div class="step-nav" id="stepNav">
+                <div class="step-item active" id="step-item-0" onclick="goToStep(0)">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">단어 탐색</div>
+                </div>
+                <div class="step-connector" id="connector-0"></div>
+                <div class="step-item" id="step-item-1" onclick="goToStep(1)">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">TF</div>
+                </div>
+                <div class="step-connector" id="connector-1"></div>
+                <div class="step-item" id="step-item-2" onclick="goToStep(2)">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">DF</div>
+                </div>
+                <div class="step-connector" id="connector-2"></div>
+                <div class="step-item" id="step-item-3" onclick="goToStep(3)">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">IDF</div>
+                </div>
+                <div class="step-connector" id="connector-3"></div>
+                <div class="step-item" id="step-item-4" onclick="goToStep(4)">
+                    <div class="step-circle">5</div>
+                    <div class="step-label">TF-IDF</div>
+                </div>
             </div>
 
-            <!-- TF 탭 -->
-            <div class="tab-content active" id="tab-tf">
+            <!-- Step 1: 단어별 TF 탐색 (소 슬라이더 포함) -->
+            <div class="tab-content active" id="tab-words">
+                <!-- 소 슬라이더: 단어 네비게이터 -->
+                <div class="spotlight-nav-bar">
+                    <button type="button" class="btn-spot-nav" id="btnSpotPrev" onclick="spotPrev()" title="이전 단어">&#8592;</button>
+                    <div class="spotlight-word-display">
+                        <div class="spotlight-word-text" id="spotWordText">-</div>
+                        <div class="spotlight-word-tf-total" id="spotTfTotal">전체 TF: -</div>
+                        <div class="spotlight-word-counter" id="spotCounter"></div>
+                    </div>
+                    <button type="button" class="btn-spot-nav" id="btnSpotNext" onclick="spotNext()" title="다음 단어">&#8594;</button>
+                </div>
+                <!-- 단어 도트: 전체 선택 단어 한눈에 보기 (소 슬라이더 도트) -->
+                <div class="spot-word-dots" id="spotWordDots"></div>
+                <!-- 단어 통계 메트릭 바 (TF합계·DF·IDF) -->
+                <div class="spot-word-stats" id="spotWordStats">
+                    <div class="spot-stat">
+                        <span class="spot-stat-label">TF 합계</span>
+                        <span class="spot-stat-val" id="spotStatTf">-</span>
+                        <span class="spot-stat-desc">전체 문장 등장 횟수</span>
+                    </div>
+                    <div class="spot-stat-div"></div>
+                    <div class="spot-stat">
+                        <span class="spot-stat-label">DF</span>
+                        <span class="spot-stat-val" id="spotStatDf">-</span>
+                        <span class="spot-stat-desc" id="spotStatDfDesc">문장에 등장</span>
+                    </div>
+                    <div class="spot-stat-div"></div>
+                    <div class="spot-stat">
+                        <span class="spot-stat-label">IDF</span>
+                        <span class="spot-stat-val" id="spotStatIdf">-</span>
+                        <span class="spot-stat-desc" id="spotStatIdfDesc">희귀도</span>
+                    </div>
+                </div>
+                <!-- 문장별 TF 음영 표시 -->
+                <div class="spot-sent-list" id="spotSentList"></div>
+            </div>
+
+            <!-- Step 2: TF -->
+            <div class="tab-content" id="tab-tf">
                 <div class="formula-box">
                     <div class="formula-title">TF (Term Frequency) 계산 공식</div>
                     <div class="formula" id="formula-tf"></div>
                 </div>
                 <div class="description">
-                    <strong>TF(단어 빈도)</strong>는 특정 문장에서 해당 단어가 몇 번 등장하는지를 나타냅니다. 
+                    <strong>TF(단어 빈도)</strong>는 특정 문장에서 해당 단어가 몇 번 등장하는지를 나타냅니다.
                     값이 클수록 해당 문장에서 자주 사용된 단어입니다.
                 </div>
                 <div class="table-container">
@@ -1737,7 +2402,7 @@
                 </div>
             </div>
 
-            <!-- DF 탭 -->
+            <!-- Step 2: DF -->
             <div class="tab-content" id="tab-df">
                 <div class="formula-box">
                     <div class="formula-title">DF (Document Frequency) 계산 공식</div>
@@ -1752,7 +2417,7 @@
                 </div>
             </div>
 
-            <!-- IDF 탭 -->
+            <!-- Step 3: IDF -->
             <div class="tab-content" id="tab-idf">
                 <div class="formula-box">
                     <div class="formula-title">IDF (Inverse Document Frequency) 계산 공식</div>
@@ -1768,7 +2433,7 @@
                 </div>
             </div>
 
-            <!-- TF-IDF 탭 -->
+            <!-- Step 5: TF-IDF -->
             <div class="tab-content" id="tab-tfidf">
                 <div class="formula-box">
                     <div class="formula-title">TF-IDF 최종 계산 공식</div>
@@ -1780,23 +2445,64 @@
                     이런 단어가 해당 문장을 대표하는 <strong>핵심 키워드</strong>입니다.
                 </div>
                 <div id="tfidf-single-warning" class="single-doc-warning"></div>
-                <div class="tfidf-layout">
-                    <div class="tfidf-table-side">
-                        <div class="table-container">
-                            <table id="tfidfTable"></table>
-                        </div>
-                        <div class="legend" id="legend"></div>
-                    </div>
-                    <div class="tfidf-cloud-side">
-                        <div class="wc-toggle">
-                            <button type="button" class="wc-btn active" id="wc-btn-tf" onclick="switchWordCloud('tf')">TF 기반</button>
-                            <button type="button" class="wc-btn" id="wc-btn-tfidf" onclick="switchWordCloud('tfidf')">TF-IDF 기반</button>
-                        </div>
-                        <div class="wc-label" id="wc-label">TF 기반 핵심어</div>
-                        <canvas id="wordCloudCanvas" width="288" height="288"></canvas>
-                        <div class="wc-diff" id="wc-diff"></div>
-                    </div>
+
+                <!-- ① TF-IDF 표 (전체폭) -->
+                <div class="table-container">
+                    <table id="tfidfTable"></table>
                 </div>
+                <div class="legend" id="legend"></div>
+
+                <!-- ② 단어별 문장 TF-IDF 확인 -->
+                <div class="tfidf-sent-section">
+                    <div class="tfidf-sent-title">🔍 단어별 문장 TF-IDF 확인</div>
+                    <!-- 소 슬라이더: 단어 네비게이터 -->
+                    <div class="spotlight-nav-bar">
+                        <button type="button" class="btn-spot-nav" id="btnTfidfPrev" onclick="tfidfSpotPrev()" title="이전 단어">&#8592;</button>
+                        <div class="spotlight-word-display">
+                            <div class="spotlight-word-text" id="tfidfSpotWord">-</div>
+                            <div class="spotlight-word-counter" id="tfidfSpotCounter"></div>
+                        </div>
+                        <button type="button" class="btn-spot-nav" id="btnTfidfNext" onclick="tfidfSpotNext()" title="다음 단어">&#8594;</button>
+                    </div>
+                    <!-- 도트 칩 -->
+                    <div class="spot-word-dots" id="tfidfSpotDots"></div>
+                    <!-- 문장 목록 -->
+                    <div class="spot-sent-list" id="tfidfSentList"></div>
+                </div>
+
+                <!-- ③ 워드클라우드 + 순위 패널 -->
+                <div class="tfidf-cloud-full">
+                    <!-- 컨트롤 행 -->
+                    <div class="tfidf-cloud-controls">
+                        <div class="wc-toggle tfidf-cloud-full-toggle">
+                            <button type="button" class="wc-btn active" id="wc-btn-tf"    onclick="switchWordCloud('tf')">TF 기반</button>
+                            <button type="button" class="wc-btn"        id="wc-btn-tfidf" onclick="switchWordCloud('tfidf')">TF-IDF 합산</button>
+                        </div>
+                        <span class="wc-label-inline" id="wc-label">TF 기반 핵심어</span>
+                    </div>
+                    <!-- 클라우드 + 순위표 -->
+                    <div class="tfidf-cloud-body">
+                        <canvas id="wordCloudCanvas" width="600" height="400"></canvas>
+                        <div class="wc-rank-panel" id="wcRankPanel">
+                            <div class="wc-rank-header">
+                                <span class="wc-rank-col-num">#</span>
+                                <span class="wc-rank-col-word">단어</span>
+                                <span class="wc-rank-col-val wc-rank-hd-tf">TF</span>
+                                <span class="wc-rank-col-val wc-rank-hd-tfidf">TF-IDF</span>
+                                <span class="wc-rank-col-bar"></span>
+                            </div>
+                            <div class="wc-rank-rows" id="wcRankRows"></div>
+                        </div>
+                    </div>
+                    <div class="wc-diff" id="wc-diff"></div>
+                </div>
+            </div>
+
+            <!-- 이전 / 다음 버튼 -->
+            <div class="step-controls">
+                <button type="button" class="btn-step btn-step-prev" id="btnPrev" onclick="prevStep()" disabled>← 이전</button>
+                <div class="step-info-center" id="stepInfo">Step 1 / 5 &nbsp;·&nbsp; 단어별 TF 탐색</div>
+                <button type="button" class="btn-step btn-step-next" id="btnNext" onclick="nextStep()">다음 →</button>
             </div>
         </div>
     </div>
@@ -1937,6 +2643,21 @@
                 toggleStopWord(allMorphemes[sentenceIdx][morphIdx].lex);
                 renderMorphemeResult(allMorphemes);
             }, 250);
+        }
+
+        // 단어(lex) 전체를 불용어 토글 (모든 문장에서 해당 lex 동시 처리)
+        function toggleStopWord(lex) {
+            // 하나라도 selected면 → 전체 제외, 모두 제외면 → 품사 기준으로 복원
+            let anySelected = false;
+            allMorphemes.forEach(morphs =>
+                morphs.forEach(m => { if (m.lex === lex && m.selected) anySelected = true; })
+            );
+            allMorphemes.forEach(morphs =>
+                morphs.forEach(m => {
+                    if (m.lex === lex)
+                        m.selected = anySelected ? false : selectedPosTags.has(m.tag);
+                })
+            );
         }
 
         // 더블클릭 핸들러 → 수정 편집창 열기
@@ -2824,21 +3545,32 @@ ${sentences.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
             const wrapper = tokenEl.closest('.morph-token-wrapper');
             const editBox = document.createElement('div');
             editBox.className = 'inline-edit-box';
+            const currentTag = morpheme.tag;
             editBox.innerHTML = `
-                <div style="background:white;border:2px solid #3B82F6;border-radius:10px;padding:12px;box-shadow:0 6px 20px rgba(0,0,0,0.16);min-width:210px;">
+                <div style="background:white;border:2px solid #3B82F6;border-radius:10px;padding:12px;box-shadow:0 6px 20px rgba(0,0,0,0.16);min-width:220px;">
                     <div style="font-size:0.78rem;color:#94A3B8;margin-bottom:6px;font-weight:600;letter-spacing:0.02em;">단어 수정</div>
                     ${originalLex !== currentLex ? `<div style="font-size:0.8rem;color:#94A3B8;margin-bottom:4px;">원본: <strong style="color:#475569">${originalLex}</strong></div>` : ''}
                     <input type="text"
                            id="editInput_${sentenceIdx}_${morphIdx}"
                            value="${currentLex}"
                            style="width:100%;padding:7px 10px;border:1px solid #CBD5E1;border-radius:6px;font-size:0.95rem;margin-bottom:8px;box-sizing:border-box;outline:none;"
-                           placeholder="새로운 단어 입력">
-                    <div style="display:flex;gap:6px;margin-bottom:6px;">
-                        <button onclick="applyEdit(${sentenceIdx}, ${morphIdx})"
+                           placeholder="새로운 단어 입력"
+                           onkeydown="if(event.key==='Enter')applyEdit(${sentenceIdx},${morphIdx});if(event.key==='Escape')cancelEdit();">
+                    <div style="font-size:0.75rem;color:#94A3B8;margin-bottom:5px;font-weight:600;">품사 변경</div>
+                    <input type="hidden" id="editTag_${sentenceIdx}_${morphIdx}" value="${currentTag}">
+                    <div class="edit-tag-row">
+                        ${['명사','동사','기타'].map(t => `
+                        <button type="button"
+                                class="edit-tag-btn${currentTag===t?' tag-active-'+t:''}"
+                                id="editTagBtn_${sentenceIdx}_${morphIdx}_${t}"
+                                onclick="selectEditTag(${sentenceIdx},${morphIdx},'${t}')">${t}</button>`).join('')}
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                        <button type="button" onclick="applyEdit(${sentenceIdx}, ${morphIdx})"
                                 style="flex:1;background:#3B82F6;color:white;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;font-size:0.82rem;font-weight:600;">
                             확인
                         </button>
-                        <button onclick="cancelEdit()"
+                        <button type="button" onclick="cancelEdit()"
                                 style="flex:1;background:#F1F5F9;color:#475569;border:none;padding:6px 10px;border-radius:5px;cursor:pointer;font-size:0.82rem;">
                             취소
                         </button>
@@ -2874,21 +3606,37 @@ ${sentences.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
             });
         }
 
+        // 품사 버튼 선택 (편집창 내)
+        function selectEditTag(si, mi, tag) {
+            document.getElementById(`editTag_${si}_${mi}`).value = tag;
+            ['명사','동사','기타'].forEach(t => {
+                const btn = document.getElementById(`editTagBtn_${si}_${mi}_${t}`);
+                if (btn) {
+                    btn.className = 'edit-tag-btn' + (t === tag ? ` tag-active-${t}` : '');
+                }
+            });
+        }
+
         // 편집 적용
         function applyEdit(sentenceIdx, morphIdx) {
-            const input = document.getElementById(`editInput_${sentenceIdx}_${morphIdx}`);
-            const newLex = input.value.trim();
+            const input   = document.getElementById(`editInput_${sentenceIdx}_${morphIdx}`);
+            const tagInput = document.getElementById(`editTag_${sentenceIdx}_${morphIdx}`);
+            const newLex  = input ? input.value.trim() : '';
+            const newTag  = tagInput ? tagInput.value : null;
             const morpheme = allMorphemes[sentenceIdx][morphIdx];
-            const currentLex = morpheme.lex;
-            
-            if (newLex !== '' && newLex !== currentLex) {
-                // original이 없으면 현재 lex를 original로 저장
-                if (!morpheme.original) {
-                    morpheme.original = currentLex;
-                }
+
+            // 텍스트 변경
+            if (newLex !== '' && newLex !== morpheme.lex) {
+                if (!morpheme.original) morpheme.original = morpheme.lex;
                 morpheme.lex = newLex;
             }
-            
+
+            // 품사 변경
+            if (newTag && newTag !== morpheme.tag) {
+                morpheme.tag      = newTag;
+                morpheme.selected = selectedPosTags.has(newTag);
+            }
+
             cancelEdit();
             renderMorphemeResult(allMorphemes);
         }
@@ -3081,12 +3829,11 @@ ${sentences.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
             computeWordScores();
             resetTopWords();
             renderTables();
-            renderWordCloud('tf');
 
-            // 결과 카드 및 단어 선택 패널 표시
-            document.getElementById('resultCard').style.display = 'block';
+            // 단어 선택 패널 표시 (resultCard는 "다음" 버튼으로 진입)
             document.getElementById('wordSelectorCard').style.display = 'block';
-            // document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' }); // 스크롤 제거
+            document.getElementById('resultCard').style.display = 'none';
+            updateSpotlight();
         }
 
         // 테이블 렌더링
@@ -3299,6 +4046,7 @@ ${sentences.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
             selectedWords = new Set(sorted.slice(0, Math.min(n, sorted.length)));
             renderWordSelector();
             renderTables();
+            updateSpotlight();
         }
 
         // 전체 해제
@@ -3306,6 +4054,7 @@ ${sentences.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
             selectedWords.clear();
             renderWordSelector();
             renderTables();
+            updateSpotlight();
         }
 
         // 단어 토글
@@ -3314,9 +4063,14 @@ ${sentences.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
                 selectedWords.delete(word);
             } else {
                 selectedWords.add(word);
+                // 새로 추가된 단어를 스포트라이트에서 바로 표시
+                const sorted = [...words].sort(wordSortKey);
+                spotIdx = sorted.filter(w => selectedWords.has(w)).indexOf(word);
+                if (spotIdx < 0) spotIdx = 0;
             }
             renderWordSelector();
             renderTables();
+            updateSpotlight();
         }
 
         // 단어 선택 패널 렌더링
@@ -3352,50 +4106,147 @@ ${sentences.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
             wcMode = mode;
             document.getElementById('wc-btn-tf').classList.toggle('active', mode === 'tf');
             document.getElementById('wc-btn-tfidf').classList.toggle('active', mode === 'tfidf');
-            document.getElementById('wc-btn-tfidf').classList.toggle('tfidf-mode', mode === 'tfidf');
             renderWordCloud(mode);
         }
 
         function renderWordCloud(mode) {
-            const canvas = document.getElementById('wordCloudCanvas');
-            if (!canvas || words.length === 0) return;
+            if (words.length === 0) return;
 
-            // 전체 단어 사용 (선택 여부 무관 — 비교 목적)
+            // canvas를 새 요소로 교체해 wordcloud2 내부 캐시/잔상 완전 제거
+            const old = document.getElementById('wordCloudCanvas');
+            if (!old) return;
+            const fresh = document.createElement('canvas');
+            fresh.id = 'wordCloudCanvas';
+            old.parentNode.replaceChild(fresh, old);
+
+            // CSS가 적용된 실제 렌더링 크기를 픽셀 버퍼에 반영
+            const w = fresh.offsetWidth  || fresh.parentElement?.offsetWidth || 600;
+            const h = fresh.offsetHeight || 400;
+            fresh.width  = w;
+            fresh.height = h;
+
+            // 점수 계산 (전체 단어 — 비교·맥락 목적)
+            const pool = words;
+
             const scores = {};
-            words.forEach(word => {
+            pool.forEach(word => {
                 if (mode === 'tf') {
-                    scores[word] = tfMatrix.reduce((s, row) => s + (row[word] || 0), 0);
+                    scores[word] = tfMatrix.reduce((s, r) => s + (r[word] || 0), 0);
                 } else {
-                    scores[word] = tfidfMatrix.reduce((s, row) => s + (row[word] || 0), 0);
+                    scores[word] = tfidfMatrix.reduce((s, r) => s + (r[word] || 0), 0);
                 }
             });
 
-            const maxScore = Math.max(...Object.values(scores)) || 1;
-            const list = words
-                .filter(w => scores[w] > 0)
-                .map(w => [w, Math.round((scores[w] / maxScore) * 60) + 10]);
+            const vals = Object.values(scores).filter(v => v > 0);
+            if (vals.length === 0) return;
 
-            const tfPalette    = ['#4F46E5','#6366F1','#818CF8','#7C3AED','#2563EB','#3730A3'];
-            const tfidfPalette = ['#DC2626','#F97316','#F59E0B','#B91C1C','#D97706','#EA580C'];
+            const maxScore = Math.max(...vals);
+            const minScore = Math.min(...vals);
+            const range    = maxScore - minScore || 1;
+
+            // 크기: 최솟값~최댓값을 16px~72px으로 선형 매핑 (차이 강조)
+            const list = pool
+                .filter(w => scores[w] > 0)
+                .sort((a, b) => scores[b] - scores[a])
+                .map(w => {
+                    const normalized = (scores[w] - minScore) / range;   // 0~1
+                    const size = Math.round(normalized * 56) + 16;       // 16~72
+                    return [w, size];
+                });
+
+            const tfPalette      = ['#4F46E5','#6366F1','#818CF8','#7C3AED','#2563EB','#3730A3'];
+            const tfidfPalette   = ['#DC2626','#F97316','#F59E0B','#B91C1C','#D97706','#EA580C'];
             const palette = mode === 'tf' ? tfPalette : tfidfPalette;
 
             document.getElementById('wc-label').textContent =
-                mode === 'tf' ? 'TF 기반 핵심어 (전체 빈도)' : 'TF-IDF 기반 핵심어 (문서 특징어)';
+                mode === 'tf' ? 'TF 기반 핵심어 (전체 빈도)' : 'TF-IDF 기반 핵심어 (합산)';
 
-            WordCloud(canvas, {
-                list,
-                fontFamily: "'Pretendard Variable', sans-serif",
-                color: () => palette[Math.floor(Math.random() * palette.length)],
-                backgroundColor: '#ffffff',
-                weightFactor: 1,
-                rotateRatio: 0.3,
-                rotationSteps: 2,
-                shrinkToFit: true,
-                drawOutOfBound: false,
-                minSize: 8,
-            });
+            const drawCloud = (sizedList, attempt) => {
+                // 레이아웃 확정 후 실제 크기로 재측정
+                const rw = fresh.parentElement?.offsetWidth || fresh.offsetWidth || 600;
+                const rh = fresh.parentElement?.offsetHeight || 400;
+                fresh.width  = rw;
+                fresh.height = rh;
+
+                fresh.addEventListener('wordcloudstop', () => {
+                    if (attempt >= 3) return;
+
+                    // 빈 픽셀(흰색 배경) 비율 측정
+                    const ctx = fresh.getContext('2d');
+                    const data = ctx.getImageData(0, 0, fresh.width, fresh.height).data;
+                    let blank = 0;
+                    const total = fresh.width * fresh.height;
+                    for (let i = 0; i < data.length; i += 4) {
+                        if (data[i] > 250 && data[i + 1] > 250 && data[i + 2] > 250) blank++;
+                    }
+                    const blankPct = blank / total;
+
+                    // 빈 공간이 45% 초과면 폰트 비례 확대 후 재시도
+                    if (blankPct > 0.45) {
+                        const scale = 1 + (blankPct - 0.45) * 1.8;
+                        const scaled = sizedList.map(([w, s]) => [w, Math.round(s * scale)]);
+                        drawCloud(scaled, attempt + 1);
+                    }
+                }, { once: true });
+
+                WordCloud(fresh, {
+                    list: sizedList,
+                    fontFamily: "'Pretendard Variable', sans-serif",
+                    color: () => palette[Math.floor(Math.random() * palette.length)],
+                    backgroundColor: '#ffffff',
+                    weightFactor: 1,
+                    rotateRatio: 0,
+                    shrinkToFit: true,
+                    drawOutOfBound: false,
+                    minSize: 10,
+                });
+            };
+            requestAnimationFrame(() => drawCloud(list, 0));
 
             renderWcDiff();
+            renderWcRankTable(mode, scores);
+        }
+
+        function renderWcRankTable(mode, scores) {
+            const container = document.getElementById('wcRankRows');
+            if (!container) return;
+
+            // TF 합산 (항상 표시)
+            const tfScores = {};
+            words.forEach(w => { tfScores[w] = tfMatrix.reduce((s, r) => s + (r[w] || 0), 0); });
+
+            // TF-IDF 합산 (항상 표시)
+            const tfidfSumScores = {};
+            words.forEach(w => { tfidfSumScores[w] = tfidfMatrix.reduce((s, r) => s + (r[w] || 0), 0); });
+
+            // 현재 모드 기준으로 정렬
+            const sorted = [...words].filter(w => (scores[w] || 0) > 0)
+                .sort((a, b) => scores[b] - scores[a]);
+
+            const maxTf    = Math.max(...sorted.map(w => tfScores[w]    || 0)) || 1;
+            const maxTfidf = Math.max(...sorted.map(w => tfidfSumScores[w] || 0)) || 1;
+
+            container.innerHTML = sorted.map((w, i) => {
+                const tf       = tfScores[w]    || 0;
+                const tfidfSum = tfidfSumScores[w] || 0;
+                const tfPct    = (tf    / maxTf)    * 100;
+                const tfidfPct = (tfidfSum / maxTfidf) * 100;
+                return `
+                <div class="wc-rank-row">
+                    <span class="wc-rank-col-num">${i + 1}</span>
+                    <span class="wc-rank-col-word">${esc(w)}</span>
+                    <span class="wc-rank-col-val">${tf}</span>
+                    <span class="wc-rank-col-val">${tfidfSum.toFixed(3)}</span>
+                    <span class="wc-rank-col-bar">
+                        <span class="wc-bar-wrap">
+                            <span class="wc-bar-tf"    style="width:${tfPct.toFixed(1)}%"></span>
+                        </span>
+                        <span class="wc-bar-wrap">
+                            <span class="wc-bar-tfidf" style="width:${tfidfPct.toFixed(1)}%"></span>
+                        </span>
+                    </span>
+                </div>`;
+            }).join('');
         }
 
         // TF 순위 vs TF-IDF 순위 비교 — 상위 5개 변화 표시
@@ -3447,13 +4298,224 @@ ${sentences.map((s, i) => `${i + 1}. ${s}`).join('\n')}`;
             document.getElementById('wc-diff').innerHTML = html;
         }
 
-        // 탭 전환
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        // 대 슬라이더 스텝 네비게이션 (5단계)
+        const STEP_NAMES  = ['words', 'tf', 'df', 'idf', 'tfidf'];
+        const STEP_LABELS = ['단어별 TF 탐색', 'TF (단어 빈도)', 'DF (문장 빈도)', 'IDF (역문장 빈도)', 'TF-IDF'];
+        let currentStep = 0;
 
-            event.target.classList.add('active');
-            document.getElementById(`tab-${tabName}`).classList.add('active');
+        function goToStep(n) {
+            currentStep = n;
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById(`tab-${STEP_NAMES[n]}`).classList.add('active');
+
+            document.querySelectorAll('.step-item').forEach((el, i) => {
+                el.classList.remove('active', 'done');
+                if (i < n) el.classList.add('done');
+                else if (i === n) el.classList.add('active');
+            });
+            document.querySelectorAll('.step-connector').forEach((el, i) => {
+                el.classList.toggle('done', i < n);
+            });
+
+            document.getElementById('btnPrev').disabled = n === 0;
+            document.getElementById('btnNext').disabled = n === STEP_NAMES.length - 1;
+            document.getElementById('stepInfo').innerHTML =
+                `Step ${n + 1} / ${STEP_NAMES.length} &nbsp;·&nbsp; ${STEP_LABELS[n]}`;
+
+            // TF-IDF 스텝 진입 시 문장뷰 + 워드클라우드 초기화
+            if (STEP_NAMES[n] === 'tfidf') {
+                updateTfidfSentView();
+                wcMode = 'tf';
+                document.getElementById('wc-btn-tf').classList.add('active');
+                document.getElementById('wc-btn-tfidf').classList.remove('active');
+                renderWordCloud('tf');
+            }
+        }
+
+        function prevStep() { if (currentStep > 0) goToStep(currentStep - 1); }
+        function nextStep() { if (currentStep < STEP_NAMES.length - 1) goToStep(currentStep + 1); }
+
+        function switchTab(tabName) { goToStep(STEP_NAMES.indexOf(tabName)); }
+
+        // 단어 선택 완료 → 대 슬라이더 진입 (상단 섹션 숨김)
+        function goToResult() {
+            document.getElementById('preResultSection').style.display = 'none';
+            const card = document.getElementById('resultCard');
+            card.style.display = 'block';
+            spotIdx = 0;
+            updateSpotlight();
+            goToStep(0);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 대 슬라이더 → 단어 선택으로 돌아가기
+        function goBack() {
+            document.getElementById('resultCard').style.display = 'none';
+            document.getElementById('preResultSection').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ================================================================
+        // 단어 스포트라이트 (단어별 TF 음영 미리보기)
+        // ================================================================
+        let spotlightWords = [];
+        let spotIdx = 0;
+
+        function esc(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+
+        function updateSpotlight() {
+            if (!words || words.length === 0) return;
+            const sorted = [...words].sort(wordSortKey);
+            spotlightWords = sorted.filter(w => selectedWords.has(w));
+            if (spotlightWords.length === 0) return;
+            // 현재 단어가 목록에서 사라졌으면 0으로 리셋
+            if (spotIdx >= spotlightWords.length) spotIdx = 0;
+            // resultCard가 열려 있을 때만 렌더링
+            if (document.getElementById('resultCard').style.display !== 'none') {
+                renderSpotlight();
+            }
+        }
+
+        function renderSpotlight() {
+            const word = spotlightWords[spotIdx];
+            if (!word) return;
+
+            const totalTf = tfMatrix.reduce((s, r) => s + (r[word] || 0), 0);
+            const df      = dfVector[word] || 0;
+            const idf     = idfVector[word] != null ? idfVector[word] : null;
+            const useLog  = document.getElementById('useLog').checked;
+            const N       = documents.length;
+
+            // 단어 네비게이터
+            document.getElementById('spotWordText').textContent = word;
+            document.getElementById('spotTfTotal').textContent  = `TF 합계: ${totalTf}`;
+            document.getElementById('spotCounter').textContent  =
+                `${spotIdx + 1} / ${spotlightWords.length}번째 단어`;
+            document.getElementById('btnSpotPrev').disabled = spotIdx === 0;
+            document.getElementById('btnSpotNext').disabled =
+                spotIdx === spotlightWords.length - 1;
+
+            // 소 슬라이더 도트
+            document.getElementById('spotWordDots').innerHTML = spotlightWords.map((w, i) =>
+                `<button type="button" class="spot-word-dot${i === spotIdx ? ' active' : ''}" onclick="spotGoTo(${i})">${esc(w)}</button>`
+            ).join('');
+
+            // 메트릭 바: TF합계·DF·IDF
+            document.getElementById('spotStatTf').textContent  = totalTf;
+            document.getElementById('spotStatDf').textContent  = df;
+            document.getElementById('spotStatDfDesc').textContent =
+                `${N}개 문장 중 ${df}개에 등장`;
+            document.getElementById('spotStatIdf').textContent =
+                idf != null ? idf.toFixed(3) : '-';
+            document.getElementById('spotStatIdfDesc').textContent =
+                useLog ? `log(${N}/${df}) = ${idf != null ? idf.toFixed(3) : '-'}`
+                       : `${N}/${df} = ${idf != null ? idf.toFixed(3) : '-'}`;
+
+            // 문장별 TF 음영
+            let html = '';
+            documents.forEach((doc, i) => {
+                const tf = tfMatrix[i][word] || 0;
+                html += `
+                    <div class="spot-sent-row ${tf > 0 ? 'has-word' : 'no-word'}">
+                        <div class="spot-sent-header">
+                            <span class="spot-sent-label">문장 ${i + 1}</span>
+                            <span class="spot-tf-badge ${tf > 0 ? 'tf-active' : 'tf-zero'}">TF = ${tf}</span>
+                        </div>
+                        <div class="spot-sent-tokens">${buildTokenHtml(i, word)}</div>
+                    </div>`;
+            });
+            document.getElementById('spotSentList').innerHTML = html;
+        }
+
+        function spotGoTo(n) {
+            spotIdx = n;
+            renderSpotlight();
+        }
+
+        // ================================================================
+        // TF-IDF 단어별 문장 확인 (Step 5 내 소 슬라이더)
+        // ================================================================
+        let tfidfSpotIdx   = 0;
+        let tfidfSpotWords = [];
+
+        function updateTfidfSentView() {
+            if (!words || words.length === 0) return;
+            // TF-IDF 합계 내림차순으로 정렬
+            tfidfSpotWords = [...words]
+                .filter(w => selectedWords.has(w))
+                .sort((a, b) => {
+                    const sa = tfidfMatrix.reduce((s, r) => s + (r[a] || 0), 0);
+                    const sb = tfidfMatrix.reduce((s, r) => s + (r[b] || 0), 0);
+                    return sb - sa;
+                });
+            tfidfSpotIdx = 0;
+            renderTfidfSentView();
+        }
+
+        function renderTfidfSentView() {
+            const word = tfidfSpotWords[tfidfSpotIdx];
+            if (!word) return;
+
+            const idf = idfVector[word] != null ? idfVector[word] : 0;
+
+            document.getElementById('tfidfSpotWord').textContent    = word;
+            document.getElementById('tfidfSpotCounter').textContent =
+                `${tfidfSpotIdx + 1} / ${tfidfSpotWords.length}번째 단어`;
+            document.getElementById('btnTfidfPrev').disabled = tfidfSpotIdx === 0;
+            document.getElementById('btnTfidfNext').disabled =
+                tfidfSpotIdx === tfidfSpotWords.length - 1;
+
+            // 도트 칩
+            document.getElementById('tfidfSpotDots').innerHTML = tfidfSpotWords.map((w, i) =>
+                `<button type="button" class="spot-word-dot${i === tfidfSpotIdx ? ' active' : ''}" onclick="tfidfSpotGoTo(${i})">${esc(w)}</button>`
+            ).join('');
+
+            // 문장 목록
+            let html = '';
+            documents.forEach((doc, i) => {
+                const tf    = tfMatrix[i][word]    || 0;
+                const tfidf = tfidfMatrix[i][word] || 0;
+                const hit   = tfidf > 0;
+                html += `
+                    <div class="spot-sent-row ${hit ? 'has-word' : 'no-word'}">
+                        <div class="spot-sent-header">
+                            <span class="spot-sent-label">문장 ${i + 1}</span>
+                            <span class="spot-tf-badge ${hit ? 'tfidf-badge' : 'tf-zero'}">TF-IDF = ${tfidf.toFixed(3)}</span>
+                        </div>
+                        ${hit ? `<div class="tfidf-formula-mini">TF(${tf}) × IDF(${idf.toFixed(3)}) = ${tfidf.toFixed(3)}</div>` : ''}
+                        <div class="spot-sent-tokens">${buildTokenHtml(i, word)}</div>
+                    </div>`;
+            });
+            document.getElementById('tfidfSentList').innerHTML = html;
+        }
+
+        function tfidfSpotPrev()  { if (tfidfSpotIdx > 0) { tfidfSpotIdx--; renderTfidfSentView(); } }
+        function tfidfSpotNext()  { if (tfidfSpotIdx < tfidfSpotWords.length - 1) { tfidfSpotIdx++; renderTfidfSentView(); } }
+        function tfidfSpotGoTo(n) { tfidfSpotIdx = n; renderTfidfSentView(); }
+
+        function buildTokenHtml(sentIdx, targetWord) {
+            const morphs = allMorphemes[sentIdx];
+            if (!morphs || morphs.length === 0) return esc(documents[sentIdx]);
+            return morphs.map(m => {
+                const safe = esc(m.lex);
+                if (m.lex === targetWord && m.selected) {
+                    return `<span class="spot-token hit">${safe}</span>`;
+                }
+                if (m.selected) {
+                    return `<span class="spot-token selected">${safe}</span>`;
+                }
+                return `<span class="spot-token other">${safe}</span>`;
+            }).join('');
+        }
+
+        function spotPrev() { if (spotIdx > 0) { spotIdx--; renderSpotlight(); } }
+        function spotNext() {
+            if (spotIdx < spotlightWords.length - 1) { spotIdx++; renderSpotlight(); }
         }
 
         // useLog 변경 시 재계산

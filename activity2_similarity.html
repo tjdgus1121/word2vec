@@ -647,22 +647,95 @@
       }
 
       @media (max-width: 768px) {
+        body { padding: 8px; }
+
+        header { padding: 18px 15px; }
+        header h1 { font-size: 1.8em; margin-bottom: 6px; }
+        header p { font-size: 0.9em; }
+
+        .tabs { flex-wrap: wrap; }
+        .tab {
+          flex: 1 1 50%;
+          font-size: 0.82em;
+          padding: 12px 6px;
+        }
+
+        .tab-content { padding: 15px; }
+
+        .welcome-screen { padding: 28px 12px; }
+        .welcome-screen h2 { font-size: 1.4em; margin-bottom: 16px; }
+
         .role-selection {
           flex-direction: column;
           align-items: center;
+          gap: 16px;
+          margin-top: 20px;
         }
+        .role-card { width: 100%; max-width: 320px; padding: 24px; }
+        .role-card h3 { font-size: 1.4em; margin-bottom: 8px; }
 
-        .student-input-area {
-          grid-template-columns: 1fr;
-        }
+        .room-code-display { padding: 20px 15px; }
+        .room-code { font-size: 2em; letter-spacing: 3px; }
 
-        .tabs {
-          flex-wrap: wrap;
-        }
+        .button-group { flex-wrap: wrap; gap: 10px; }
+        button { padding: 12px 18px; font-size: 0.92em; }
 
-        .tab {
-          flex: 1 1 50%;
-        }
+        input[type="text"] { font-size: 1em; padding: 12px; }
+        textarea { font-size: 0.95em; }
+
+        .student-input-area { grid-template-columns: 1fr; }
+
+        #wordcloud-container { min-height: 280px; padding: 10px; }
+        #wordcloud-canvas { height: 280px; }
+
+        .shape-settings { padding: 12px; }
+        .shape-option { padding: 9px 14px; font-size: 13px; margin: 3px; }
+
+        .analysis-section { margin: 16px 0; }
+        .analysis-section h3 { font-size: 1.2em; margin-bottom: 12px; }
+
+        .similarity-card { padding: 14px; }
+        .similarity-card .similarity-value { font-size: 1.1em; }
+
+        .matrix-table { font-size: 0.82em; }
+        .matrix-table th,
+        .matrix-table td { padding: 5px 4px; }
+
+        .frequency-table th,
+        .frequency-table td { padding: 8px 5px; font-size: 0.85em; }
+
+        .ma-box { min-width: unset; width: 92%; padding: 24px 18px; }
+        .ma-pct { font-size: 1.8rem; }
+
+        .morpheme-sentence-orig { white-space: normal; max-width: 100%; }
+        .morpheme-tokens { gap: 8px 12px; }
+        .morph-word { font-size: 0.85rem; }
+        .morph-tag-badge { font-size: 0.58rem; padding: 2px 5px; }
+
+        .morph-usage-hint { font-size: 0.7rem; padding: 6px 10px; }
+
+        .tutorial { padding: 14px; }
+        .participation-status { padding: 14px; }
+
+        .modal-content { width: 96%; margin: 3% auto; }
+        .modal-body { padding: 16px; }
+        .modal-header { padding: 14px 16px; }
+        .modal-header h2 { font-size: 1.1em; }
+
+        .chart-container { padding: 12px; }
+        .word-selection { gap: 8px; }
+        .word-checkbox { padding: 8px 14px; font-size: 0.9em; }
+
+        .sentence-selection { max-height: 280px; }
+      }
+
+      @media (max-width: 420px) {
+        header h1 { font-size: 1.45em; }
+        .tab { font-size: 0.72em; padding: 10px 4px; }
+        .room-code { font-size: 1.6em; letter-spacing: 2px; }
+        button { padding: 11px 14px; font-size: 0.88em; }
+        #wordcloud-canvas { height: 220px; }
+        #wordcloud-container { min-height: 220px; }
       }
       /* 형태소 분석 스타일 (아치형 토큰) */
       .morpheme-sentence {
@@ -1037,6 +1110,33 @@
         color: #555;
         font-style: italic;
       }
+
+      .image-upload-box {
+        border: 3px dashed #1e3a5f;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: white;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .demo-input-box {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        margin-top: 20px;
+      }
+
+      @media (max-width: 768px) {
+        .image-upload-box { padding: 20px; min-height: 120px; }
+        .demo-input-box { padding: 16px; }
+      }
     </style>
   </head>
   <body>
@@ -1157,20 +1257,7 @@
               </h4>
               <div
                 id="image-upload-box"
-                style="
-                  border: 3px dashed #1e3a5f;
-                  border-radius: 12px;
-                  padding: 40px;
-                  text-align: center;
-                  cursor: pointer;
-                  transition: all 0.3s;
-                  background: white;
-                  min-height: 200px;
-                  display: flex;
-                  flex-direction: column;
-                  align-items: center;
-                  justify-content: center;
-                "
+                class="image-upload-box"
               >
                 <div id="image-upload-placeholder">
                   <p style="color: #1e3a5f; font-size: 1.1em; margin: 10px 0">
@@ -1443,14 +1530,7 @@
             </div>
           </div>
 
-          <div
-            style="
-              background: white;
-              padding: 30px;
-              border-radius: 15px;
-              margin-top: 20px;
-            "
-          >
+          <div class="demo-input-box">
             <h3 style="color: #00bcd4; margin-bottom: 20px">
               📝 분석할 문장 입력
             </h3>
@@ -1511,9 +1591,6 @@
 
       <!-- 형태소 분리 탭 -->
       <div id="tab-morpheme" class="tab-content">
-        <div style="text-align:right; margin-bottom:6px;">
-          <span id="kiwi-status-badge" style="font-size:0.85em; color:#999;">🔄 Kiwi 모델 로딩 중...</span>
-        </div>
         <div class="tutorial">
           <h4>🔍 형태소 분리 단계</h4>
           <div class="tutorial-step">1. 각 문장이 단어로 자동 분리됩니다</div>
@@ -1530,7 +1607,10 @@
             5. 더블클릭하면 직접 수정할 수 있습니다
           </div>
           <div class="tutorial-step">
-            6. ✂️ 버튼을 클릭하면 단어를 분리할 수 있습니다
+            6. Ctrl+클릭하면 동사/형용사를 기본형(~다) → 명사 순으로 변환합니다
+          </div>
+          <div class="tutorial-step">
+            7. ✂️ 버튼을 클릭하면 단어를 분리할 수 있습니다
           </div>
         </div>
 
@@ -2100,6 +2180,8 @@
         update,
         onChildAdded,
         onChildChanged,
+        onChildRemoved,
+        onDisconnect,
       } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
       import { initializeAppCheck, ReCaptchaV3Provider } from
         "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check.js";
@@ -2131,6 +2213,8 @@
       window.firebaseOnValue = onValue;
       window.firebaseOnChildAdded = onChildAdded;
       window.firebaseOnChildChanged = onChildChanged;
+      window.firebaseOnChildRemoved = onChildRemoved;
+      window.firebaseOnDisconnect = onDisconnect;
       window.firebasePush = push;
 
       // Firebase 로드 완료 이벤트 발생
@@ -2146,6 +2230,8 @@
       let currentRole = null;
       let currentRoom = null;
       let currentNickname = null;
+      let currentStudentRef = null;
+      let imageListenerUnsubscribe = null;
       let allSentences = [];
       let currentMorphemes = []; // 현재 형태소 분석 결과
       let markedMorphemes = []; // 합치기 위해 선택된 형태소들 {sentenceIndex, morphemeIndex}
@@ -3533,6 +3619,12 @@
           updateStudentCard(snapshot.key, studentData);
           updateParticipationStatus();
         });
+
+        window.firebaseOnChildRemoved(studentsRef, (snapshot) => {
+          const card = document.getElementById(`student-${snapshot.key}`);
+          if (card) card.remove();
+          updateParticipationStatus();
+        });
       }
 
       function addStudentCard(studentId, data) {
@@ -3624,6 +3716,12 @@
 
           console.log("✅ 형태소 분석 완료");
 
+          // 학생들에게 분석 완료 신호 전송
+          if (currentRoom && window.firebaseReady) {
+            const roomRef = window.firebaseRef(window.firebaseDB, `rooms/${currentRoom}`);
+            window.firebaseUpdate(roomRef, { analysisReady: true });
+          }
+
           // 형태소 분리 탭으로 이동
           document.getElementById("tab-btn-morpheme").disabled = false;
           switchTab("morpheme");
@@ -3685,7 +3783,7 @@
 
         const useFilter =
           document.getElementById("stopwords-toggle")?.checked ?? true;
-        const CONTENT_TAGS = ["NNG", "NNP", "SL"];
+        const CONTENT_TAGS = ["NNG", "NNP", "SL", "VV", "VA"];
 
         const words = [];
         currentMorphemes.forEach((morphemes) => {
@@ -3805,6 +3903,12 @@
                 .classList.remove("hidden");
               console.log("✅ student-input 화면 표시됨");
 
+              // 새로고침 복구: 이전 세션이 있으면 닉네임 자동 입력
+              const saved = JSON.parse(sessionStorage.getItem("studentSession") || "null");
+              if (saved && saved.room === code && saved.nickname) {
+                document.getElementById("nickname-input").value = saved.nickname;
+              }
+
               // 주제 이미지가 있으면 표시
               if (roomData.topicImage) {
                 console.log("이미지 데이터 있음, showStudentTopicImage 호출");
@@ -3813,14 +3917,17 @@
                 console.warn("⚠️ topicImage가 없습니다");
               }
 
-              // 이미지 변경 실시간 감지
+              // 이미지 변경 실시간 감지 (기존 리스너 해제 후 재등록)
+              if (imageListenerUnsubscribe) {
+                imageListenerUnsubscribe();
+                imageListenerUnsubscribe = null;
+              }
               const imageRef = window.firebaseRef(
                 window.firebaseDB,
                 `rooms/${code}/topicImage`,
               );
-              window.firebaseOnValue(imageRef, (imgSnapshot) => {
+              imageListenerUnsubscribe = window.firebaseOnValue(imageRef, (imgSnapshot) => {
                 const imageData = imgSnapshot.val();
-                console.log("이미지 리스너: imageData 있음?", !!imageData);
                 if (imageData) {
                   showStudentTopicImage(imageData);
                 } else {
@@ -3867,16 +3974,27 @@
       }
 
       function goBackToNickname() {
-        // 문장 입력 숨기고 닉네임 섹션 다시 보이기
+        // 기존 Firebase 등록 취소 (onDisconnect 취소 + 데이터 삭제)
+        if (currentStudentRef) {
+          window.firebaseOnDisconnect(currentStudentRef).cancel();
+          window.firebaseSet(currentStudentRef, null);
+          currentStudentRef = null;
+        }
+        currentNickname = null;
+        sessionStorage.removeItem("studentSession");
+
         document.getElementById("sentence-input").classList.add("hidden");
         document.getElementById("nickname-section").classList.remove("hidden");
 
-        // 입력 필드 초기화
         document.getElementById("sentence1").value = "";
         document.getElementById("sentence1").disabled = false;
+        const btn = document.getElementById("submit-sentences-btn");
+        btn.style.display = "";
+        btn.disabled = false;
+        btn.textContent = "📤 제출하기";
       }
 
-      function setNickname() {
+      async function setNickname() {
         const nickname = document.getElementById("nickname-input").value.trim();
         if (!nickname) {
           alert("닉네임을 입력해주세요.");
@@ -3888,34 +4006,74 @@
           return;
         }
 
-        currentNickname = nickname;
-        document.getElementById("student-nickname").textContent = nickname;
+        const btn = document.getElementById("set-nickname-btn");
+        btn.disabled = true;
+        btn.textContent = "저장 중...";
 
-        const studentRef = window.firebasePush(
-          window.firebaseRef(
-            window.firebaseDB,
-            `rooms/${currentRoom}/students`,
-          ),
-        );
-        window.firebaseSet(studentRef, {
-          nickname: nickname,
-          sentences: [""], // 1개만
-          timestamp: Date.now(),
-        });
+        try {
+          // 닉네임 중복 체크
+          const studentsRef = window.firebaseRef(window.firebaseDB, `rooms/${currentRoom}/students`);
+          const existingSnap = await new Promise((resolve) =>
+            window.firebaseOnValue(studentsRef, resolve, { onlyOnce: true })
+          );
+          let duplicate = false;
+          existingSnap.forEach((child) => {
+            if (child.val().nickname === nickname) duplicate = true;
+          });
+          if (duplicate) {
+            alert(`"${nickname}"은(는) 이미 사용 중인 닉네임입니다.\n다른 닉네임을 입력해주세요.`);
+            btn.disabled = false;
+            btn.textContent = "✅ 시작하기";
+            return;
+          }
 
-        // 닉네임 섹션 숨기고 문장 입력 섹션 보이기
-        document.getElementById("nickname-section").classList.add("hidden");
-        document.getElementById("sentence-input").classList.remove("hidden");
-        console.log("✅ 문장 입력 화면으로 전환");
+          // 새로고침 복구: sessionStorage에 저장된 key 재사용
+          const saved = JSON.parse(sessionStorage.getItem("studentSession") || "null");
+          let studentRef;
+          if (saved && saved.room === currentRoom && saved.nickname === nickname && saved.key) {
+            studentRef = window.firebaseRef(window.firebaseDB, `rooms/${currentRoom}/students/${saved.key}`);
+          } else {
+            studentRef = window.firebasePush(
+              window.firebaseRef(window.firebaseDB, `rooms/${currentRoom}/students`)
+            );
+          }
+
+          await window.firebaseSet(studentRef, {
+            nickname: nickname,
+            sentences: [""],
+            timestamp: Date.now(),
+          });
+
+          // 연결 끊기면 Firebase에서 자동 삭제
+          window.firebaseOnDisconnect(studentRef).remove();
+
+          currentNickname = nickname;
+          currentStudentRef = studentRef;
+          document.getElementById("student-nickname").textContent = nickname;
+
+          // 세션 저장 (새로고침 복구용)
+          sessionStorage.setItem("studentSession", JSON.stringify({
+            room: currentRoom,
+            nickname: nickname,
+            key: studentRef.key,
+          }));
+
+          document.getElementById("nickname-section").classList.add("hidden");
+          document.getElementById("sentence-input").classList.remove("hidden");
+        } catch (e) {
+          alert("저장 중 오류가 발생했습니다. 다시 시도해주세요.");
+          console.error(e);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "✅ 시작하기";
+        }
       }
 
-      function submitSentences() {
-        const s1 = cleanSentence(
-          document.getElementById("sentence1").value,
-        );
-
+      async function submitSentences() {
+        // 검증을 UI 변경 전에 먼저 수행
+        const s1 = cleanSentence(document.getElementById("sentence1").value);
         if (!s1) {
-          alert("문장을 작성해주세요.");
+          alert("문장을 작성해주세요. (특수문자만으로는 제출할 수 없습니다.)");
           return;
         }
 
@@ -3924,43 +4082,80 @@
           return;
         }
 
-        const studentsRef = window.firebaseRef(
-          window.firebaseDB,
-          `rooms/${currentRoom}/students`,
-        );
-        window.firebaseOnValue(
-          studentsRef,
-          (snapshot) => {
-            snapshot.forEach((child) => {
-              if (child.val().nickname === currentNickname) {
-                const studentRef = window.firebaseRef(
-                  window.firebaseDB,
-                  `rooms/${currentRoom}/students/${child.key}`,
-                );
-                window.firebaseUpdate(studentRef, { sentences: [s1] });
+        const btn = document.getElementById("submit-sentences-btn");
+        btn.disabled = true;
+        btn.textContent = "제출 중...";
+
+        try {
+          if (currentStudentRef) {
+            await window.firebaseUpdate(currentStudentRef, { sentences: [s1] });
+          } else {
+            // currentStudentRef가 없을 때 닉네임으로 fallback 검색
+            const studentsRef = window.firebaseRef(window.firebaseDB, `rooms/${currentRoom}/students`);
+            await new Promise((resolve) => {
+              window.firebaseOnValue(studentsRef, (snapshot) => {
+                snapshot.forEach((child) => {
+                  if (child.val().nickname === currentNickname) {
+                    const ref = window.firebaseRef(window.firebaseDB, `rooms/${currentRoom}/students/${child.key}`);
+                    window.firebaseUpdate(ref, { sentences: [s1] });
+                  }
+                });
+                resolve();
+              }, { onlyOnce: true });
+            });
+          }
+
+          document.getElementById("sentence1").disabled = true;
+          btn.style.display = "none";
+          document.getElementById("submission-status").classList.remove("hidden");
+
+          // 교사가 분석 시작하면 자동으로 결과 화면으로 이동
+          if (currentRoom && window.firebaseReady) {
+            const analysisRef = window.firebaseRef(window.firebaseDB, `rooms/${currentRoom}/analysisReady`);
+            window.firebaseOnValue(analysisRef, (snap) => {
+              if (snap.val() === true) {
+                const statusDiv = document.getElementById("submission-status");
+                const noticeEl = document.getElementById("analysis-ready-notice");
+                if (!noticeEl && statusDiv) {
+                  const notice = document.createElement("p");
+                  notice.id = "analysis-ready-notice";
+                  notice.style.cssText = "margin-top:10px;color:#1e3a5f;font-weight:bold;font-size:1.1em;";
+                  notice.textContent = "🔔 선생님이 분석을 시작했습니다! 결과를 확인하세요.";
+                  statusDiv.appendChild(notice);
+                }
+                // 자동으로 결과 화면 이동
+                viewAnalysisAsStudent();
               }
             });
-          },
-          { onlyOnce: true },
-        );
-
-        document.getElementById("sentence1").disabled = true;
-        document.querySelector("#sentence-input button").style.display = "none";
-        document.getElementById("submission-status").classList.remove("hidden");
+          }
+        } catch (e) {
+          alert("제출 중 오류가 발생했습니다. 다시 시도해주세요.");
+          console.error(e);
+          btn.disabled = false;
+          btn.textContent = "📤 제출하기";
+        }
       }
 
-      function viewAnalysisAsStudent() {
-        collectAllSentences(() => {
+      let studentAnalysisRunning = false;
+      async function viewAnalysisAsStudent() {
+        if (studentAnalysisRunning) return;
+        studentAnalysisRunning = true;
+
+        collectAllSentences(async () => {
           if (allSentences.length < 1) {
-            alert("아직 문장이 수집되지 않았습니다.");
+            studentAnalysisRunning = false;
             return;
           }
 
+          currentMorphemes = await _runMorphemeAnalysis(allSentences);
+
+          document.getElementById("tab-btn-morpheme").disabled = false;
           document.getElementById("tab-btn-analysis").disabled = false;
           document.getElementById("tab-btn-vector").disabled = false;
-          switchTab("analysis");
+          switchTab("morpheme");
 
-          setTimeout(() => analyzeText(), 300);
+          renderAllMorphemes();
+          studentAnalysisRunning = false;
         });
       }
 
@@ -4004,6 +4199,92 @@
       // ==========================================
       // 형태소 분석 (강화된 로컬 분석) — Kiwi Worker 실패 시 fallback
       // ==========================================
+      // ── 동사/형용사 기본형 복원 (Lemmatization) ────────────────────────
+
+      // 너무 범용적이라 기본형 결과에서 제외할 동사
+      const VERB_BASE_STOPWORDS = new Set([
+        "있다","없다","되다","하다","이다","않다","아니다","못하다",
+        "같다","나다","가다","오다","보다","알다","모르다","싶다",
+      ]);
+
+      // 하다 복합 어미: "공부해요" → "공부하다"
+      const HADA_SUFFIXES = [
+        "했었습니다","했었어요","했었어",
+        "했습니다","했어요","했어","했다","했고","했는데","했지만",
+        "했으면","했으니까","했으며","했지",
+        "합니다","할게요","할게","할까요","할까",
+        "하겠습니다","하겠어요","하겠어","하겠다",
+        "하세요","하십시오","하십니까",
+        "해요","해서","해도","해야","해야겠다","해야겠어요",
+        "하고","하면","하며","하여","하지만","하지","하는데","하더니",
+        "하는","한다","하니까","하니","하다가","하다보니",
+        "하네요","하군요","하던",
+        "해",
+      ].sort((a, b) => b.length - a.length);
+
+      // 과거형 어미: "먹었어요" → "먹다"
+      const PAST_ENDINGS_VERB = [
+        "었었습니다","았었습니다",
+        "었었어요","았었어요",
+        "었습니다","았습니다","였습니다",
+        "었어요","았어요","였어요",
+        "었어","았어","였어",
+        "었다","았다","였다",
+        "었고","았고",
+        "었는데","았는데",
+        "었지만","았지만",
+        "었으면","았으면",
+      ].sort((a, b) => b.length - a.length);
+
+      // 고신뢰도 어미: 이 어미로 끝나면 거의 확실히 동사/형용사
+      const VERB_HIGHCONF_ENDINGS = [
+        "겠습니다","겠어요","겠어","겠다","겠지",
+        "습니다",
+        "어요","아요","여요",
+        "는다","는군요","네요","군요","나요",
+        "지만","으면","면서",
+      ].sort((a, b) => b.length - a.length);
+
+      // 동사/형용사 활용형 → 기본형(사전형) 반환. 해당 없으면 null.
+      function lemmatizeVerbAdj(token) {
+        if (token.length < 2) return null;
+
+        // ① 하다 복합: stem + suffix → stem + "하다"
+        for (const suf of HADA_SUFFIXES) {
+          if (token.endsWith(suf) && token.length > suf.length) {
+            const stem = token.slice(0, -suf.length);
+            if (stem.length < 1) continue;
+            const base = stem + "하다";
+            if (VERB_BASE_STOPWORDS.has(base)) return null;
+            return { lex: base, tag: "VA" };
+          }
+        }
+
+        // ② 과거형: stem + 었/았/였 + 어미 → stem + "다"
+        for (const suf of PAST_ENDINGS_VERB) {
+          if (token.endsWith(suf) && token.length > suf.length) {
+            const stem = token.slice(0, -suf.length);
+            if (stem.length < 1) continue;
+            const base = stem + "다";
+            if (VERB_BASE_STOPWORDS.has(base)) return null;
+            return { lex: base, tag: "VV" };
+          }
+        }
+
+        // ③ 고신뢰도 어미: stem 최소 2글자 (모호한 1글자 어간 방지)
+        for (const suf of VERB_HIGHCONF_ENDINGS) {
+          if (token.endsWith(suf) && token.length > suf.length) {
+            const stem = token.slice(0, -suf.length);
+            if (stem.length < 2) continue;
+            const base = stem + "다";
+            if (VERB_BASE_STOPWORDS.has(base)) return null;
+            return { lex: base, tag: "VV" };
+          }
+        }
+
+        return null;
+      }
+
       async function _localAnalyzeMorphemes(text) {
         console.log("🔬 형태소 분석 시작 (로컬 강화 분석)");
 
@@ -4064,6 +4345,13 @@
           // 0-2. 분리 금지 패턴 (형용사, 동사 등)
           if (DONT_SPLIT.has(token)) {
             morphemes.push({ lex: token, tag: "NNG", selected: true });
+            return;
+          }
+
+          // 0-3. 동사/형용사 기본형 복원 (깨끗해요 → 깨끗하다, 먹었어요 → 먹다)
+          const lemma = lemmatizeVerbAdj(token);
+          if (lemma) {
+            morphemes.push({ lex: lemma.lex, tag: lemma.tag, selected: true });
             return;
           }
 
@@ -4280,10 +4568,10 @@
               const cssClass = isMarked ? 'shift-selecting' : (m.selected ? 'selected' : 'excluded');
               const col = getTagColor(m.tag);
               return `
-                <div class="morph-token-wrapper">
+                <div class="morph-token-wrapper" data-sent="${sentenceIndex}" data-morph="${idx}">
                   <div class="morph-token ${cssClass}"
                        onclick="handleMorphClick(event,${sentenceIndex},${idx})"
-                       ondblclick="handleMorphDblClick(event,${sentenceIndex},${idx},this)">
+                       ondblclick="handleMorphDblClick(event,${sentenceIndex},${idx})">
                     <div class="morph-tag-badge" style="background:${col.bg};color:${col.text};">${m.tag}</div>
                     <div class="morph-arc" style="border-color:${col.arc};"></div>
                     <div class="morph-word">${m.lex}</div>
@@ -4299,23 +4587,73 @@
       }
 
       // ── 클릭 핸들러 (onclick 어트리뷰트용) ────────────────────────────
+      let _morphClickTimer = null;
+
       function handleMorphClick(event, sentenceIndex, morphemeIndex) {
+        // Ctrl+클릭: 동사/형용사 ↔ 기본형(~다) ↔ 명사 순환 변환
+        if (event.ctrlKey || event.metaKey) {
+          event.stopPropagation();
+          clearTimeout(_morphClickTimer);
+          _morphClickTimer = null;
+          cycleMorphemeForm(sentenceIndex, morphemeIndex);
+          return;
+        }
         if (event.shiftKey) {
           event.stopPropagation();
           toggleMarkMorpheme(sentenceIndex, morphemeIndex);
-        } else {
-          toggleMorphemeSelection(sentenceIndex, morphemeIndex);
+          return;
         }
+        // 더블클릭 감지를 위해 단일 클릭을 220ms 지연
+        clearTimeout(_morphClickTimer);
+        _morphClickTimer = setTimeout(() => {
+          _morphClickTimer = null;
+          toggleMorphemeSelection(sentenceIndex, morphemeIndex);
+        }, 220);
       }
 
-      function handleMorphDblClick(event, sentenceIndex, morphemeIndex, tokenEl) {
+      // Ctrl+클릭: 동사/형용사 기본형 ↔ 명사 순환
+      // VV/VA (다 없음) → VV/VA (다 붙임, 기본형) → NNG (다 제거, 명사) → 처음으로
+      function cycleMorphemeForm(sentenceIndex, morphemeIndex) {
+        const m = currentMorphemes[sentenceIndex][morphemeIndex];
+        const isVerbTag = m.tag === 'VV' || m.tag === 'VA';
+        const hasDA = m.lex.endsWith('다');
+
+        if (isVerbTag && !hasDA) {
+          // 어간 상태 → 기본형(~다)으로
+          m.lex = m.lex + '다';
+          m.selected = true;
+        } else if (isVerbTag && hasDA) {
+          // 기본형 → 명사형(~다 제거, NNG)으로
+          m.lex = m.lex.slice(0, -1);
+          m.tag = 'NNG';
+          m.selected = true;
+        } else if (m.tag === 'NNG') {
+          // 명사 → 동사 기본형으로 (다시 ~다 붙임)
+          m.lex = m.lex + '다';
+          m.tag = 'VV';
+          m.selected = true;
+        }
+
+        renderAllMorphemes();
+      }
+
+      function handleMorphDblClick(event, sentenceIndex, morphemeIndex) {
         event.stopPropagation();
+        // 단일 클릭 지연 취소 → 토글(renderAllMorphemes) 실행 안 됨
+        clearTimeout(_morphClickTimer);
+        _morphClickTimer = null;
+
         // 기존 편집창 제거
         const existing = document.querySelector('.inline-edit-box');
         if (existing) existing.remove();
 
+        // data 속성으로 현재 살아있는 DOM 요소 탐색 (재렌더 후에도 안전)
+        const wrapper = document.querySelector(
+          `.morph-token-wrapper[data-sent="${sentenceIndex}"][data-morph="${morphemeIndex}"]`
+        );
+        if (!wrapper) return;
+
         const morpheme = currentMorphemes[sentenceIndex][morphemeIndex];
-        const wrapper = tokenEl.closest('.morph-token-wrapper');
         const editBox = document.createElement('div');
         editBox.className = 'inline-edit-box';
         editBox.innerHTML = `
@@ -4338,6 +4676,7 @@
             </div>
           </div>`;
         editBox.style.cssText = 'position:absolute;top:100%;left:0;margin-top:4px;z-index:1000;';
+        wrapper.style.position = 'relative';
         wrapper.appendChild(editBox);
 
         const input = editBox.querySelector('#_morphEditInput');
@@ -4351,18 +4690,18 @@
         };
         const cancel = () => editBox.remove();
 
-        editBox.querySelector('#_morphEditSave').onclick = save;
-        editBox.querySelector('#_morphEditCancel').onclick = cancel;
+        editBox.querySelector('#_morphEditSave').onclick = (e) => { e.stopPropagation(); save(); };
+        editBox.querySelector('#_morphEditCancel').onclick = (e) => { e.stopPropagation(); cancel(); };
         input.addEventListener('keydown', e => {
-          if (e.key === 'Enter') save();
+          if (e.key === 'Enter') { e.stopPropagation(); save(); }
           if (e.key === 'Escape') cancel();
         });
       }
 
-      // 외부 클릭 시 편집창 닫기
-      document.addEventListener('click', () => {
+      // 외부 클릭 시 편집창 닫기 (편집창 내부 클릭은 제외)
+      document.addEventListener('click', (e) => {
         const box = document.querySelector('.inline-edit-box');
-        if (box) box.remove();
+        if (box && !box.contains(e.target)) box.remove();
       });
 
       function toggleMarkMorpheme(sentenceIndex, morphemeIndex) {
@@ -5342,11 +5681,11 @@
             sentIdx !== -1 &&
             currentMorphemes[sentIdx]
           ) {
-            // NNG(일반명사), NNP(고유명사), SL(외래어)만 내용어로 채택
+            // NNG/NNP(명사), SL(외래어), VV/VA(동사·형용사 기본형)를 내용어로 채택
             words = currentMorphemes[sentIdx]
               .filter(
                 (m) =>
-                  m.selected && ["NNG", "NNP", "SL"].includes(m.tag),
+                  m.selected && ["NNG", "NNP", "SL", "VV", "VA"].includes(m.tag),
               )
               .map((m) => m.lex);
           } else {
@@ -5368,16 +5707,16 @@
       function displayMatrix(matrix) {
         const container = document.getElementById("matrix-display");
 
-        let html = "<table><thead><tr><th>문장</th>";
+        let html = `<table><thead><tr><th>문장</th>`;
         selectedWords.forEach((word) => {
-          html += `<th>${word}</th>`;
+          html += `<th style="text-align:center">${word}</th>`;
         });
-        html += "</tr></thead><tbody>";
+        html += `</tr></thead><tbody>`;
 
         matrix.forEach((row, i) => {
           html += `<tr><th>문장 ${i + 1}</th>`;
-          row.forEach((val) => {
-            html += `<td>${val}</td>`;
+          row.forEach((tf) => {
+            html += `<td style="color:#1e3a5f;font-weight:600">${tf}</td>`;
           });
           html += "</tr>";
         });
@@ -5647,52 +5986,80 @@
       function visualizeVectors(matrix) {
         const canvas = document.getElementById("vector-chart");
         if (!canvas) return;
-
         const ctx = canvas.getContext("2d");
-
         if (window.vectorChart) window.vectorChart.destroy();
 
         const words = selectedWords.slice(0, 5);
         if (words.length === 0) return;
 
-        const datasets = words.map((word, idx) => {
-          const colors = [
-            "#1e3a5f",
-            "#c9a227",
-            "#2d5a87",
-            "#5a8f7b",
-            "#8b5a5a",
-          ];
-          const wordIdx = selectedWords.indexOf(word);
-          const frequencies = matrix.map((row) => row[wordIdx] || 0);
+        const N = matrix.length;
 
+        // TF-IDF 계산: TF(raw count) × IDF(log(N/df)+1)
+        const tfidfMatrix = matrix.map((row) =>
+          row.map((tf, wIdx) => {
+            if (tf === 0) return 0;
+            const df = matrix.filter((r) => r[wIdx] > 0).length;
+            const idf = Math.log(N / df) + 1;
+            return parseFloat((tf * idf).toFixed(3));
+          })
+        );
+
+        const colors = ["#1e3a5f", "#c9a227", "#2d5a87", "#5a8f7b", "#8b5a5a"];
+        const labels = getSelectedSentencesForAnalysis().map((_, i) => `문장 ${i + 1}`);
+
+        const datasets = words.map((word, idx) => {
+          const wIdx = selectedWords.indexOf(word);
           return {
             label: word,
-            data: frequencies,
-            backgroundColor: colors[idx % colors.length] + "80",
+            data: tfidfMatrix.map((row) => row[wIdx] || 0),
+            backgroundColor: colors[idx % colors.length] + "99",
             borderColor: colors[idx % colors.length],
-            borderWidth: 2,
+            borderWidth: 1.5,
+            borderRadius: 4,
           };
         });
 
-        const labels = allSentences.map((_, idx) => `문장 ${idx + 1}`);
+        // 문장 수에 따라 컨테이너 높이 동적 조정
+        const container = document.getElementById("vector-chart-container");
+        container.style.position = "relative";
+        container.style.height = Math.max(220, N * 52 + 100) + "px";
+        canvas.removeAttribute("width");
+        canvas.removeAttribute("height");
 
         window.vectorChart = new Chart(ctx, {
           type: "bar",
-          data: { labels: labels, datasets: datasets },
+          data: { labels, datasets },
           options: {
+            indexAxis: "y",               // 수평 막대
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
               title: {
                 display: true,
-                text: "선택한 단어가 각 문장에서 나타난 횟수",
-                font: { size: 18, family: "Noto Sans KR" },
+                text: "단어별 TF-IDF 가중치 비교",
+                font: { size: 16, family: "Noto Sans KR", weight: "bold" },
+                padding: { bottom: 14 },
               },
               legend: { display: true, position: "top" },
+              tooltip: {
+                callbacks: {
+                  label: (c) => ` ${c.dataset.label}: ${c.parsed.x.toFixed(3)}`,
+                },
+              },
             },
             scales: {
-              y: { beginAtZero: true, ticks: { stepSize: 1 } },
+              x: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "TF-IDF 가중치",
+                  font: { family: "Noto Sans KR" },
+                },
+                ticks: { font: { family: "Noto Sans KR" } },
+              },
+              y: {
+                ticks: { font: { family: "Noto Sans KR", size: 13 } },
+              },
             },
           },
         });
@@ -5944,14 +6311,16 @@
           const prompt = `한국어 문장들을 형태소로 분리하고 품사를 태깅하세요.
 
 규칙:
-- 명사(일반/고유/대명사) → tag: "NNG"
-- 동사/형용사 → 어간만 반환 → tag: "VV"
-- 조사 → tag: "JX"
-- 어미 → tag: "EF"
+- 명사(일반/고유/대명사) → 원형 그대로 → tag: "NNG"
+- 동사 → 기본형(사전형, ~다 형태)으로 반환 → tag: "VV" (예: 먹었어요 → 먹다)
+- 형용사 → 기본형(사전형, ~다 형태)으로 반환 → tag: "VA" (예: 깨끗해요 → 깨끗하다)
+- 하다 복합 동사/형용사 → 전체 기본형 → tag: "VA" (예: 공부해요 → 공부하다)
+- 조사 → tag: "JX" (분리하지 않음, 어미와 함께 제외)
+- 어미 → tag: "EF" (분리하지 않음)
 - 외국어(영어 등) → tag: "SL"
 - 숫자 → tag: "SN"
 - 나머지(부사, 접속사, 기호 등) → tag: "ETC"
-- 조사와 어미는 반드시 분리
+- 조사와 어미는 어간/어근에 합치지 말고 분리
 - JSON 배열만 반환, 설명 없이
 
 출력 형식: [[{"lex":"형태소","tag":"NNG"}, ...], ...]
@@ -5994,12 +6363,13 @@ ${batch.map((s, idx) => `${i + idx + 1}. ${s}`).join('\n')}`;
           const text = data.candidates[0].content.parts[0].text;
           const raw = typeof text === 'string' ? JSON.parse(text) : text;
 
-          const CONTENT_TAGS = new Set(['NNG', 'SL']);
+          const CONTENT_TAGS = new Set(['NNG', 'SL', 'VV', 'VA']);
           raw.forEach(sentMorphs => {
             result.push(sentMorphs.map(m => ({
               lex: m.lex,
               tag: m.tag,
               selected: CONTENT_TAGS.has(m.tag) && m.lex.length >= 2
+                        && !VERB_BASE_STOPWORDS.has(m.lex)
             })));
           });
         }
@@ -6026,8 +6396,7 @@ ${batch.map((s, idx) => `${i + idx + 1}. ${s}`).join('\n')}`;
           if (msg.type === 'ready') {
             workerKiwiReady = true;
             console.log(`✅ Kiwi Worker 준비 완료 — char:${msg.charCount} tag:${msg.tagCount}`);
-            const badge = document.getElementById('kiwi-status-badge');
-            if (badge) { badge.textContent = '🧠 Kiwi 준비 완료'; badge.style.color = '#28a745'; }
+            console.log('✅ Kiwi Worker 준비 완료');
           } else if (msg.type === 'error') {
             console.warn('⚠️ Kiwi Worker 오류 (로컬 분석 사용):', msg.message);
             workerKiwiReady = false;
@@ -6045,9 +6414,18 @@ ${batch.map((s, idx) => `${i + idx + 1}. ${s}`).join('\n')}`;
       // Worker 출력({morphs:[{lex,tag}]}) → {lex, tag, selected}[] 변환
       function postProcessRaw(rawResult) {
         const CONTENT_TAGS = new Set(['NNG', 'NNP', 'SL', 'XR']);
+        const VERB_TAGS = new Set(['VV', 'VA']);
         const morphemes = [];
         rawResult.forEach(word => {
           word.morphs.forEach(morph => {
+            // 동사/형용사 어간에 "다"를 붙여 기본형으로 복원
+            if (VERB_TAGS.has(morph.tag) && morph.lex.length >= 1) {
+              const base = morph.lex + "다";
+              if (!VERB_BASE_STOPWORDS.has(base)) {
+                morphemes.push({ lex: base, tag: morph.tag, selected: true });
+                return;
+              }
+            }
             morphemes.push({
               lex: morph.lex,
               tag: morph.tag,
@@ -6088,7 +6466,7 @@ ${batch.map((s, idx) => `${i + idx + 1}. ${s}`).join('\n')}`;
           // 1순위: Gemini Flash 2.0 Lite
           try {
             console.log('✨ Gemini Flash 2.0 Lite로 형태소 분석');
-            updateMorphAnalysisModal(0, sentences.length, 'Gemini AI 분석 중...');
+            updateMorphAnalysisModal(0, sentences.length, 'AI 분석 중...');
             const geminiResult = await callGeminiMorpheme(sentences);
             if (geminiResult && geminiResult.length === sentences.length) {
               console.log('✅ Gemini 형태소 분석 완료');

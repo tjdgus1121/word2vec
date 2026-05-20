@@ -1111,6 +1111,24 @@
         font-style: italic;
       }
 
+      .btn-competition {
+        background: linear-gradient(135deg, #e67e22, #d35400);
+        color: white;
+        font-size: 1.05em;
+        padding: 15px 28px;
+      }
+
+      .quiz-link-wrap { margin-top: 30px; }
+
+      .bottom-actions {
+        text-align: center;
+        margin-top: 30px;
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
       .image-upload-box {
         border: 3px dashed #1e3a5f;
         border-radius: 12px;
@@ -1187,6 +1205,11 @@
                 <h3>🧪 체험하기</h3>
                 <p>방 코드 없이 혼자서<br />빠르게 테스트합니다</p>
               </div>
+            </div>
+            <div class="quiz-link-wrap">
+              <button type="button" class="btn-competition" onclick="location.href='./activity3_quiz.html'">
+                🏆 유사도 문제 경쟁모드
+              </button>
             </div>
           </div>
         </div>
@@ -1910,9 +1933,12 @@
           </div>
         </div>
 
-        <div style="text-align: center; margin-top: 30px">
+        <div class="bottom-actions">
           <button class="btn-primary" id="download-btn">
             💾 결과 스크린샷 다운로드
+          </button>
+          <button class="btn-competition" onclick="location.href='./activity3_quiz'">
+            🏆 유사도 문제 경쟁모드
           </button>
         </div>
       </div>

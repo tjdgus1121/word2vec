@@ -6325,7 +6325,7 @@
       }
 
       // ==========================================
-      // Gemini 형태소 분석 (Flash 2.0 Lite)
+      // Gemini 형태소 분석 (Flash 2.5 Lite)
       // ==========================================
       const GEMINI_PROXY = 'https://tfidf.tjdgus1121.workers.dev';
 
@@ -6354,7 +6354,7 @@
 문장들:
 ${batch.map((s, idx) => `${i + idx + 1}. ${s}`).join('\n')}`;
 
-          const res = await fetch(`${GEMINI_PROXY}/gemini-2.0-flash-lite`, {
+          const res = await fetch(`${GEMINI_PROXY}/gemini-2.5-flash-lite`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -6489,9 +6489,9 @@ ${batch.map((s, idx) => `${i + idx + 1}. ${s}`).join('\n')}`;
       async function _runMorphemeAnalysis(sentences) {
         showMorphAnalysisModal(sentences.length);
         try {
-          // 1순위: Gemini Flash 2.0 Lite
+          // 1순위: Gemini Flash 2.5 Lite
           try {
-            console.log('✨ Gemini Flash 2.0 Lite로 형태소 분석');
+            console.log('✨ Gemini Flash 2.5 Lite로 형태소 분석');
             updateMorphAnalysisModal(0, sentences.length, 'AI 분석 중...');
             const geminiResult = await callGeminiMorpheme(sentences);
             if (geminiResult && geminiResult.length === sentences.length) {

@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>텍스트 분석 체험 - AI Mathematics</title>
 
+    <!-- 사이드바 네비게이션 -->
+    <link rel="stylesheet" href="../nav.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+    <script src="../nav.js"></script>
+
     <!-- 한국어 형태소 분석 사전 (폴백용) -->
     <script src="korean-dict.js"></script>
 
@@ -1158,6 +1163,21 @@
     </style>
   </head>
   <body>
+    <!-- 사이드바 -->
+    <div class="sidebar-toggle" role="button" aria-label="메뉴 열기" tabindex="0">
+      <i class="fas fa-bars"></i>
+    </div>
+    <aside class="sidebar">
+      <nav>
+        <a href="../indeximage.html"><i class="fa fa-home"></i><span>홈</span></a>
+        <a href="activity1_tfidf.html"><i class="fa fa-chart-bar"></i><span>TF-idf 분석도구</span></a>
+        <a href="activity2_similarity.html" class="active"><i class="fa fa-equals"></i><span>유사도분석</span></a>
+        <a href="activity3_quiz.html"><i class="fa fa-link"></i><span>코사인 유사도 단어잇기</span></a>
+        <a href="activity4_similiarityprc.html"><i class="fa fa-calculator"></i><span>유사도 계산하기</span></a>
+        <a href="activity5_jaccard.html"><i class="fa fa-face-smile"></i><span>감정 분석도구</span></a>
+      </nav>
+    </aside>
+
     <div class="container">
       <header>
         <h1>📊 텍스트 분석 체험</h1>

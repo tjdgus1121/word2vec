@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>핵심 단어 뽑기 게임</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --accent: #e0e7ff;
+            --success: #16a34a;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .game-screen.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .sentence-box {
+            position: relative;
+            background-color: #f1f5f9;
+            padding: 30px;
+            padding-right: 120px;
+            border-radius: 16px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            border-left: 6px solid var(--primary);
+            text-align: left;
+        }
+
+        .sentence-text.is-hidden {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        .hide-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            padding: 8px 14px;
+            background-color: #64748b;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.15s ease;
+        }
+
+        .hide-btn:hover {
+            background-color: #475569;
+        }
+
+        .hide-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .hide-btn:disabled:hover {
+            background-color: #64748b;
+        }
+
+        .mission-badge {
+            display: inline-block;
+            background-color: var(--accent);
+            color: var(--primary);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-weight: 600;
+            margin-bottom: 30px;
+        }
+
+        .room-badge {
+            display: inline-block;
+            background-color: #f1f5f9;
+            color: var(--text-light);
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 30px;
+            margin-left: 10px;
+        }
+
+        .reverse-badge {
+            display: inline-block;
+            background-color: #fef3c7;
+            color: #b45309;
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            margin-left: 10px;
+        }
+
+        .hint-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-light);
+            margin-bottom: 14px;
+        }
+
+        .hint-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .hint-word {
+            padding: 10px 18px;
+            background-color: var(--accent);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+
+        .guess-input {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-family: inherit;
+            margin-bottom: 20px;
+        }
+
+        .guess-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .guess-text {
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .guess-text.is-empty {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: #64748b;
+        }
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+
+        .btn-link {
+            display: block;
+            margin: 10px auto 0;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            font-size: 0.9rem;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .mode-select {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .room-panel {
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .room-input {
+            display: block;
+            width: 100%;
+            max-width: 280px;
+            margin: 0 auto 14px;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .room-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .error-msg {
+            color: #dc2626;
+            font-size: 0.9rem;
+            margin: -4px 0 14px;
+        }
+
+        .room-code-display {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--primary);
+            background-color: var(--accent);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 18px;
+            letter-spacing: 4px;
+        }
+
+        .qr-wrap {
+            margin-bottom: 20px;
+        }
+
+        .qr-code {
+            display: inline-block;
+            padding: 12px;
+            background-color: #fff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            line-height: 0;
+        }
+
+        .qr-caption {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        .lobby-participants {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 24px;
+            min-height: 36px;
+        }
+
+        .participant-chip {
+            padding: 6px 14px;
+            background-color: #f1f5f9;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .participant-chip.is-host::after {
+            content: ' 👑';
+        }
+
+        .waiting-msg {
+            color: var(--text-light);
+            font-size: 0.95rem;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .word-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            min-height: 56px;
+            padding: 16px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            margin-bottom: 24px;
+        }
+
+        .word-chip {
+            padding: 10px 18px;
+            background-color: var(--card-bg);
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            cursor: grab;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+
+        .word-chip:hover {
+            background-color: var(--accent);
+        }
+
+        .word-chip.dragging {
+            opacity: 0.35;
+        }
+
+        .drop-zone {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .drop-slot {
+            flex: 1;
+            min-width: 90px;
+            max-width: 160px;
+            height: 56px;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #94a3b8;
+            background-color: #fff;
+            transition: all 0.15s ease;
+        }
+
+        .drop-slot.over {
+            border-color: var(--primary);
+            background-color: var(--accent);
+        }
+
+        .drop-slot.filled {
+            border-style: solid;
+            border-color: var(--primary);
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .add-slot-btn {
+            flex-shrink: 0;
+            width: 56px;
+            height: 56px;
+            border: 2px dashed var(--primary);
+            border-radius: 12px;
+            background-color: var(--card-bg);
+            color: var(--primary);
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .add-slot-btn:hover {
+            background-color: var(--accent);
+        }
+
+        .add-slot-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .add-slot-btn:disabled:hover {
+            background-color: var(--card-bg);
+        }
+
+        .feedback {
+            min-height: 28px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-bottom: 10px;
+            color: var(--success);
+        }
+
+        .picks-board {
+            margin-top: 10px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            text-align: left;
+        }
+
+        .picks-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .picks-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-top: 1px solid #e2e8f0;
+            flex-wrap: wrap;
+        }
+
+        .picks-row:first-of-type {
+            border-top: none;
+        }
+
+        .picks-row.mine .picks-name {
+            color: var(--primary);
+        }
+
+        .picks-name {
+            flex-shrink: 0;
+            min-width: 70px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .picks-words {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .picks-word {
+            padding: 4px 10px;
+            background-color: var(--accent);
+            color: var(--primary);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .picks-waiting, .picks-empty {
+            color: #94a3b8;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+
+        .nav-btns {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .btn, .btn-secondary, .word-chip, .drop-slot, .add-slot-btn, .hide-btn {
+            touch-action: manipulation;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .container {
+                padding: 24px 16px;
+                border-radius: 18px;
+            }
+
+            h1 {
+                font-size: 1.4rem;
+                margin-bottom: 16px;
+            }
+
+            .progress-bar {
+                margin-bottom: 24px;
+            }
+
+            .btn {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+
+            .mode-select {
+                flex-direction: column;
+            }
+
+            .mode-select .btn {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .sentence-box {
+                padding: 18px;
+                padding-bottom: 60px;
+                font-size: 1.15rem;
+            }
+
+            .hide-btn {
+                top: auto;
+                bottom: 14px;
+                right: 14px;
+            }
+
+            .mission-badge, .room-badge, .reverse-badge {
+                font-size: 0.75rem;
+                padding: 5px 12px;
+                margin-bottom: 16px;
+            }
+
+            .drop-slot {
+                min-width: 72px;
+                height: 48px;
+                font-size: 0.95rem;
+            }
+
+            .add-slot-btn {
+                width: 48px;
+                height: 48px;
+            }
+
+            .word-chip, .hint-word {
+                padding: 8px 14px;
+                font-size: 0.95rem;
+            }
+
+            .room-code-display {
+                font-size: 1.3rem;
+                letter-spacing: 2px;
+                padding: 12px;
+            }
+
+            .qr-code img, .qr-code canvas, .qr-code table {
+                width: 140px !important;
+                height: 140px !important;
+            }
+
+            .picks-name {
+                min-width: 56px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import {
+            getDatabase, ref, set, get, child, onValue, onDisconnect, serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCHFzeZOGfiljKBDlOyTdmS-LpxXNPTdhc",
+            authDomain: "text-attention-83362.firebaseapp.com",
+            databaseURL: "https://text-attention-83362-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "text-attention-83362",
+            storageBucket: "text-attention-83362.firebasestorage.app",
+            messagingSenderId: "1085782992556",
+            appId: "1:1085782992556:web:73c7f40e760120ded62109"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // 일반 <script>(모듈이 아닌)에서 쓸 수 있도록 window에 노출
+        window.fb = { db, ref, set, get, child, onValue, onDisconnect, serverTimestamp };
+        window.dispatchEvent(new Event('firebase-ready'));
+    </script>
+
+    <div class="container">
+        <h1>핵심 단어 뽑기</h1>
+
+        <div class="progress-bar">
+            <div class="progress" id="progressBar"></div>
+        </div>
+
+        <div class="game-screen active" id="screen-0">
+            <p style="font-size:1.15rem; line-height:1.8; margin-bottom:30px;">
+                정답은 없어요! 문장을 보고 떠오르는 핵심 단어 3개를<br>자유롭게 드래그해서 상자에 넣어보세요.
+            </p>
+
+            <div class="mode-select" id="modeSelect">
+                <button class="btn" onclick="nextScreen()">혼자 하기</button>
+                <button class="btn btn-secondary" onclick="showPanel('createPanel')">방 만들기</button>
+                <button class="btn btn-secondary" onclick="showPanel('joinPanel')">참여하기</button>
+            </div>
+
+            <div class="room-panel hidden" id="createPanel">
+                <input type="text" id="hostNickname" class="room-input" placeholder="닉네임" maxlength="12">
+                <div class="error-msg hidden" id="createError"></div>
+                <button class="btn" onclick="createRoom()">방 만들기</button>
+                <button type="button" class="btn-link" onclick="showPanel('modeSelect')">취소</button>
+            </div>
+
+            <div class="room-panel hidden" id="joinPanel">
+                <input type="text" id="joinCodeInput" class="room-input" placeholder="참여 코드 (4자리)" maxlength="6" inputmode="numeric">
+                <input type="text" id="joinNickname" class="room-input" placeholder="닉네임" maxlength="12">
+                <div class="error-msg hidden" id="joinError"></div>
+                <button class="btn" onclick="joinRoom()">참여하기</button>
+                <button type="button" class="btn-link" onclick="showPanel('modeSelect')">취소</button>
+            </div>
+
+            <div class="room-panel hidden" id="lobbyPanel">
+                <div class="room-code-display">방 코드 <span id="roomCodeText"></span></div>
+                <div class="qr-wrap hidden" id="qrWrap">
+                    <div id="qrcode" class="qr-code"></div>
+                    <div class="qr-caption">휴대폰으로 스캔하면 바로 참여할 수 있어요</div>
+                </div>
+                <div class="lobby-participants" id="lobbyParticipants"></div>
+                <button class="btn hidden" id="lobbyStartBtn" onclick="nextScreen()">게임 시작</button>
+                <div class="waiting-msg hidden" id="lobbyWaitMsg">호스트가 시작하면 자동으로 시작돼요...</div>
+            </div>
+        </div>
+
+        <div class="game-screen" id="game-core">
+            <div class="mission-badge" id="stageBadge">STAGE 1 / 20</div><span class="reverse-badge hidden" id="reverseBadge">🔄 거꾸로 퀴즈</span><span class="room-badge hidden" id="roomBadge"></span>
+            <div class="sentence-box">
+                <span class="sentence-text" id="sentenceText"></span>
+                <button type="button" class="hide-btn" id="hideBtn" onclick="toggleSentence()">숨기기</button>
+            </div>
+
+            <div id="forwardArea">
+                <div class="word-bank" id="wordBank"></div>
+                <div class="drop-zone" id="dropZone"></div>
+                <div class="feedback" id="feedback"></div>
+            </div>
+
+            <div id="reverseArea" class="hidden">
+                <div class="hint-label">💡 이 단어들만 보고 원래 문장을 맞혀보세요</div>
+                <div class="hint-words" id="hintWords"></div>
+                <input type="text" id="guessInput" class="guess-input" placeholder="내가 추리한 문장을 적어보세요" oninput="syncMyGuess()">
+            </div>
+
+            <div class="picks-board hidden" id="picksBoard"></div>
+
+            <div class="nav-btns" id="navBtns">
+                <button class="btn btn-secondary" onclick="prevScreen()">이전</button>
+                <button class="btn" id="nextBtn" onclick="nextScreen()">다음 문장</button>
+            </div>
+            <div class="waiting-msg hidden" id="hostOnlyMsg">호스트가 진행을 조작하고 있어요.</div>
+        </div>
+
+        <div class="game-screen" id="screen-final">
+            <h2 style="color:var(--success); margin-bottom:25px;">🎉 완료!</h2>
+            <p style="font-size:1.2rem; margin-bottom:40px;">20문장 모두 완료했어요. 수고하셨습니다!</p>
+            <button class="btn btn-secondary" onclick="resetGame()">다시 하기</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        const stages = [
+            { sentence: "오늘 급식 메뉴에 돈가스 나온대 진짜 좋다" },
+            { sentence: "선생님이 수행평가 정말 쉽게 낸다고 했잖아" },
+            { sentence: "나는 치킨을 좋아해서 매일 먹는다" },
+            { sentence: "내일 아침 일찍 학교 가야 해서 너무 졸려" },
+            { sentence: "어제 밤에 친구랑 축구 하다가 다리를 다쳤어" },
+            { sentence: "이번 주말에 가족이랑 놀이공원 가기로 했어" },
+            { sentence: "수학 문제가 너무 어려워서 머리가 아파" },
+            { sentence: "도서관에서 빌린 책을 이번 주에 다 읽었어" },
+            { sentence: "옆 반 친구가 체육 시간에 축구공을 잃어버렸대" },
+            { sentence: "오늘 아침에 늦잠 자서 지각할 뻔했어" },
+            { sentence: "방학 동안 매일 아침 운동하기로 다짐했어" },
+            { sentence: "저녁에 엄마가 맛있는 김치찌개를 끓여주셨어" },
+            { sentence: "새로 나온 게임이 너무 재미있어서 밤새 했어" },
+            { sentence: "친구랑 싸워서 오늘 하루 종일 기분이 안 좋아" },
+            { sentence: "다음 달에 있을 시험 때문에 걱정이 많아" },
+            { sentence: "버스를 놓쳐서 학교에 십 분 늦게 도착했어" },
+            { sentence: "새로 산 운동화가 너무 예뻐서 계속 신고 다녀" },
+            { sentence: "할머니 댁에 가서 맛있는 과일을 잔뜩 먹었어" },
+            { sentence: "비가 갑자기 많이 와서 우산을 새로 샀어" },
+            { sentence: "축제 준비 때문에 친구들과 밤늦게까지 남았어" }
+        ];
+
+        let currentScreen = 0;
+        const totalScreens = stages.length + 2; // 인트로 + 스테이지들 + 결과 화면
+        let bankState = [];
+        let slotState = [null, null, null];
+        let currentSentence = '';
+        let sentenceHidden = false;
+        let shuffledWords = [];
+        let hintCount = 3;
+        let reverseUnsubscribe = null;
+
+        function isReverseStage(stageIdx) {
+            return (stageIdx + 1) % 3 === 0;
+        }
+
+        // ---------------- 방(room) 기능 ----------------
+        let firebaseReady = !!window.fb;
+        window.addEventListener('firebase-ready', () => { firebaseReady = true; });
+
+        let roomCode = null;   // null이면 혼자 하기 모드
+        let myId = null;
+        let myNickname = '';
+        let isHost = false;
+        let picksUnsubscribe = null;
+        let guessUnsubscribe = null;
+
+        function generateId() {
+            if (window.crypto && window.crypto.randomUUID) return window.crypto.randomUUID();
+            return 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        }
+
+        function generateRoomCode() {
+            return String(Math.floor(1000 + Math.random() * 9000));
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        const ROOM_PANEL_IDS = ['modeSelect', 'createPanel', 'joinPanel', 'lobbyPanel'];
+        function showPanel(id) {
+            ROOM_PANEL_IDS.forEach(pid => {
+                document.getElementById(pid).classList.toggle('hidden', pid !== id);
+            });
+        }
+
+        function showRoomError(elId, message) {
+            const el = document.getElementById(elId);
+            el.textContent = message;
+            el.classList.remove('hidden');
+        }
+
+        async function createRoom() {
+            document.getElementById('createError').classList.add('hidden');
+            if (!firebaseReady) { showRoomError('createError', '연결 중이에요. 잠시 후 다시 시도해주세요.'); return; }
+            const nickname = document.getElementById('hostNickname').value.trim().slice(0, 12);
+            if (!nickname) { showRoomError('createError', '닉네임을 입력해주세요.'); return; }
+
+            const { db, ref, set, get, child, onDisconnect, serverTimestamp } = window.fb;
+
+            try {
+                myId = generateId();
+                myNickname = nickname;
+                isHost = true;
+
+                let code = generateRoomCode();
+                for (let attempt = 0; attempt < 5; attempt++) {
+                    const snap = await get(child(ref(db), `rooms/${code}`));
+                    if (!snap.exists()) break;
+                    code = generateRoomCode();
+                }
+                roomCode = code;
+
+                await set(ref(db, `rooms/${roomCode}`), {
+                    hostId: myId,
+                    currentScreen: 0,
+                    createdAt: serverTimestamp(),
+                    participants: {
+                        [myId]: { nickname: myNickname, isHost: true }
+                    }
+                });
+
+                onDisconnect(ref(db, `rooms/${roomCode}/participants/${myId}`)).remove();
+
+                attachRoomListeners();
+                document.getElementById('roomCodeText').textContent = roomCode;
+                document.getElementById('lobbyStartBtn').classList.remove('hidden');
+                document.getElementById('lobbyWaitMsg').classList.add('hidden');
+                showPanel('lobbyPanel');
+                showJoinQrCode(roomCode);
+            } catch (err) {
+                console.error(err);
+                roomCode = null;
+                showRoomError('createError', '방을 만들지 못했어요. Firebase 설정을 확인해주세요.');
+            }
+        }
+
+        function showJoinQrCode(code) {
+            try {
+                if (!window.QRCode) return;
+                const qrContainer = document.getElementById('qrcode');
+                qrContainer.innerHTML = '';
+                const joinUrl = `${window.location.origin}${window.location.pathname}?room=${code}`;
+                new QRCode(qrContainer, {
+                    text: joinUrl,
+                    width: 160,
+                    height: 160,
+                    colorDark: '#1e293b',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                document.getElementById('qrWrap').classList.remove('hidden');
+            } catch (err) {
+                console.error('QR code generation failed', err);
+            }
+        }
+
+        function checkUrlForRoomCode() {
+            const params = new URLSearchParams(window.location.search);
+            const code = (params.get('room') || '').replace(/\D/g, '');
+            if (!code) return;
+            showPanel('joinPanel');
+            document.getElementById('joinCodeInput').value = code;
+            document.getElementById('joinNickname').focus();
+        }
+
+        async function joinRoom() {
+            document.getElementById('joinError').classList.add('hidden');
+            if (!firebaseReady) { showRoomError('joinError', '연결 중이에요. 잠시 후 다시 시도해주세요.'); return; }
+            const code = document.getElementById('joinCodeInput').value.replace(/\D/g, '');
+            const nickname = document.getElementById('joinNickname').value.trim().slice(0, 12);
+            if (!code || !nickname) { showRoomError('joinError', '참여 코드와 닉네임을 모두 입력해주세요.'); return; }
+
+            const { db, ref, set, get, child, onDisconnect } = window.fb;
+
+            try {
+                const roomSnap = await get(child(ref(db), `rooms/${code}`));
+                if (!roomSnap.exists()) { showRoomError('joinError', '존재하지 않는 방 코드예요.'); return; }
+
+                myId = generateId();
+                myNickname = nickname;
+                isHost = false;
+                roomCode = code;
+
+                await set(ref(db, `rooms/${roomCode}/participants/${myId}`), {
+                    nickname: myNickname, isHost: false
+                });
+                onDisconnect(ref(db, `rooms/${roomCode}/participants/${myId}`)).remove();
+
+                attachRoomListeners();
+                document.getElementById('roomCodeText').textContent = roomCode;
+                document.getElementById('lobbyStartBtn').classList.add('hidden');
+                document.getElementById('lobbyWaitMsg').classList.remove('hidden');
+                showPanel('lobbyPanel');
+
+                const data = roomSnap.val();
+                if (typeof data.currentScreen === 'number' && data.currentScreen > 0) {
+                    currentScreen = data.currentScreen;
+                    showScreen();
+                }
+            } catch (err) {
+                console.error(err);
+                roomCode = null;
+                showRoomError('joinError', '참여하지 못했어요. Firebase 설정을 확인해주세요.');
+            }
+        }
+
+        function attachRoomListeners() {
+            const { db, ref, onValue } = window.fb;
+
+            onValue(ref(db, `rooms/${roomCode}/currentScreen`), snap => {
+                const val = snap.val();
+                if (typeof val !== 'number' || val === currentScreen) return;
+                currentScreen = val;
+                showScreen();
+            }, err => console.error(err));
+
+            onValue(ref(db, `rooms/${roomCode}/participants`), snap => {
+                renderParticipants(snap.val() || {});
+            }, err => console.error(err));
+        }
+
+        function renderParticipants(data) {
+            const entries = Object.values(data);
+
+            const lobbyEl = document.getElementById('lobbyParticipants');
+            if (lobbyEl) {
+                lobbyEl.innerHTML = entries.map(p =>
+                    `<span class="participant-chip${p.isHost ? ' is-host' : ''}">${escapeHtml(p.nickname || '참가자')}</span>`
+                ).join('');
+            }
+
+            const badge = document.getElementById('roomBadge');
+            if (badge && roomCode) {
+                badge.textContent = `방 ${roomCode} · 참가자 ${entries.length}명`;
+                badge.classList.remove('hidden');
+            }
+        }
+
+        function attachResultsListener(stageIdx) {
+            if (picksUnsubscribe) { picksUnsubscribe(); picksUnsubscribe = null; }
+            if (guessUnsubscribe) { guessUnsubscribe(); guessUnsubscribe = null; }
+
+            const board = document.getElementById('picksBoard');
+            if (!roomCode) { board.classList.add('hidden'); return; }
+
+            const { db, ref, onValue } = window.fb;
+            board.classList.remove('hidden');
+
+            if (isReverseStage(stageIdx)) {
+                guessUnsubscribe = onValue(ref(db, `rooms/${roomCode}/guesses/${stageIdx}`), snap => {
+                    renderGuessBoard(snap.val() || {});
+                }, err => console.error(err));
+            } else {
+                picksUnsubscribe = onValue(ref(db, `rooms/${roomCode}/picks/${stageIdx}`), snap => {
+                    renderPicksBoard(snap.val() || {});
+                }, err => console.error(err));
+            }
+        }
+
+        function renderPicksBoard(picksData) {
+            const board = document.getElementById('picksBoard');
+            const entries = Object.entries(picksData);
+            const title = '<div class="picks-title">함께 고른 단어</div>';
+
+            if (!entries.length) {
+                board.innerHTML = title + '<div class="picks-empty">아직 아무도 고르지 않았어요.</div>';
+                return;
+            }
+
+            board.innerHTML = title + entries.map(([pid, p]) => `
+                <div class="picks-row${pid === myId ? ' mine' : ''}">
+                    <span class="picks-name">${escapeHtml(p.nickname || '참가자')}</span>
+                    <span class="picks-words">${
+                        (p.words && p.words.length)
+                            ? p.words.map(w => `<span class="picks-word">${escapeHtml(w)}</span>`).join('')
+                            : '<span class="picks-waiting">선택 중...</span>'
+                    }</span>
+                </div>
+            `).join('');
+        }
+
+        function renderGuessBoard(guessData) {
+            const board = document.getElementById('picksBoard');
+            const entries = Object.entries(guessData);
+            const title = '<div class="picks-title">함께 추리한 문장</div>';
+
+            if (!entries.length) {
+                board.innerHTML = title + '<div class="picks-empty">아직 아무도 추리하지 않았어요.</div>';
+                return;
+            }
+
+            board.innerHTML = title + entries.map(([pid, g]) => `
+                <div class="picks-row${pid === myId ? ' mine' : ''}">
+                    <span class="picks-name">${escapeHtml(g.nickname || '참가자')}</span>
+                    <span class="guess-text${g.guess ? '' : ' is-empty'}">${g.guess ? escapeHtml(g.guess) : '추리 중...'}</span>
+                </div>
+            `).join('');
+        }
+
+        function syncMyPicks() {
+            if (!roomCode || !myId) return;
+            const stageIdx = currentScreen - 1;
+            if (stageIdx < 0) return;
+            const words = slotState.filter(w => w !== null);
+            const { db, ref, set } = window.fb;
+            set(ref(db, `rooms/${roomCode}/picks/${stageIdx}/${myId}`), {
+                nickname: myNickname,
+                words
+            }).catch(err => console.error(err));
+        }
+
+        let guessSyncTimer = null;
+        function syncMyGuess() {
+            if (!roomCode || !myId) return;
+            clearTimeout(guessSyncTimer);
+            guessSyncTimer = setTimeout(() => {
+                const stageIdx = currentScreen - 1;
+                if (stageIdx < 0) return;
+                const guess = document.getElementById('guessInput').value.trim().slice(0, 200);
+                const { db, ref, set } = window.fb;
+                set(ref(db, `rooms/${roomCode}/guesses/${stageIdx}/${myId}`), {
+                    nickname: myNickname,
+                    guess
+                }).catch(err => console.error(err));
+            }, 400);
+        }
+
+        function syncRoomScreen() {
+            if (!roomCode || !isHost) return;
+            const { db, ref, set } = window.fb;
+            set(ref(db, `rooms/${roomCode}/currentScreen`), currentScreen).catch(err => console.error(err));
+        }
+
+        function syncReverseState() {
+            if (!roomCode || !isHost) return;
+            const stageIdx = currentScreen - 1;
+            if (!isReverseStage(stageIdx)) return;
+            const { db, ref, set } = window.fb;
+            set(ref(db, `rooms/${roomCode}/reveal/${stageIdx}`), {
+                hidden: sentenceHidden,
+                hintCount
+            }).catch(err => console.error(err));
+        }
+
+        function attachReverseListener(stageIdx) {
+            if (reverseUnsubscribe) { reverseUnsubscribe(); reverseUnsubscribe = null; }
+            if (!roomCode || !isReverseStage(stageIdx)) return;
+            const { db, ref, onValue } = window.fb;
+            reverseUnsubscribe = onValue(ref(db, `rooms/${roomCode}/reveal/${stageIdx}`), snap => {
+                const val = snap.val();
+                if (!val) return;
+                if (typeof val.hidden === 'boolean') sentenceHidden = val.hidden;
+                if (typeof val.hintCount === 'number') hintCount = val.hintCount;
+                renderSentence();
+                renderHintWords();
+            }, err => console.error(err));
+        }
+
+        function updateNavVisibility() {
+            const navBtns = document.getElementById('navBtns');
+            const hostOnlyMsg = document.getElementById('hostOnlyMsg');
+            const inRoomAsGuest = roomCode && !isHost;
+            navBtns.classList.toggle('hidden', inRoomAsGuest);
+            hostOnlyMsg.classList.toggle('hidden', !inRoomAsGuest);
+        }
+        // -------------- 방(room) 기능 끝 --------------
+
+        function shuffle(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function updateProgress() {
+            const pct = (currentScreen / (totalScreens - 1)) * 100;
+            document.getElementById('progressBar').style.width = pct + '%';
+        }
+
+        function renderBank() {
+            const bank = document.getElementById('wordBank');
+            bank.innerHTML = '';
+            bankState.forEach(word => {
+                const chip = document.createElement('div');
+                chip.className = 'word-chip';
+                chip.draggable = true;
+                chip.textContent = word;
+                chip.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', word);
+                    chip.classList.add('dragging');
+                });
+                chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+                chip.addEventListener('click', () => attemptPlace(word));
+                bank.appendChild(chip);
+            });
+        }
+
+        function renderSlots() {
+            const zone = document.getElementById('dropZone');
+            zone.innerHTML = '';
+
+            slotState.forEach((word, i) => {
+                const slot = document.createElement('div');
+                slot.className = 'drop-slot' + (word ? ' filled' : '');
+                slot.textContent = word || '';
+                slot.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    slot.classList.add('over');
+                });
+                slot.addEventListener('dragleave', () => slot.classList.remove('over'));
+                slot.addEventListener('drop', e => {
+                    e.preventDefault();
+                    slot.classList.remove('over');
+                    const w = e.dataTransfer.getData('text/plain');
+                    if (w) attemptPlace(w);
+                });
+                slot.addEventListener('click', () => removeSlotWord(i));
+                zone.appendChild(slot);
+            });
+
+            const addBtn = document.createElement('button');
+            addBtn.type = 'button';
+            addBtn.className = 'add-slot-btn';
+            addBtn.textContent = '+';
+            addBtn.title = '단어 칸 추가';
+            addBtn.addEventListener('click', addSlot);
+            zone.appendChild(addBtn);
+        }
+
+        function addSlot() {
+            slotState.push(null);
+            renderSlots();
+            updateFeedback();
+            syncMyPicks();
+        }
+
+        function renderHintWords() {
+            const container = document.getElementById('hintWords');
+            container.innerHTML = '';
+
+            shuffledWords.slice(0, hintCount).forEach(word => {
+                const chip = document.createElement('span');
+                chip.className = 'hint-word';
+                chip.textContent = word;
+                container.appendChild(chip);
+            });
+
+            if (hintCount < shuffledWords.length) {
+                const addBtn = document.createElement('button');
+                addBtn.type = 'button';
+                addBtn.className = 'add-slot-btn';
+                addBtn.textContent = '+';
+                addBtn.title = '힌트 단어 추가';
+                addBtn.disabled = roomCode && !isHost;
+                addBtn.addEventListener('click', revealMoreHint);
+                container.appendChild(addBtn);
+            }
+        }
+
+        function revealMoreHint() {
+            if (hintCount >= shuffledWords.length) return;
+            hintCount++;
+            renderHintWords();
+            syncReverseState();
+        }
+
+        function updateFeedback() {
+            const fb = document.getElementById('feedback');
+            fb.textContent = slotState.includes(null) ? '' : `나만의 ${slotState.length}단어 완성! ✨`;
+        }
+
+        function attemptPlace(word) {
+            const emptyIdx = slotState.indexOf(null);
+            if (emptyIdx === -1) return;
+            const bankIdx = bankState.indexOf(word);
+            if (bankIdx === -1) return;
+            bankState.splice(bankIdx, 1);
+            slotState[emptyIdx] = word;
+            renderBank();
+            renderSlots();
+            updateFeedback();
+            syncMyPicks();
+        }
+
+        function removeSlotWord(i) {
+            const word = slotState[i];
+            if (!word) return;
+            slotState[i] = null;
+            bankState.push(word);
+            renderBank();
+            renderSlots();
+            updateFeedback();
+            syncMyPicks();
+        }
+
+        function renderSentence() {
+            const textEl = document.getElementById('sentenceText');
+            const btn = document.getElementById('hideBtn');
+            const reverse = isReverseStage(currentScreen - 1);
+
+            if (sentenceHidden) {
+                textEl.textContent = reverse ? '🤔 힌트 단어만 보고 문장을 추리해보세요!' : '문장이 숨겨졌어요. 👀';
+                textEl.classList.add('is-hidden');
+                btn.textContent = reverse ? '확인하기' : '문장 보기';
+            } else {
+                textEl.textContent = currentSentence;
+                textEl.classList.remove('is-hidden');
+                btn.textContent = reverse ? '다시 숨기기' : '숨기기';
+            }
+
+            btn.disabled = reverse && roomCode && !isHost;
+        }
+
+        function toggleSentence() {
+            sentenceHidden = !sentenceHidden;
+            renderSentence();
+            syncReverseState();
+        }
+
+        function loadStage(stageIdx) {
+            const stageData = stages[stageIdx];
+            const reverse = isReverseStage(stageIdx);
+
+            document.getElementById('stageBadge').textContent = `STAGE ${stageIdx + 1} / ${stages.length}`;
+            document.getElementById('nextBtn').textContent = stageIdx === stages.length - 1 ? '결과 보기' : '다음 문장';
+            document.getElementById('reverseBadge').classList.toggle('hidden', !reverse);
+            document.getElementById('forwardArea').classList.toggle('hidden', reverse);
+            document.getElementById('reverseArea').classList.toggle('hidden', !reverse);
+
+            currentSentence = stageData.sentence;
+            shuffledWords = shuffle(stageData.sentence.split(' '));
+
+            if (reverse) {
+                sentenceHidden = true;
+                hintCount = 3;
+                document.getElementById('guessInput').value = '';
+                renderSentence();
+                renderHintWords();
+            } else {
+                sentenceHidden = false;
+                renderSentence();
+                bankState = shuffledWords.slice();
+                slotState = [null, null, null];
+                renderBank();
+                renderSlots();
+                updateFeedback();
+            }
+
+            updateNavVisibility();
+            attachResultsListener(stageIdx);
+            attachReverseListener(stageIdx);
+        }
+
+        function showScreen() {
+            document.getElementById('screen-0').classList.remove('active');
+            document.getElementById('game-core').classList.remove('active');
+            document.getElementById('screen-final').classList.remove('active');
+
+            updateProgress();
+
+            if (currentScreen === 0) {
+                document.getElementById('screen-0').classList.add('active');
+            } else if (currentScreen >= 1 && currentScreen <= stages.length) {
+                loadStage(currentScreen - 1);
+                document.getElementById('game-core').classList.add('active');
+            } else {
+                document.getElementById('screen-final').classList.add('active');
+            }
+        }
+
+        function nextScreen() {
+            if (currentScreen < totalScreens - 1) {
+                currentScreen++;
+                showScreen();
+                syncRoomScreen();
+            }
+        }
+
+        function prevScreen() {
+            if (currentScreen > 0) {
+                currentScreen--;
+                showScreen();
+                syncRoomScreen();
+            }
+        }
+
+        function resetGame() {
+            currentScreen = 0;
+            showScreen();
+            syncRoomScreen();
+        }
+
+        // 초기 실행
+        showScreen();
+        checkUrlForRoomCode();
+    </script>
+</body>
+</html>

@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
@@ -358,13 +359,17 @@
                     <button onclick="copyRoomCode()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-all">📋 코드 복사</button>
                     <button onclick="copyRoomLink()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition-all">🔗 링크 복사</button>
                 </div>
+                <div class="flex flex-col items-center mt-4">
+                    <div id="dashQrCode" class="bg-white p-3 rounded-xl border-2 border-gray-200 inline-block"></div>
+                    <div class="text-gray-500 text-sm mt-2">휴대폰으로 스캔하면 바로 참여할 수 있어요</div>
+                </div>
             </div>
             <div class="bg-white rounded-2xl shadow-xl p-6 mb-4">
                 <div class="flex justify-between items-center mb-4">
                     <div class="font-bold text-gray-700"><span id="dashStageLabel">대기 인원</span>: <span id="dashCount" class="text-teal-600">0</span></div>
                     <div id="dashStatus" class="px-3 py-1 rounded-full text-sm font-bold bg-yellow-100 text-yellow-800">대기 중</div>
                 </div>
-                <div id="dashList" class="min-h-[60px]"><p class="text-center text-gray-400">학생들이 코드를 입력하면 표시됩니다.</p></div>
+                <div id="dashList" class="min-h-[60px] max-h-[420px] overflow-y-auto pr-1"><p class="text-center text-gray-400">학생들이 코드를 입력하면 표시됩니다.</p></div>
             </div>
             <div id="dashActions" class="flex gap-3 flex-wrap"></div>
         </div>
@@ -523,9 +528,9 @@
         let currentRoomCode = null;   // 참여/생성한 방 코드
         let waitingKey = null;        // 대기 명단에서 내 키
         // 실시간 구독 핸들(정리용)
-        let waitingRef = null, metaWatchRef = null, waitingEntryRef = null;
+        let waitingRef = null, metaWatchRef = null, waitingEntryRef = null, waitingPollTimer = null;
         let dashWaitingRef = null, dashScoresRef = null, dashStatusRef = null;
-        let dashCode = null, dashStatus = null;
+        let dashCode = null, dashStatus = null, dashPollTimer = null;
         let myScoreKey = null;        // 방 모드에서 내 점수 노드 키(내 등수 찾기용)
 
         // 화면별 표시 방식(가운데 정렬 폼은 flex, 넓은 화면은 block)
@@ -552,12 +557,64 @@
             items.sort((a, b) => (Number(a.joinedAt) || 0) - (Number(b.joinedAt) || 0));
             return items;
         }
+        // 참여자가 몰릴 때 Firebase SDK의 실시간 동기화 캐시가 멈춰서(같은 연결에서는
+        // once('value')도 오래된 값을 반환) 대기 명단/순위가 갱신되지 않는 경우가 있다.
+        // SDK를 거치지 않는 REST 요청은 이 캐시의 영향을 받지 않으므로 폴링에는 이걸 쓴다.
+        async function dbGetRest(path) {
+            const res = await fetch(`${firebaseConfig.databaseURL}${path}.json`);
+            if (!res.ok) throw new Error(`REST GET ${path} 실패: ${res.status}`);
+            return res.json();
+        }
+        function objectToWaitingItems(obj) {
+            const items = [];
+            Object.entries(obj || {}).forEach(([key, value]) => {
+                if (!value || !value.name) return;
+                items.push({ key, ...value });
+            });
+            items.sort((a, b) => (Number(a.joinedAt) || 0) - (Number(b.joinedAt) || 0));
+            return items;
+        }
+        function objectToScoreItems(obj) {
+            return Object.entries(obj || {}).map(([key, value]) => ({ key, ...value }));
+        }
         function renderWaitingBadges(items, ownKey = null) {
             return items.map(it =>
                 `<span class="px-3 py-2 rounded-lg font-bold ${it.key === ownKey ? 'bg-cyan-100 text-cyan-800' : 'bg-blue-100 text-blue-800'}">${escapeHtml(it.name)}${it.key === ownKey ? ' · 나' : ''}</span>`
             ).join('');
         }
         function goToCreate() { showScreen('createScreen'); }
+
+        // 실제 배포 주소 (file:// 또는 로컬 서버(Live Server 등)로 열었을 때를 대비한 대체 주소)
+        const PRODUCTION_URL = 'https://tjdgus1121.github.io/word2vec/activity3_quiz.html';
+        function isReachableFromOtherDevices() {
+            const proto = location.protocol;
+            if (proto !== 'http:' && proto !== 'https:') return false; // file:// 등
+            const host = location.hostname;
+            // localhost / 127.0.0.1 / ::1 (VS Code Live Server 등)는 같은 기기 안에서만 열려서
+            // 다른 기기(휴대폰)에서는 절대 접속할 수 없음
+            return host !== 'localhost' && host !== '127.0.0.1' && host !== '::1' && host !== '';
+        }
+        function getJoinUrl(code) {
+            const base = isReachableFromOtherDevices() ? (location.origin + location.pathname) : PRODUCTION_URL;
+            return `${base}?room=${code}`;
+        }
+        function showDashQrCode(code) {
+            try {
+                if (!window.QRCode) return;
+                const container = document.getElementById('dashQrCode');
+                container.innerHTML = '';
+                new QRCode(container, {
+                    text: getJoinUrl(code),
+                    width: 160,
+                    height: 160,
+                    colorDark: '#1f2937',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch (err) {
+                console.error('QR 코드 생성 실패', err);
+            }
+        }
         // 방 만들기: '직접 입력' 선택 시에만 시작 단어 입력칸 표시
         function toggleStartWordInput() {
             const mode = document.querySelector('input[name="startWordMode"]:checked').value;
@@ -1113,14 +1170,21 @@
             document.getElementById('dashCount').textContent = '0';
             document.getElementById('dashList').innerHTML = '<p class="text-center text-gray-400">학생들이 코드를 입력하면 표시됩니다.</p>';
             showScreen('dashboardScreen');
+            showDashQrCode(code);
             // 방 상태(대기/시작/마감)에 따라 대시보드 UI 변경
             dashStatusRef = firebase.database().ref(`rooms/${code}/meta/status`);
             dashStatusRef.on('value', snap => { const ns = snap.val(); if (ns !== dashStatus) { dashStatus = ns; updateDashUI(); } });
         }
 
+        // 대기 인원이 한꺼번에 몰리면(예: 30명 동시 제출) 실시간 구독(.on('value'))이
+        // 중간에 멈춰버리는 경우가 있어(Firebase 특정 환경에서 재현됨), 교사 화면은
+        // 짧은 주기로 once('value')를 다시 읽어오는 폴링 방식으로 안정성을 확보한다.
+        const DASH_POLL_MS = 2000;
+
         function updateDashUI() {
             if (dashWaitingRef) { dashWaitingRef.off(); dashWaitingRef = null; }
             if (dashScoresRef) { dashScoresRef.off(); dashScoresRef = null; }
+            if (dashPollTimer) { clearInterval(dashPollTimer); dashPollTimer = null; }
             const statusEl = document.getElementById('dashStatus');
             const actions = document.getElementById('dashActions');
 
@@ -1132,18 +1196,25 @@
                     <button onclick="startRoomGame()" class="flex-1 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-bold py-4 rounded-xl text-lg transition-all transform hover:scale-105 shadow-lg">▶ 게임 시작</button>
                     <button onclick="closeRoom()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-4 px-6 rounded-xl transition-all">방 취소</button>
                     <button onclick="dashHome()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-4 px-6 rounded-xl transition-all">홈</button>`;
-                // 대기 명단 실시간
-                dashWaitingRef = firebase.database().ref(`rooms/${dashCode}/waiting`);
-                dashWaitingRef.on('value', snap => {
-                    const items = getWaitingItems(snap);
-                    document.getElementById('dashCount').textContent = items.length;
-                    document.getElementById('dashList').innerHTML = items.length === 0
-                        ? '<p class="text-center text-gray-400">학생들이 코드를 입력하면 표시됩니다.</p>'
-                        : `<div class="flex flex-wrap gap-2">${renderWaitingBadges(items)}</div>`;
-                }, error => {
-                    console.error('대기 명단 구독 실패:', error);
-                    document.getElementById('dashList').innerHTML = '<p class="text-center text-red-500">대기 명단을 불러오지 못했습니다.</p>';
-                });
+                // 대기 명단: 짧은 주기로 다시 읽어와 표시 (실시간 구독 정체 방지, REST로 SDK 캐시 우회)
+                const roomAtStart = dashCode;
+                async function refreshWaiting() {
+                    if (dashCode !== roomAtStart) return;
+                    try {
+                        const data = await dbGetRest(`/rooms/${roomAtStart}/waiting`);
+                        if (dashCode !== roomAtStart) return;
+                        const items = objectToWaitingItems(data);
+                        document.getElementById('dashCount').textContent = items.length;
+                        document.getElementById('dashList').innerHTML = items.length === 0
+                            ? '<p class="text-center text-gray-400">학생들이 코드를 입력하면 표시됩니다.</p>'
+                            : `<div class="flex flex-wrap gap-2">${renderWaitingBadges(items)}</div>`;
+                    } catch (error) {
+                        console.error('대기 명단 조회 실패:', error);
+                        document.getElementById('dashList').innerHTML = '<p class="text-center text-red-500">대기 명단을 불러오지 못했습니다.</p>';
+                    }
+                }
+                refreshWaiting();
+                dashPollTimer = setInterval(refreshWaiting, DASH_POLL_MS);
             } else if (dashStatus === 'started' || dashStatus === 'closed') {
                 document.getElementById('dashStageLabel').textContent = '제출 인원';
                 if (dashStatus === 'started') {
@@ -1157,16 +1228,25 @@
                     statusEl.className = 'px-3 py-1 rounded-full text-sm font-bold bg-gray-200 text-gray-700';
                     actions.innerHTML = `<button onclick="dashHome()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-4 px-6 rounded-xl transition-all">홈</button>`;
                 }
-                // 실시간 순위
-                dashScoresRef = firebase.database().ref(`rooms/${dashCode}/scores`);
-                dashScoresRef.on('value', snap => {
-                    const items = []; snap.forEach(c => items.push({ key: c.key, ...c.val() }));
-                    items.sort((a, b) => b.score - a.score);
-                    document.getElementById('dashCount').textContent = items.length;
-                    document.getElementById('dashList').innerHTML = items.length === 0
-                        ? '<p class="text-center text-gray-400">학생들이 끝내면 순위가 표시됩니다.</p>'
-                        : renderDashScores(items);
-                });
+                // 실시간 순위: 짧은 주기로 다시 읽어와 표시 (실시간 구독 정체 방지, REST로 SDK 캐시 우회)
+                const roomAtStart = dashCode;
+                async function refreshScores() {
+                    if (dashCode !== roomAtStart) return;
+                    try {
+                        const data = await dbGetRest(`/rooms/${roomAtStart}/scores`);
+                        if (dashCode !== roomAtStart) return;
+                        const items = objectToScoreItems(data);
+                        items.sort((a, b) => b.score - a.score);
+                        document.getElementById('dashCount').textContent = items.length;
+                        document.getElementById('dashList').innerHTML = items.length === 0
+                            ? '<p class="text-center text-gray-400">학생들이 끝내면 순위가 표시됩니다.</p>'
+                            : renderDashScores(items);
+                    } catch (error) {
+                        console.error('순위 조회 실패:', error);
+                    }
+                }
+                refreshScores();
+                dashPollTimer = setInterval(refreshScores, DASH_POLL_MS);
             }
         }
         function renderDashScores(items) {
@@ -1189,10 +1269,11 @@
         function dashHome() { teardownDash(); goHome(); }
         function teardownDash() {
             [dashWaitingRef, dashScoresRef, dashStatusRef].forEach(r => { if (r) r.off(); });
+            if (dashPollTimer) { clearInterval(dashPollTimer); dashPollTimer = null; }
             dashWaitingRef = dashScoresRef = dashStatusRef = null; dashCode = null; dashStatus = null;
         }
         function copyRoomCode() { if (dashCode) navigator.clipboard.writeText(dashCode); }
-        function copyRoomLink() { if (dashCode) navigator.clipboard.writeText(location.origin + location.pathname + '?room=' + dashCode); }
+        function copyRoomLink() { if (dashCode) navigator.clipboard.writeText(getJoinUrl(dashCode)); }
 
         // ============================================
         // 학급 모드 — 학생: 방 참여 / 대기실
@@ -1242,16 +1323,22 @@
             document.getElementById('waitingCode').textContent = code;
             document.getElementById('waitingName').textContent = name;
             showScreen('waitingScreen');
-            // 대기 명단 실시간
-            waitingRef = firebase.database().ref(`rooms/${code}/waiting`);
-            waitingRef.on('value', snap => {
-                const items = getWaitingItems(snap);
-                document.getElementById('waitingCount').textContent = items.length;
-                document.getElementById('waitingList').innerHTML = renderWaitingBadges(items, waitingKey);
-            }, error => {
-                console.error('대기 명단 구독 실패:', error);
-                document.getElementById('waitingList').innerHTML = '<span class="text-red-500 font-bold">대기 명단을 불러오지 못했습니다.</span>';
-            });
+            // 대기 명단: 짧은 주기로 다시 읽어와 표시 (참여자가 몰릴 때 실시간 구독이 멈추는 것 방지, REST로 SDK 캐시 우회)
+            async function refreshWaitingList() {
+                if (currentRoomCode !== code) return;
+                try {
+                    const data = await dbGetRest(`/rooms/${code}/waiting`);
+                    if (currentRoomCode !== code) return;
+                    const items = objectToWaitingItems(data);
+                    document.getElementById('waitingCount').textContent = items.length;
+                    document.getElementById('waitingList').innerHTML = renderWaitingBadges(items, waitingKey);
+                } catch (error) {
+                    console.error('대기 명단 조회 실패:', error);
+                    document.getElementById('waitingList').innerHTML = '<span class="text-red-500 font-bold">대기 명단을 불러오지 못했습니다.</span>';
+                }
+            }
+            refreshWaitingList();
+            waitingPollTimer = setInterval(refreshWaitingList, DASH_POLL_MS);
             // 시작/마감 신호 감지
             metaWatchRef = firebase.database().ref(`rooms/${code}/meta`);
             metaWatchRef.on('value', snap => {
@@ -1263,6 +1350,7 @@
         function teardownStudent() {
             if (waitingRef) { waitingRef.off(); waitingRef = null; }
             if (metaWatchRef) { metaWatchRef.off(); metaWatchRef = null; }
+            if (waitingPollTimer) { clearInterval(waitingPollTimer); waitingPollTimer = null; }
         }
         function removeWaitingEntry() {
             const ref = waitingEntryRef || (waitingKey && currentRoomCode ? firebase.database().ref(`rooms/${currentRoomCode}/waiting/${waitingKey}`) : null);
